@@ -1,6 +1,8 @@
 import os
+import pandas as pd
 
 from fastapi import FastAPI
+df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results_trends_pathways.xlsx")
 
 def __is_running_on_nuvolos():
     """
@@ -24,3 +26,14 @@ else:
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
+
+@app.get("/v1/country-data/{country}/{assessment_year}")
+async def get_country_data(country: str, assessment_year: int):
+    mask = (df_assessments["Country"] == country &
+    (df_assessments["Assessment date"].dt.year))
+    return {"Message": f"You requested data for {country} in {assessment_year}. Eventually, we will return the data here."}
+
+
+
+
+
