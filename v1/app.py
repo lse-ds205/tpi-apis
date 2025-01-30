@@ -28,10 +28,8 @@ else:
 async def read_root():
     return {"Hello": "World"}
 
-
-
-@app.get("/v1/country-data/{country}/{assessment_year}")
-async def get_country_data(country: str, assessment_year: int):
+@app.get("/v1/country-data/{country}/{assessment_year}", response_model=CountryData)
+async def get_country_data(country: str, assessment_year: int) -> CountryData:
     
     # Load the data
     df = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
@@ -56,13 +54,14 @@ async def get_country_data(country: str, assessment_year: int):
     # Filter out all NaNs
     df.replace(np.nan, "", inplace=True)
 
-    # Rename the columns to remove the "area " prefix
-    df.rename(columns=lambda x: x.replace("area ", ""), inplace=True)
+    # Rename the columns to remove the "area " prefix and replace the . with a _
+    df.rename(columns=lambda x: x.replace("area ", "").replace(".", "_"), inplace=True)
     df.rename(columns={"Country": "country", "Assessment date": "assessment_year"}, inplace=True)
 
     # Convert dataframe to dictionary
-    my_dict = df.to_dict(orient="records")
+    output_dict = df.iloc[0].to_dict()
 
-    # Silly non-data-driven response for now
-    return my_dict
+    output = CountryData(**output_dict)
+
+    return output # TypeError: v1.models.CountryData() argument after ** must be a mapping, not list
     
