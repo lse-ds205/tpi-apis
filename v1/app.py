@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
+from .models import CountryData
 from fastapi import FastAPI
 
 def __is_running_on_nuvolos():
@@ -64,3 +65,4 @@ async def get_country_data(country: str, assessment_year: int):
 
     # Silly non-data-driven response for now
     return my_dict
+    
