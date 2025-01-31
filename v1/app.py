@@ -1,26 +1,35 @@
 import os
+import pandas as pd
 
 from fastapi import FastAPI
+app = FastAPI()
 
-def __is_running_on_nuvolos():
-    """
-    If we are running this script from Nuvolos Cloud, 
-    there will be an environment variable called HOSTNAME
-    which starts with 'nv-'
-    """
+# from .models import CountryData 
 
-    hostname = os.getenv("HOSTNAME")
-    return hostname is not None and hostname.startswith('nv-')
+filepath = './data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx'
+df_assessments = pd.read_excel(filepath)
 
-if __is_running_on_nuvolos():
-    # Nuvolos alters the URL of the API (likely for security reasons)
-    # Instead of https://A-BIG-IP-ADDRESS:8000/
-    # The API is actually served at https://A-BIG-IP-ADDRESS/proxy/8000/
-    app = FastAPI(root_path="/proxy/8000/")
-else:
-    # No need to set up anything else if running this on local machine
-    app = FastAPI()
+df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
+df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])
 
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
+
+@app.get("/v1/country-data/{country}/{assessment_year}")
+async def get_country_data(country: str, assessment_year: int):
+
+    #only include country, year row
+    mask = (df_assessments['Assessment date'].dt.year == assessment_year) & (df_assessments['Country'] == country)
+    filtered_df = df_assessments[mask]
+
+    #remove irrelevant columns
+    filtered_df = filtered_df.drop(["Id", "Assessment date", "Publication date", "Country Id", "Country"], axis=1)
+
+    #return results as a dictionary
+    df_dict = filtered_df.to_dict(orient='records')
+
+    return {
+        "message": f"You requested data for {country} in {assessment_year}",
+        "data": df_dict
+    }

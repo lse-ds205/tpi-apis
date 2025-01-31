@@ -1,5 +1,6 @@
 # Regular DS stuff
 pandas==2.2.3
+openpyxl
 
 # API stuff
 requests==2.31.0
