@@ -41,7 +41,18 @@ async def get_country_data(country: str, assessment_year: int) -> CountryData:
         }
 
         filtered_df = filtered_df.rename(columns=remap_area_column_names)
-        output_dict = filtered_df.iloc[0].to_dict()
+        data = filtered_df.iloc[0]
+        EP = {col: data[col] for col in data.index if col.startswith("EP")}
+        CP = {col: data[col] for col in data.index if col.startswith("CP")}
+        CF = {col: data[col] for col in data.index if col.startswith("CF")}
+        output_dict = {
+            "country": country,
+            "assessment_year": assessment_year,
+            "EP": {"indicators": EP},
+            "CP": {"indicators": CP},
+            "CF": {"indicators": CF}
+        } 
+
         output = CountryData(**output_dict)
         return output
     except HTTPException as he:
