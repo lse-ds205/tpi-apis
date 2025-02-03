@@ -3,7 +3,13 @@ import pandas as pd
 
 from fastapi import FastAPI
 from typing import List
-from .models import CountryData
+
+from pydantic import BaseModel, Field
+from typing import Literal
+
+
+
+
 
 # Load the data
 filepath = "./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx" # Specify the correct path to the file
@@ -12,6 +18,7 @@ df_assessments = pd.read_excel(filepath)
 # Convert the date columns to datetime type so we can filter by year later
 df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
 df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])
+
 
 def __is_running_on_nuvolos():
     """
