@@ -2,6 +2,7 @@ import os
 import pandas as pd
 
 from fastapi import FastAPI
+from typing import List
 from .models import CountryData
 
 # Load the data
@@ -31,25 +32,31 @@ else:
     # No need to set up anything else if running this on local machine
     app = FastAPI()
 
-@app.get("/v1/country-data/{country}/{assessment_year}")
-async def get_country_data(country: str, assessment_year: int):
+@app.get("/v1/country-data/{country}/{assessment_year}", response_model = CountryData)
+async def get_country_data(country: str, assessment_year: int) -> CountryData:
 
     data = df_assessments[(df_assessments["Country"] == country) & (df_assessments["Assessment date"].dt.year == assessment_year)]
 
     #filter for the area columns
     area_columns = [col for col in data.columns if col.startswith("area")]
     data = data[area_columns]
+    data['country'] = country
+    data['assessment_year'] = assessment_year
 
     #JSON does not allow for NaN or NULL
     data = data.fillna("")
 
     #rename columns
     remap_area_column_names = {
-        col: col.replace('area', '').replace(".", "_") for col in area_columns
+        col: col.replace('area ', '').replace(".", "_") for col in area_columns
     }
 
     data = data.rename(columns=remap_area_column_names)
 
     #Grab just the first row and return it as a dictionary.
     #Even though there should only be one row anyway, we specify it because we want to convert to dictionary
-    return data.iloc[0].to_dict()
+    output_dict = data.iloc[0].to_dict()
+
+    output = CountryData(**output_dict)
+
+    return output
