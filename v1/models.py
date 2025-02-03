@@ -16,3 +16,7 @@ class CountryData(BaseModel):
     CF_2: str
     CF_3: str
     CF_4: str
+
+class Metric(BaseModel):
+    name: str
+    value: str
