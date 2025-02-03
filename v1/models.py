@@ -17,6 +17,11 @@ class CountryData(BaseModel):
     CF_3: str
     CF_4: str
 
+class Indicator(BaseModel):
+    assessment: str
+    metric: Metric
+
+
 class Metric(BaseModel):
     name: str
     value: str
