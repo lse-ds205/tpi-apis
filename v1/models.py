@@ -1,12 +1,29 @@
 from pydantic import BaseModel, Field
-from typing import Literal  # This helps us limit possible values
+from typing import Union, List
+
+# Data input error - not sending a number into year do it on the front-end (typos)
+# Country not included in the data or year not included in the data to be included in the backend
+
+class Metric(BaseModel):
+    name: str
+    value: str
+
+class Indicator(BaseModel):
+    name: str
+    assessment: str
+    metrics: List[Union[Metric, str]] = Field(
+        default_factory=list)
 
 class Area(BaseModel):
-    indicators: dict[str, str]
+    name: str
+    assessment: str
+    indicators: List[Indicator]
 
-class CountryData(BaseModel):
+class Pillar(BaseModel):
+    name: str = Field(..., pattern="^(EP|CP|CF)$")
+    areas: List[Area]
+
+class CountryDataResponse(BaseModel):
     country: str
     assessment_year: int
-    EP: Area
-    CP: Area
-    CF: Area
+    pillars: List[Pillar]
