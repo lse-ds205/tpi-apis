@@ -8,7 +8,7 @@ class Metric(BaseModel):
 class Indicator(BaseModel):
     name: str
     assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
-    metrics: Metric
+    metrics: list[Metric]
 
 class Area(BaseModel):
     name: str
@@ -17,7 +17,7 @@ class Area(BaseModel):
 
 class Pillar(BaseModel):
     name: Literal['EP', 'CP', 'CF']
-    areas: Area
+    areas: list[Area]
 
 class CountryData(BaseModel):
     pillars: list[Pillar]

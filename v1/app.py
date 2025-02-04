@@ -3,7 +3,7 @@ import pandas as pd
 
 from fastapi import FastAPI
 from typing import List
-from .models import CountryData
+from .models import CountryData, Pillar, Area, Indicator, Metric
 import re
 
 # Load the data
