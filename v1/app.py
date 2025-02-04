@@ -114,4 +114,4 @@ async def get_country_metrics(country: str, assessment_year: int):
         list_metrics.append(individual_metric)
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
-    return list_metrics
+
