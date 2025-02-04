@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from fastapi import FastAPI
-from ..models import CountryData
+from .models import CountryData
 
 file_path = './data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx'
 df_assessments = pd.read_excel(file_path)
