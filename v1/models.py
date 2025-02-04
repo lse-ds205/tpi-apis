@@ -7,13 +7,24 @@ class CountryData(BaseModel):
     EP_1: Literal["Yes", "No", "Partial", ""] 
     EP_2: Literal["Yes", "No", "Partial", ""]
     EP_3: Literal["Yes", "No", "Partial", ""]
-    CP_1: str
-    CP_2: str
-    CP_3: str
-    CP_4: str
-    CP_5: str
-    CP_6: str
-    CF_1: strgi
-    CF_2: str
-    CF_3: str
-    CF_4: str
+    CP_1: Literal["Yes", "No", "Partial", ""]
+    CP_2: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CP_3: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CP_4: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CP_5: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CP_6: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CF_1: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CF_2: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CF_3: Literal["Yes", "No", "Partial", "Exempt", ""]
+    CF_4: Literal["Yes", "No", "Partial", "Exempt", ""]
+    
+class Area(BaseModel):
+    indicators: dict[str, str]
+
+class CountryData(BaseModel):
+    country: str
+    assessment_year: int
+    EP: Area
+    CP: Area
+    CF: Area
+
