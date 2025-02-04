@@ -115,3 +115,10 @@ async def get_country_metrics(country: str, assessment_year: int):
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
     return list_metrics
+
+
+
+filepath = "./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx"
+df_assessments = pd.read_excel(filepath)
+df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
+df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])

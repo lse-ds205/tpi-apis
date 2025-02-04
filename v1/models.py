@@ -1,5 +1,9 @@
 from pydantic import BaseModel
 
+class Metric(BaseModel):
+    name: str
+    value: str
+    
 class CountryData(BaseModel):
     country: str
     assessment_year: int
@@ -22,6 +26,3 @@ class Indicator(BaseModel):
     metric: Metric
 
 
-class Metric(BaseModel):
-    name: str
-    value: str
