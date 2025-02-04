@@ -73,7 +73,21 @@ async def get_country_data(country: str, assessment_year: int):
         # Flatten the row to a dictionary
     output_dict = data.iloc[0].to_dict()
     
-    output = CountryData(**output_dict)
+    output = CountryData(country=output_dict['country'],
+                         assessment_year=output_dict['assessment_year'],
+                         EP_1=output_dict['EP.1'],
+                         EP_2=output_dict['EP.2'],
+                         EP_3=output_dict['EP.3'],
+                         CP_1=output_dict['CP.1'],
+                         CP_2=output_dict['CP.2'],
+                         CP_3=output_dict['CP.3'],
+                         CP_4=output_dict['CP.4'],
+                         CP_5=output_dict['CP.5'],
+                         CP_6=output_dict['CP.6'],
+                         CF_1=output_dict['CF.1'],
+                         CF_2=output_dict['CF.2'],
+                         CF_3=output_dict['CF.3'],
+                         CF_4=output_dict['CF.4'])
 
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
