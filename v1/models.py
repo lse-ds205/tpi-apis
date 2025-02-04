@@ -25,5 +25,10 @@ class Pillar(BaseModel):
     name: Literal['EP', 'CP', 'CF']
     areas: list[Area]
 
+class Metadata(BaseModel):
+    country: str
+    assessment_year: int = Field(ge=2023, le=2024)
+    
 class CountryData(BaseModel):
+    metadata: Metadata
     pillars: list[Pillar]

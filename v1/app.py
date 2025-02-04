@@ -68,9 +68,8 @@ async def get_country_data(country: str, assessment_year: int) -> CountryData:
     #get pillar
     pillars = [{'name': pillar, 'areas': areas} for pillar in ["EP","CP","CF"]]
 
-    output_dict = {'pillars': [pillar for pillar in pillars]}
-
-
+    output_dict = {'metadata': {'country': country, 'assessment_year': assessment_year},
+                   'pillars': [pillar for pillar in pillars]}
 
     output = CountryData(**output_dict)
 
