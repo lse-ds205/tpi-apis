@@ -70,6 +70,8 @@ async def get_country_data(country: str, assessment_year: int) -> CountryData:
 
     output_dict = {'pillars': [pillar for pillar in pillars]}
 
+
+
     output = CountryData(**output_dict)
 
     return output

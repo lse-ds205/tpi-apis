@@ -7,17 +7,23 @@ class Metric(BaseModel):
 
 class Indicator(BaseModel):
     name: str
-    assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
+    assessment: Literal['Not Applicable',
+                        'No Data',
+                        'Not applicable',
+                        'Yes',
+                        'No',
+                        'No data',
+                        'Exempt']
     metrics: Union[Metric, Literal[""]]
 
 class Area(BaseModel):
     name: str
     assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
-    indicators: Union[list[Indicator], Literal[""]]
+    indicators: list[Indicator]
 
 class Pillar(BaseModel):
     name: Literal['EP', 'CP', 'CF']
-    areas: Union[list[Area], Literal[""]]
+    areas: list[Area]
 
 class CountryData(BaseModel):
-    pillars: Union[list[Pillar], Literal[""]]
+    pillars: list[Pillar]
