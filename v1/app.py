@@ -12,38 +12,14 @@ df_assessments = pd.read_excel(filepath, engine='openpyxl')
 async def read_root():
     return {"Hello": "World"} 
 
-# Specifying the classes to reflect the models.py file
-class Metric(BaseModel):
-    name: str
-    value: str
-
-class Indicator(BaseModel):
-    name: str
-    assessment: str
-    metrics: List[Union[Metric, str]] = Field(default_factory=list)
-
-class Area(BaseModel):
-    name: str
-    assessment: str
-    indicators: List[Indicator]
-
-class Pillar(BaseModel):
-    name: str = Field(..., pattern="^(EP|CP|CF)$")
-    areas: List[Area]
-
-class CountryDataResponse(BaseModel):
-    country: str
-    assessment_year: int
-    pillars: List[Pillar]
-
 class CountryDataProcessor:
     def __init__(self, df: pd.DataFrame, country: str, assessment_year: int):
         self.df = df
-        self.country = country.lower()
+        self.country = country.lower() # Converts the country name to lowercase
         self.assessment_year = assessment_year
-        self.filtered_df = self.filter_data()
+        self.filtered_df = self.filter_data()  # Filters the DataFrame 
         
-    def filter_data(self) -> pd.DataFrame:
+    def filter_data(self) -> pd.DataFrame: # We are returning a dataframe
         self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], errors='coerce')
         mask = (
             (self.df['Country'].str.lower() == self.country) & 
@@ -56,27 +32,14 @@ class CountryDataProcessor:
         
         return filtered_df.iloc[0]  # Return the first matching row
     
-    def process_pillar(self, pillar: str) -> Pillar:
-        areas = []
-        area_dict: Dict[str, Dict] = {}
-        pillar_cols = [col for col in self.filtered_df.index if f" {pillar}." in col]
-        
-        for col in pillar_cols:
-            self.process_column(col, pillar, area_dict)
-        
-        for area_name, area_data in area_dict.items():
-            areas.append(self.create_area(area_name, area_data))
-        
-        return Pillar(name=pillar, areas=areas)
-    
-    def process_column(self, col: str, pillar: str, area_dict: Dict[str, Dict]):
-        parts = col.split()
-        if len(parts) < 2:
+    def process_column(self, col: str, pillar: str, area_dict: Dict[str, Dict]): #This is the key function that processes the DataFrame
+        parts = col.split() # Split the column name by space
+        if len(parts) < 2: # Note that this only applies to column names with at least 2 parts
             return
         
-        col_type, col_path = parts[0], parts[1]
+        col_type, col_path = parts[0], parts[1] # Realize that in the dataframe, the first word is the area/indicator/metric, second word tells me further information
         path_parts = col_path.split('.')
-        if len(path_parts) < 2:
+        if len(path_parts) < 2: #Exit if there are less than 2 words in the column -- dont apply to other columns such as "ID" or "Country"
             return
         
         area_num = path_parts[1]
@@ -88,7 +51,7 @@ class CountryDataProcessor:
                 'indicators': {}
             }
         
-        if len(path_parts) >= 3 and col_type == 'indicator':
+        if len(path_parts) >= 3 and col_type == 'indicator': #If the column type is an indicator AND it has the form a.b.c
             indicator_num = path_parts[2]
             indicator_key = f"{area_key}.{indicator_num}"
             area_dict[area_key]['indicators'][indicator_key] = {
@@ -103,7 +66,18 @@ class CountryDataProcessor:
             if indicator_key in area_dict[area_key]['indicators']:
                 metric = Metric(name=f"{indicator_key}.{metric_num}", value=str(self.filtered_df[col]))
                 area_dict[area_key]['indicators'][indicator_key]['metrics'].append(metric)
-    
+    def process_pillar(self, pillar: str) -> Pillar: #We are returning a pillar
+        areas = []
+        area_dict: Dict[str, Dict] = {}
+        pillar_cols = [col for col in self.filtered_df.index if f" {pillar}." in col]
+        
+        for col in pillar_cols:
+            self.process_column(col, pillar, area_dict)
+        
+        for area_name, area_data in area_dict.items():
+            areas.append(self.create_area(area_name, area_data))
+        
+        return Pillar(name=pillar, areas=areas)
     def create_area(self, area_name: str, area_data: Dict) -> Area:
         indicators = []
         for ind_name, ind_data in area_data['indicators'].items():
@@ -125,3 +99,8 @@ async def get_country_data(country: str, assessment_year: int) -> CountryDataRes
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# A list in python for javascript is an array of objects
+
+
+#Can use list comprehension instead of for loop. Instantiate a list, append those items to the list, return list at the end

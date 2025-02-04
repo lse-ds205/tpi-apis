@@ -27,3 +27,5 @@ class CountryDataResponse(BaseModel):
     country: str
     assessment_year: int
     pillars: List[Pillar]
+
+#None in python is represented as Null in JSON
