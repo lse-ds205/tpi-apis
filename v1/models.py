@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Union
+from typing import Literal, Optional, List
 
 class Metric(BaseModel):
     name: str
-    value: str
+    value: Optional[str] = None
 
 class Indicator(BaseModel):
     name: str
@@ -14,21 +14,21 @@ class Indicator(BaseModel):
                         'No',
                         'No data',
                         'Exempt']
-    metrics: Union[Metric, Literal[""]]
+    metrics: Optional[Metric] = None
 
 class Area(BaseModel):
     name: str
     assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
-    indicators: list[Indicator]
+    indicators: List[Indicator] = []
 
 class Pillar(BaseModel):
     name: Literal['EP', 'CP', 'CF']
-    areas: list[Area]
+    areas: List[Area] = []
 
 class Metadata(BaseModel):
     country: str
     assessment_year: int = Field(ge=2023, le=2024)
-    
+
 class CountryData(BaseModel):
     metadata: Metadata
-    pillars: list[Pillar]
+    pillars: List[Pillar]
