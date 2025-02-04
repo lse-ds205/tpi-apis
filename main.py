@@ -1,4 +1,5 @@
 import uvicorn
+import pandas as pd
 from fastapi import FastAPI
 
 from v1.app import app
