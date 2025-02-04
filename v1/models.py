@@ -13,11 +13,11 @@ class Indicator(BaseModel):
 class Area(BaseModel):
     name: str
     assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
-    indicators: Indicator
+    indicators: str
 
 class Pillar(BaseModel):
     name: Literal['EP', 'CP', 'CF']
-    areas: str
+    areas: Area
 
 class CountryData(BaseModel):
     pillars: list[Pillar]

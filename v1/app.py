@@ -37,9 +37,16 @@ else:
 @app.get("/v1/country-data/{country}/{assessment_year}", response_model = CountryData)
 async def get_country_data(country: str, assessment_year: int) -> CountryData:
     data = df_assessments[(df_assessments["Country"] == country) & (df_assessments["Assessment date"].dt.year == assessment_year)]
+
+    #remember which columns are area, indicator, metric
+    area_cols = [re.sub(".*?\s", "", col) for col in data.columns if col.startswith("area")]
+    indicator_cols = [re.sub(".*?\s", "", col) for col in data.columns if col.startswith("indicator")]
+    metric_cols =  [re.sub(".*?\s", "", col) for col in data.columns if col.startswith("metric")] 
+
+    #remove unecessary columns
     data = data[[col for col in data.columns if col.startswith(("area", "indicator", "metric"))]]
 
-    #rename columns so they start with the pillars
+    #rename columns so they align with output
     remap_column_names = {col: re.sub(".*?\s", "", col) for col in data.columns}
     data = data.rename(columns=remap_column_names)
 
@@ -47,8 +54,11 @@ async def get_country_data(country: str, assessment_year: int) -> CountryData:
     data = data.iloc[0]
     data = data.fillna("")
 
+    #get area
+    areas = [{'name': area, 'assessment': data[f"{area}"], 'indicators': 'notdoneyet'} for area in area_cols]
+
     #get pillar
-    pillars = [{'name': pillar, 'areas': "notdoneyet"} for pillar in ['EP', 'CP', 'CF']]
+    pillars = [{'name': pillar, 'areas': areas} for pillar in ["EP","CP","CF"]]
 
     output_dict = {'pillars': [pillar for pillar in pillars]}
 
