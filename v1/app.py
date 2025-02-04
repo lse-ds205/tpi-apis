@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 
 from .models import CountryData, Metric
 
+
 df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
 df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
 df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])
@@ -69,11 +70,15 @@ async def get_country_data(country: str, assessment_year: int):
     data = data.rename(columns=remap_area_column_names)
     output_dict = data.iloc[0].to_dict()
 
+        # Flatten the row to a dictionary
+    output_dict = data.iloc[0].to_dict()
+    
     output = CountryData(**output_dict)
 
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
     return output
+
 
 @app.get("/v1/country-metrics/{country}/{assessment_year}", response_model=List[Metric])
 async def get_country_metrics(country: str, assessment_year: int):
@@ -115,10 +120,3 @@ async def get_country_metrics(country: str, assessment_year: int):
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
     return list_metrics
-
-
-
-filepath = "./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx"
-df_assessments = pd.read_excel(filepath)
-df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
-df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])
