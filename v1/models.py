@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Union
 
 class Metric(BaseModel):
     name: str
@@ -8,16 +8,16 @@ class Metric(BaseModel):
 class Indicator(BaseModel):
     name: str
     assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
-    metrics: list[Metric]
+    metrics: Union[Metric, Literal[""]]
 
 class Area(BaseModel):
     name: str
     assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
-    indicators: str
+    indicators: Union[list[Indicator], Literal[""]]
 
 class Pillar(BaseModel):
     name: Literal['EP', 'CP', 'CF']
-    areas: list[Area]
+    areas: Union[list[Area], Literal[""]]
 
 class CountryData(BaseModel):
-    pillars: list[Pillar]
+    pillars: Union[list[Pillar], Literal[""]]

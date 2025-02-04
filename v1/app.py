@@ -54,8 +54,16 @@ async def get_country_data(country: str, assessment_year: int) -> CountryData:
     data = data.iloc[0]
     data = data.fillna("")
 
+    #get metric
+    metrics = [{'name': metric, 'value': data[f'{metric}']} for metric in metric_cols]
+
+    #get indicator
+    indicators = [{'name': indicator, 'assessment': data[f"{indicator}"],
+                   'metrics': next((met for met in metrics if met["name"].startswith(indicator)), "")} for indicator in indicator_cols]   
+
     #get area
-    areas = [{'name': area, 'assessment': data[f"{area}"], 'indicators': 'notdoneyet'} for area in area_cols]
+    areas = [{'name': area, 'assessment': data[f"{area}"],
+              'indicators': [ind for ind in indicators if ind["name"].startswith(area)]} for area in area_cols]
 
     #get pillar
     pillars = [{'name': pillar, 'areas': areas} for pillar in ["EP","CP","CF"]]
