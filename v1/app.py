@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from fastapi import FastAPI
+from .models import CountryData
 
 file_path = './data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx'
 df_assessments = pd.read_excel(file_path)
@@ -31,7 +32,7 @@ else:
 async def read_root():
     return {"Hello": "World"}
 
-@app.get("/v1/country-data/{country}/{assessment_year}")
+@app.get("/v1/country-data/{country}/{assessment_year}", response_model=CountryData)
 async def get_country_data(country: str, assessment_year: int):
 
     selected_row = (
@@ -55,7 +56,7 @@ async def get_country_data(country: str, assessment_year: int):
     data['assessment_year'] = assessment_year
 
     remap_area_column_names = {
-        col: col.replace('area ', '')
+        col: col.replace('area ', '').replace('.', '_')
         for col in area_columns
     }
 
@@ -64,5 +65,6 @@ async def get_country_data(country: str, assessment_year: int):
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
     output_dict = data.iloc[0].to_dict()
+    output = CountryData(**output_dict)
 
-    return output_dict
+    return output
