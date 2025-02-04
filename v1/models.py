@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Literal
 
 class CountryData(BaseModel):
@@ -9,6 +9,16 @@ class CountryData(BaseModel):
     EP_1: Literal["Yes", "No", "Partial", ""] 
     EP_2: Literal["Yes", "No", "Partial", ""]
     EP_3: Literal["Yes", "No", "Partial", ""]
+    CP_1: str
+    CP_2: str
+    CP_3: str
+    CP_4: str
+    CP_5: str
+    CP_6: str
+    CF_1: str
+    CF_2: str
+    CF_3: str
+    CF_4: str
 
 class Metric(BaseModel):
     name: str
@@ -17,7 +27,7 @@ class Metric(BaseModel):
 class Indicator(BaseModel):
     name: str
     asessment:str
-    metric: Optional[list[Metric]] = None
+    metric: Optional[List[Metric]] = None
     source: Optional[str] = None
 
 class Area (BaseModel):
@@ -25,7 +35,7 @@ class Area (BaseModel):
     assessment: Optional[str] = None
     indicator: List[Indicator] = []
 
-class Pilar(BaseModel):
+class Pillar(BaseModel):
     name: str
     area: List[Area] = []
 
@@ -35,4 +45,4 @@ class Metadata(BaseModel):
 
 class ResponseData(BaseModel):
     metadata: Metadata
-    pilar: List[Pilar] = []
+    pillar: List[Pillar] = []

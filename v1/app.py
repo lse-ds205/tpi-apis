@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import uvicorn
 
-from .models import CountryData, Metric
+from .models import CountryData, Metric, ResponseData
 from fastapi import FastAPI, HTTPException
 from typing import List
 
@@ -115,3 +115,6 @@ async def get_country_metrics(country: str, assessment_year: int):
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
     return list_metrics
+
+@app.get("/v1/country-metrics-v2/{country}/{assessment_year}", response_model=List[ResponseData])
+async def get_ResponseData(country: str, assessment_year: int):
