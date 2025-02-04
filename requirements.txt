@@ -1,17 +1,15 @@
-# Regular DS stuff
-pandas==2.2.3
+pandas
+requests
+uvicorn
+fastapi
+matplotlib
+seaborn
+lets-plot
+ipykernel
+jupyterlab
 
-# API stuff
-requests==2.31.0
-uvicorn==0.34.0
-fastapi==0.115.7
+# TO START:
+# uvicorn main:app --reload
 
-
-# Data viz
-matplotlib==3.10.0
-seaborn==0.13.2
-lets-plot==4.5.2
-
-# Stuff VSCode needs
-ipykernel>=6.21.2
-jupyterlab>=3.6.1
+# TO STOP:
+# CTRL + C
