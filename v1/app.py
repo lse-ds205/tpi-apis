@@ -3,13 +3,8 @@ import pandas as pd
 
 from fastapi import FastAPI
 from typing import List
-
-from pydantic import BaseModel, Field
-from typing import Literal
-
-
-
-
+from .models import CountryData
+import re
 
 # Load the data
 filepath = "./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx" # Specify the correct path to the file
@@ -41,28 +36,21 @@ else:
 
 @app.get("/v1/country-data/{country}/{assessment_year}", response_model = CountryData)
 async def get_country_data(country: str, assessment_year: int) -> CountryData:
-
     data = df_assessments[(df_assessments["Country"] == country) & (df_assessments["Assessment date"].dt.year == assessment_year)]
+    data = data[[col for col in data.columns if col.startswith(("area", "indicator", "metric"))]]
 
-    #filter for the area columns
-    area_columns = [col for col in data.columns if col.startswith("area")]
-    data = data[area_columns]
-    data['country'] = country
-    data['assessment_year'] = assessment_year
+    #rename columns so they start with the pillars
+    remap_column_names = {col: re.sub(".*?\s", "", col) for col in data.columns}
+    data = data.rename(columns=remap_column_names)
 
-    #JSON does not allow for NaN or NULL
+    #get flat Pandas series of country data
+    data = data.iloc[0]
     data = data.fillna("")
 
-    #rename columns
-    remap_area_column_names = {
-        col: col.replace('area ', '').replace(".", "_") for col in area_columns
-    }
+    #get pillar
+    pillars = [{'name': pillar, 'areas': "notdoneyet"} for pillar in ['EP', 'CP', 'CF']]
 
-    data = data.rename(columns=remap_area_column_names)
-
-    #Grab just the first row and return it as a dictionary.
-    #Even though there should only be one row anyway, we specify it because we want to convert to dictionary
-    output_dict = data.iloc[0].to_dict()
+    output_dict = {'pillars': [pillar for pillar in pillars]}
 
     output = CountryData(**output_dict)
 

@@ -17,7 +17,7 @@ class Area(BaseModel):
 
 class Pillar(BaseModel):
     name: Literal['EP', 'CP', 'CF']
-    areas: Area
+    areas: str
 
 class CountryData(BaseModel):
-    pillars: Pillar
+    pillars: list[Pillar]
