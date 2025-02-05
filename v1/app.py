@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
-from .models import CountryData
+from .models_hierarchy import CountryData2
 from fastapi import FastAPI
 
 def __is_running_on_nuvolos():
@@ -28,8 +28,8 @@ else:
 async def read_root():
     return {"Hello": "World"}
 
-@app.get("/v1/country-data/{country}/{assessment_year}", response_model=CountryData)
-async def get_country_data(country: str, assessment_year: int) -> CountryData:
+@app.get("/v1/country-data/{country}/{assessment_year}", response_model=CountryData2)
+async def get_country_data(country: str, assessment_year: int) -> CountryData2:
     
     # Load the data
     df = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
@@ -39,11 +39,11 @@ async def get_country_data(country: str, assessment_year: int) -> CountryData:
     df['Publication date'] = pd.to_datetime(df['Publication date'], format='%d/%m/%Y')
 
     # Keep only relevant columns
-    df = df[[
-        "area EP.1", "area EP.2", "area EP.3", "area CP.1", "area CP.2", "area CP.3", 
-        "area CP.4", "area CP.5", "area CP.6", "area CF.1", "area CF.2", "area CF.3", 
-        "area CF.4", "Country", "Assessment date"
-    ]]
+    # df = df[[
+    #    "area EP.1", "area EP.2", "area EP.3", "area CP.1", "area CP.2", "area CP.3", 
+    #    "area CP.4", "area CP.5", "area CP.6", "area CF.1", "area CF.2", "area CF.3", 
+    #    "area CF.4", "Country", "Assessment date"
+    # ]]
 
     # Only keep the year in the "Assessment date" column
     df['Assessment date'] = df['Assessment date'].dt.year #converts the column entries to integers!
@@ -59,9 +59,25 @@ async def get_country_data(country: str, assessment_year: int) -> CountryData:
     df.rename(columns={"Country": "country", "Assessment date": "assessment_year"}, inplace=True)
 
     # Convert dataframe to dictionary
-    output_dict = df.iloc[0].to_dict()
+    data = df.iloc[0]
 
-    output = CountryData(**output_dict)
+    # Create dictionaries for each categorie of columns
+    EP = {col: data[col] for col in data.index if col.startswith("EP")}
+    CP = {col: data[col] for col in data.index if col.startswith("CP")}
+    CF = {col: data[col] for col in data.index if col.startswith("CF")}
 
-    return output # TypeError: v1.models.CountryData() argument after ** must be a mapping, not list
+    # Create nested dictionaries (EP, CP and CF columns' dictionaries are nested in the output_dict dictionary)
+    # The models which the output_dict is being passed to are nested analogously in models_hierarchy.py
+    output_dict = {
+    "country": country,
+    "assessment_year": assessment_year,
+    "EP": {"indicators": EP},
+    "CP": {"indicators": CP},
+    "CF": {"indicators": CF}
+    }
+
+    # Apply the model to the output to ensure output's correct data format
+    output = CountryData2(**output_dict)
+
+    return output
     
