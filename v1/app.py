@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 from fastapi import FastAPI
-from .models import CountryData 
+from .models import CountryData, Area
 
 
 df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
@@ -32,8 +32,6 @@ else:
 async def read_root():
     return {"Hello": "World"}
 
-
-
 @app.get("/v1/country-data/{country}/{assessment_year}", response_model=CountryData)
 async def get_country_data(country: str, assessment_year: int):
 
@@ -44,6 +42,11 @@ async def get_country_data(country: str, assessment_year: int):
 
     # Filter the data
     data = df_assessments[selected_row]
+    data = data.iloc[0]
+
+    EP = {col: data[col] for col in data.index if col.startswith("EP")}
+    CP = {col: data[col] for col in data.index if col.startswith("CP")}
+    CF = {col: data[col] for col in data.index if col.startswith("CF")}
 
     if data.empty:
         raise HTTPException(status_code=404, 
@@ -66,8 +69,17 @@ async def get_country_data(country: str, assessment_year: int):
         for col in area_columns
     }
 
-    data = data.rename(columns=remap_area_column_names)
-    output_dict = data.iloc[0].to_dict()
+    # data = data.rename(columns=remap_area_column_names)
+    # output_dict = data.iloc[0].to_dict()
+
+#add mirror of nested json-class thing insdie of this dictionary!!!!!!!!!!!!!!!!!!!!
+    output_dict = {
+    "country": country,
+    "assessment_year": assessment_year,
+    "EP": {"indicators": EP,},
+    "CP": {"indicators": CP},
+    "CF": {"indicators": CF}
+    }
 
     output = CountryData(**output_dict)
 
