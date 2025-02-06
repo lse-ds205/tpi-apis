@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal
 
 class CountryData(BaseModel):
@@ -19,11 +19,13 @@ class CountryData(BaseModel):
     CF_3: Literal["Yes", "No", "Partial", ""] 
     CF_4: Literal["Not applicable", 'nan', ""] 
 
+class Metric(BaseModel):
+    name: str
+    value: str
+    
+    
 class Indicator(BaseModel):
     assessment: str
     metric: Metric
 
 
-class Metric(BaseModel):
-    name: str
-    value: str
