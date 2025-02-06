@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class Metric(BaseModel):
@@ -8,9 +8,11 @@ class Metric(BaseModel):
 class Indicator(BaseModel):
     name: str
     assessment: str
-    metrics: Optional[Metric] = None
-    source: Optional[str] = None
-    indicators: Optional[List['Indicator']] = None  # Allow for nested indicators
+    metrics: Optional[Metric] = Field(default=None, exclude_none=True)
+    
+    model_config = {
+        "json_exclude_none": True  # This will exclude None values from JSON output
+    }
 
 class Area(BaseModel):
     name: str

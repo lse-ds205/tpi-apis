@@ -132,97 +132,65 @@ async def get_country_metrics(country: str, assessment_year: int):
 
 @app.get("/v1/country-structure/{country}/{assessment_year}", response_model=ResponseData)
 async def get_country_structure(country: str, assessment_year: int):
-    selected_row = (
-        (df_assessments["Country"] == country) &
-        (df_assessments['Assessment date'].dt.year == assessment_year)
-    )
+    # Filter data using pandas boolean indexing
+    mask = (df_assessments["Country"] == country) & (df_assessments['Assessment date'].dt.year == assessment_year)
+    data = df_assessments[mask].iloc[0] if not df_assessments[mask].empty else None
 
-    # Filter the data
-    data = df_assessments[selected_row]
-
-    if data.empty:
+    if data is None:
         raise HTTPException(status_code=404, 
-                          detail=f"There is no data for country: {country} and year: {assessment_year}")
+                          detail=f"No data found for country: {country} and year: {assessment_year}")
 
-    # Get the first row as a Series
-    data = data.iloc[0]
-    
-    # Helper function to extract metrics for an indicator
     def get_metrics(indicator_name: str) -> Optional[Metric]:
-        metric_col = f"metric {indicator_name}"
-        if metric_col in data.index and pd.notna(data[metric_col]):
-            return Metric(name=indicator_name, value=str(data[metric_col]))
-        return None
-
-    # Helper function to create sub-indicators for a parent indicator
-    def create_sub_indicators(parent_prefix: str) -> List[Indicator]:
-        sub_indicators = []
-        # Find all columns that start with the parent prefix and have an additional level
-        sub_indicator_cols = [col for col in data.index 
-                            if col.startswith(f"area {parent_prefix}.")
-                            and len(col.replace(f"area {parent_prefix}.", "").split(".")) >= 1]
+        # Find all metric columns for this indicator
+        metric_cols = [col for col in data.index 
+                      if col.startswith(f'metric {indicator_name}')]
         
-        for col in sub_indicator_cols:
-            indicator_name = col.replace("area ", "")
-            if pd.notna(data[col]):  # Only include if there's a value
-                sub_indicators.append(
-                    Indicator(
-                        name=indicator_name,
-                        assessment=str(data[col]),
-                        metrics=get_metrics(indicator_name)
-                    )
-                )
-        return sub_indicators
+        # Return first valid metric if any exist
+        valid_metrics = [
+            Metric(name=col.replace('metric ', ''), value=str(data[col]))
+            for col in metric_cols
+            if pd.notna(data[col]) and data[col] != ""
+        ]
+        return valid_metrics[0] if valid_metrics else None
 
-    # Helper function to create area indicators
-    def create_area_indicators(area_prefix: str) -> List[Indicator]:
+    def create_indicators_for_area(area_name: str) -> List[Indicator]:
+        # Find all indicators for this area using pandas string methods
+        indicator_cols = data.index[data.index.str.startswith(f'indicator {area_name}')]
+        
         indicators = []
-        # Find direct child indicators of this area
-        area_cols = [col for col in data.index 
-                    if col.startswith(f"area {area_prefix}")]
+        for col in indicator_cols:
+            if pd.notna(data[col]):
+                base_name = col.replace('indicator ', '')
+                metric = get_metrics(base_name)
+                
+                # Create indicator with or without metrics
+                indicator_dict = {
+                    "name": base_name,
+                    "assessment": str(data[col])
+                }
+                if metric:
+                    indicator_dict["metrics"] = metric
+                
+                indicators.append(Indicator(**indicator_dict))
         
-        for col in area_cols:
-            indicator_name = col.replace("area ", "")
-            if pd.notna(data[col]):  # Only include if there's a value
-                sub_indicators = create_sub_indicators(indicator_name)
-                indicators.append(
-                    Indicator(
-                        name=indicator_name,
-                        assessment=str(data[col]),
-                        metrics=get_metrics(indicator_name),
-                        indicators=sub_indicators if sub_indicators else None
-                    )
-                )
         return indicators
 
-    # Create pillars
-    pillars = []
-    for pillar_name in ["EP", "CP", "CF"]:
-        # Find all areas for this pillar
-        area_prefixes = set(
-            col.split(".")[0] + "." + col.split(".")[1]
-            for col in data.index 
-            if col.startswith(f"area {pillar_name}.")
-        )
-        
-        areas = []
-        for area_prefix in area_prefixes:
-            clean_prefix = area_prefix.replace("area ", "")
-            if f"area {clean_prefix}" in data.index:
-                area_assessment = str(data[f"area {clean_prefix}"])
-                areas.append(
-                    Area(
-                        name=clean_prefix,
-                        assessment=area_assessment,
-                        indicators=create_area_indicators(clean_prefix)
-                    )
+    # Create pillars using list comprehension
+    pillars = [
+        Pillar(
+            name=pillar_name,
+            areas=[
+                Area(
+                    name=col.replace('area ', ''),
+                    assessment=str(data[col]),
+                    indicators=create_indicators_for_area(col.replace('area ', ''))
                 )
-        
-        pillars.append(
-            Pillar(
-                name=pillar_name,
-                areas=areas
-            )
+                for col in data.index[data.index.str.startswith(f'area {pillar_name}.')]
+                if pd.notna(data[col])
+            ]
         )
+        for pillar_name in ["EP", "CP", "CF"]
+        if any(col.startswith(f'area {pillar_name}.') for col in data.index)
+    ]
 
     return ResponseData(pillars=pillars)
