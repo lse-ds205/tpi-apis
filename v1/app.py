@@ -71,7 +71,21 @@ async def get_country_data(country: str, assessment_year: int):
     
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
-    output_dict = data.iloc[0].to_dict()
+
+    data = data.iloc[0]
+
+    EP = {col: data[col] for col in data.index if col.startswith("EP")}
+    CP = {col: data[col] for col in data.index if col.startswith("CP")}
+    CF = {col: data[col] for col in data.index if col.startswith("CF")}
+
+    output_dict = {
+    "country": country,
+    "assessment_year": assessment_year,
+    "EP": {"indicators": EP},
+    "CP": {"indicators": CP},
+    "CF": {"indicators": CF}
+    }
+
     output = CountryData(**output_dict)
     return output
 
@@ -116,5 +130,5 @@ async def get_country_metrics(country: str, assessment_year: int):
     # and return it as a dictionary
     return list_metrics
 
-@app.get("/v1/country-metrics-v2/{country}/{assessment_year}", response_model=List[ResponseData])
-async def get_ResponseData(country: str, assessment_year: int):
+# @app.get("/v1/country-metrics-v2/{country}/{assessment_year}", response_model=List[ResponseData])
+# async def get_ResponseData(country: str, assessment_year: int):
