@@ -11,13 +11,38 @@ git clone https://github.com/lse-ds205/ascor-api.git
 cd ascor-api
 ```
 
-### 2. Install Dependencies
+### 2. (Optional but Recommended) Create a Virtual Environment
+
+First of all, ensure you have Python 3.10+ installed.
+
+It is recommended to create a virtual environment to manage dependencies for this project. You can create a virtual environment using the following command:
+
+```bash
+python -m venv ascor-env
+```
+
+Then, whenever you are running the project, activate the virtual environment using the following command:
+
+```bash
+# If on Mac or Linux (e.g. Nuvolos)
+source ascor-env/bin/activate
+
+# If on Windows
+ascor-env\Scripts\activate
+```
+
+You can configure VS Code to always use this virtual environment by Ctrl + P and then `Python: Select Interpreter` and choose the `ascor-env` folder.
+
+
+### 3. Install Dependencies
+
 Ensure you have Python 3.10+ installed. Use the following command to install all required dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run the FastAPI App
+### 4. Run the FastAPI App
 Navigate to the `v1/` folder and start the server:
 ```bash
 cd v1
