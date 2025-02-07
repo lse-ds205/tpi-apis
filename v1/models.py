@@ -40,4 +40,3 @@ class Pillar(BaseModel):
     name: str
     areas: List[Area]
 
-

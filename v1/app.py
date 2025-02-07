@@ -3,7 +3,7 @@
 import os
 import pandas as pd
 
-from typing import List
+from typing import List, Dict
 
 from fastapi import FastAPI, HTTPException
 
@@ -228,7 +228,7 @@ async def get_country_areas(country: str, assessment_year: int):
 # pillar end point
 
 # what is the best way to then embed pillars in dictionary
-@app.get("/v1/country-pillars/{country}/{assessment_year}", response_model=List[Pillar])
+@app.get("/v1/country-pillars/{country}/{assessment_year}", response_model=Dict[str, List[Pillar]])
 async def get_country_pillars(country: str, assessment_year: int):
     selected_data = df_assessments.loc[
         (df_assessments["Country"].str.strip() == country.strip()) & 
@@ -305,4 +305,4 @@ async def get_country_pillars(country: str, assessment_year: int):
         if areas:
             pillars.append(Pillar(**pillar_dict)) 
 
-    return pillars
+    return {"pillars": pillars}
