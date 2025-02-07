@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import Literal, Optional, List, Union
 
 class CountryData(BaseModel):
     country: str
@@ -27,13 +27,17 @@ class Metric(BaseModel):
 class Indicator(BaseModel):
     name: str
     assessment: str
-    metric: Optional[Metric]
+    metric: Union[Metric, str] = ""
 
 
 class Area(BaseModel):
     name: str
     assessment: str
-    Indicator:Indicator
+    indicators:List[Indicator]
 
+
+class Pillar(BaseModel):
+    name: str
+    areas: List[Area]
 
 

@@ -7,7 +7,7 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException
 
-from .models import CountryData, Metric, Indicator, Area
+from .models import CountryData, Metric, Indicator, Area, Pillar
 
 df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
 df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
@@ -118,7 +118,10 @@ async def get_country_metrics(country: str, assessment_year: int):
     # and return it as a dictionary
     return list_metrics
 
+# FORMATIVE 3: i have created 4 different end points for metrics, indicators, areas and pillars
+# by breaking it down it means the user can specify what level of detail they are interested in 
 
+# this end point retrieves indicators and their nested metrics 
 @app.get("/v1/country-indicators/{country}/{assessment_year}", response_model=List[Indicator])
 async def get_country_indicators(country: str, assessment_year: int):
     selected_data = df_assessments.loc[
@@ -142,7 +145,7 @@ async def get_country_indicators(country: str, assessment_year: int):
             continue  
 
         row = row.iloc[0]  
-        metric_data = None 
+        metric_data = '' 
 
         for metric_col in metric_columns:
             metric_name = ".".join(metric_col.replace("metric ", "").split(".")[:3])
@@ -154,10 +157,152 @@ async def get_country_indicators(country: str, assessment_year: int):
         indicators.append(Indicator(
             name=indicator_name,
             assessment=str(row[indicator_col]),
-            metric=metric_data
+            metric= metric_data if isinstance(metric_data, Metric) else ""
         ))
 
     return indicators
 
 
-# TO DO: finish this logic for pillar and area, figure out how to have no metric appear as '' not null
+# this end point retrieves areas and their nested indicators and metrics 
+@app.get("/v1/country-areas/{country}/{assessment_year}", response_model=List[Area])
+async def get_country_areas(country: str, assessment_year: int):
+    selected_data = df_assessments.loc[
+        (df_assessments["Country"].str.strip() == country.strip()) & 
+        (df_assessments["Assessment date"].dt.year == assessment_year)
+    ]
+
+    if selected_data.empty:
+        raise HTTPException(status_code=404, detail=f"No data found for {country} in {assessment_year}")
+
+    area_columns = [col for col in df_assessments.columns if col.startswith('area ')]
+    indicator_columns = [col for col in df_assessments.columns if col.startswith('indicator ')]
+    metric_columns = [col for col in df_assessments.columns if col.startswith('metric ')]
+
+    areas = []
+
+    for area_col in area_columns:
+        area_name = area_col.replace("area ", "")
+        area_row = selected_data[selected_data[area_col].notna()]
+
+        if area_row.empty:
+            continue  
+        
+        area_row = area_row.iloc[0]  
+        indicators = []
+
+        for indicator_col in indicator_columns:
+            indicator_name = indicator_col.replace("indicator ", "")
+
+            if indicator_name.split('.')[:2] != area_name.split('.'):
+                continue  
+
+            indicator_row = selected_data[selected_data[indicator_col].notna()]
+            if indicator_row.empty:
+                continue  
+
+            indicator_row = indicator_row.iloc[0]  
+            metric_data = ''  
+            for metric_col in metric_columns:
+                metric_name = ".".join(metric_col.replace("metric ", "").split(".")[:3])
+                
+                if metric_name == indicator_name:
+                    metric_data = Metric(name=metric_name, value=str(indicator_row[metric_col]))  
+                    break  
+
+            indicators.append(Indicator(
+                name=indicator_name,
+                assessment=str(indicator_row[indicator_col]),
+                metric= metric_data if isinstance(metric_data, Metric) else ""  
+            ))
+
+        areas.append(Area(
+            name=area_name,
+            assessment=str(area_row[area_col]),
+            indicators=indicators
+        ))
+
+    return areas
+
+
+
+# pillar end point
+
+# what is the best way to then embed pillars in dictionary
+@app.get("/v1/country-pillars/{country}/{assessment_year}", response_model=List[Pillar])
+async def get_country_pillars(country: str, assessment_year: int):
+    selected_data = df_assessments.loc[
+        (df_assessments["Country"].str.strip() == country.strip()) & 
+        (df_assessments["Assessment date"].dt.year == assessment_year)
+    ]
+
+    if selected_data.empty:
+        raise HTTPException(status_code=404, detail=f"No data found for {country} in {assessment_year}")
+
+    area_columns = [col for col in df_assessments.columns if col.startswith('area ')]
+    indicator_columns = [col for col in df_assessments.columns if col.startswith('indicator ')]
+    metric_columns = [col for col in df_assessments.columns if col.startswith('metric ')]
+
+    pillar_names = sorted(set(area_col.replace("area ", "").split('.')[0] for area_col in area_columns))
+    pillars = []
+
+    for pillar_name in pillar_names:
+        areas = []
+
+        for area_col in area_columns:
+            area_name = area_col.replace("area ", "")
+
+            if not area_name.startswith(pillar_name):
+                continue  
+
+            area_row = selected_data[selected_data[area_col].notna()]
+            if area_row.empty:
+                continue  
+
+            area_row = area_row.iloc[0]  
+            indicators = []
+
+            for indicator_col in indicator_columns:
+                indicator_name = indicator_col.replace("indicator ", "")
+
+                if not indicator_name.startswith(area_name):
+                    continue  
+
+                indicator_row = selected_data[selected_data[indicator_col].notna()]
+                if indicator_row.empty:
+                    continue  
+
+                indicator_row = indicator_row.iloc[0]  
+                metric_data = ''
+
+                for metric_col in metric_columns:
+                    metric_name = ".".join(metric_col.replace("metric ", "").split(".")[:3])
+
+                    if metric_name == indicator_name:
+                        metric_data = Metric(name=metric_name, value=str(indicator_row[metric_col]))  
+                        break  
+
+                
+                indicator_dict = {
+                    "name": indicator_name,
+                    "assessment": str(indicator_row[indicator_col]),
+                    "metric": metric_data if isinstance(metric_data, Metric) else ""
+                }
+                indicators.append(Indicator(**indicator_dict)) 
+
+            
+            area_dict = {
+                "name": area_name,
+                "assessment": str(area_row[area_col]),
+                "indicators": indicators
+            }
+            areas.append(Area(**area_dict))  
+
+       
+        pillar_dict = {
+            "name": pillar_name,
+            "areas": areas
+        }
+        if areas:
+            pillars.append(Pillar(**pillar_dict)) 
+
+    return pillars
