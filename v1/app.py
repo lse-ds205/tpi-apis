@@ -7,7 +7,7 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException
 
-from .models import CountryData, Metric
+from .models import CountryData, Metric, Indicator, Area
 
 df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
 df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
@@ -117,3 +117,47 @@ async def get_country_metrics(country: str, assessment_year: int):
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
     return list_metrics
+
+
+@app.get("/v1/country-indicators/{country}/{assessment_year}", response_model=List[Indicator])
+async def get_country_indicators(country: str, assessment_year: int):
+    selected_data = df_assessments.loc[
+        (df_assessments["Country"].str.strip() == country.strip()) & 
+        (df_assessments["Assessment date"].dt.year == assessment_year)
+    ]
+
+    if selected_data.empty:
+        raise HTTPException(status_code=404, detail=f"No data found for {country} in {assessment_year}")
+
+    indicator_columns = [col for col in df_assessments.columns if col.startswith('indicator ')]
+    metric_columns = [col for col in df_assessments.columns if col.startswith('metric ')]
+
+    indicators = []
+
+    for indicator_col in indicator_columns:
+        indicator_name = indicator_col.replace("indicator ", "")
+        row = selected_data[selected_data[indicator_col].notna()]
+
+        if row.empty:
+            continue  
+
+        row = row.iloc[0]  
+        metric_data = None 
+
+        for metric_col in metric_columns:
+            metric_name = ".".join(metric_col.replace("metric ", "").split(".")[:3])
+            
+            if metric_name == indicator_name:
+                metric_data = Metric(name=metric_name, value=str(row[metric_col]))  
+                break  
+
+        indicators.append(Indicator(
+            name=indicator_name,
+            assessment=str(row[indicator_col]),
+            metric=metric_data
+        ))
+
+    return indicators
+
+
+# TO DO: finish this logic for pillar and area, figure out how to have no metric appear as '' not null
