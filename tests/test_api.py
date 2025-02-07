@@ -175,7 +175,7 @@ def test_get_country_data_structure(client, df_assessments):
         assert "pillars" in keys, msg
 
         msg = base_error_msg + "The 'pillars' key should be a list and there should be exactly 3 pillars in the response."
-        assert type(data['pillars']) == list and len(data['pillars']) == 3, msg
+        assert isinstance(data['pillars'], list) and len(data['pillars']) == 3, msg
 
         for pillar in data["pillars"]:
 
@@ -186,7 +186,7 @@ def test_get_country_data_structure(client, df_assessments):
                 assert key in list(pillar.keys()), msg
 
             msg = base_error_msg + "'areas' should be a list and there should be at least one area under each pillar."
-            assert type(pillar["areas"]) == list and len(pillar["areas"]) > 0, msg
+            assert isinstance(pillar["areas"], list) and len(pillar["areas"]) > 0, msg
 
             for area in pillar["areas"]:
                 
@@ -195,21 +195,27 @@ def test_get_country_data_structure(client, df_assessments):
                     msg = base_error_msg + f"Expected a '{key}' key under each area."
                     assert key in list(area.keys()), msg
 
-                msg = (
-                    base_error_msg,
-                    "'indicators' should be a list and there should be at least one indicator under each area."
-                )
-                assert type(area["indicators"]) == list and len(area["indicators"]) > 0, msg
+                # CF.4 does not have indicators
+                if area['name'] != 'CF.4':
+                    msg = (
+                        base_error_msg,
+                        "'indicators' should be a list and there should be at least one indicator under each area. "
+                        f"Area object: {area}"
+                    )
+                    assert isinstance(area["indicators"], list) and len(area["indicators"]) > 0, msg
 
-                for indicator in area["indicators"]:
-                    
-                    expected_indicator_keys = ["name", "assessment", "metrics"]
-                    for key in expected_indicator_keys:
-                        msg = base_error_msg + f"Expected a '{key}' key under each indicator."
-                        assert key in list(indicator.keys()), msg
+                    for indicator in area["indicators"]:
+                        
+                        expected_indicator_keys = ["name", "assessment", "metrics"]
+                        for key in expected_indicator_keys:
+                            msg = base_error_msg + f"Expected a '{key}' key under each indicator."
+                            assert key in list(indicator.keys()), msg
 
-                    metrics = indicator["metrics"]
-                    assert type(metrics) == list, base_error_msg + "Metrics should be a list (even if an empty one)"
-                    if len(metrics) != 0:
-                        assert metric['name'] is not None, base_error_msg + "Each metric should have a 'name' key"
-                        assert metric['value'] is not None, base_error_msg + "Each metric should have a 'value' key"
+                        metrics = indicator["metrics"]
+                        assert type(metrics) == list, base_error_msg + "Metrics should be a dict (even if an empty one)"
+                        if len(metrics) != 0:
+                            for metric in metrics:
+                                assert type(metric) == dict, base_error_msg + "Each metric should be a dict"
+                                assert len(metric) == 2, base_error_msg + "Each metric should have exactly 2 keys"
+                                assert metric['name'] is not None, base_error_msg + "Each metric should have a 'name' key"
+                                assert metric['value'] is not None, base_error_msg + "Each metric should have a 'value' key"
