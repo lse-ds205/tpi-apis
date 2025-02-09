@@ -5,7 +5,7 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException
 
-from .models import CountryData, Metric
+from .models import CountryData, Metric, ResponseData, Indicator, Metadata, Pillar, Area
 
 df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
 df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
@@ -75,7 +75,7 @@ async def get_country_data(country: str, assessment_year: int):
     # and return it as a dictionary
     return output
 
-@app.get("/v1/country-metrics/{country}/{assessment_year}", response_model=List[Metric])
+@app.get("/v1/country-fulldata/{country}/{assessment_year}", response_model=List[Metric])
 async def get_country_metrics(country: str, assessment_year: int):
 
     selected_row = (
@@ -115,3 +115,59 @@ async def get_country_metrics(country: str, assessment_year: int):
     # Grab just the first element (there should only be one anyway)
     # and return it as a dictionary
     return list_metrics
+
+
+@app.get("/v1/country-metrics/{country}/{assessment_year}", response_model=ResponseData)
+async def get_country_metrics(country: str, assessment_year: int):
+    selected_row = (
+        (df_assessments["Country"] == country) &
+        (df_assessments['Assessment date'].dt.year == assessment_year)
+    )
+
+    # Filter the data
+    data = df_assessments[selected_row]
+
+    if data.empty:
+        raise HTTPException(status_code=404, 
+                            detail=f"There is no data for country: {country} and year: {assessment_year}")
+
+    row = data.iloc[0]
+    pillars = []
+    for pillar_name in ["EP", "CP", "CF"]:  # Dynamically process pillar names
+        areas = []
+        for col_name in row.index:  # Iterate through the columns of the selected row
+            if col_name.startswith(f"area {pillar_name}"):  # Match area columns (e.g., "area EP.1")
+                area_name = col_name.split(" ")[1]  # Extract area name (e.g., "EP.1")
+                assessment = assessment = row[col_name] if pd.notna(row[col_name]) else None  # Handle NaN values
+                indicators = []
+
+                # Match indicators related to the area
+                for indicator_col in row.index:
+                    if indicator_col.startswith(f"indicator {area_name}"):
+                        indicator_name = indicator_col.split(" ")[1]  # Extract indicator name (e.g., "EP.1.a")
+                        assessment = row[indicator_col]
+                        metrics = []
+
+                        # Match metrics related to the indicator
+                        for metric_col in row.index:
+                            if metric_col.startswith(f"metric {indicator_name}"):
+                                metric_name = metric_col.split(" ")[1]  # Extract metric name (e.g., "EP.1.a.1")
+                                value = row[metric_col]
+                                metrics.append(Metric(name=metric_name, value=value))
+                        
+                        # Add the indicator
+                        indicators.append(Indicator(name=indicator_name, assessment=assessment, metrics=metrics))
+                
+                # Add the area
+                areas.append(Area(name=area_name, assessment=assessment, indicators=indicators))
+        
+        pillars.append(Pillar(name=pillar_name, area=areas))
+    
+    # Create metadata
+    metadata = Metadata(
+        metadata="Country metrics data",
+        assessment_year=assessment_year
+    )
+    
+    # Return the response
+    return ResponseData(metadata=metadata, pillars=pillars)
