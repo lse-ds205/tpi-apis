@@ -6,13 +6,13 @@ filepath =  '../data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx'
 
 data = pd.read_excel(filepath)
 
-app = FastAPI()
+app_test = FastAPI()
 
-@app.get('/')
+@app_test.get('/')
 async def read_root():
     return f'hello'
 
-@app.get('/v1/country-data/{country}/{year_end}')
+@app_test.get('/v1/country-data/{country}/{year_end}')
 async def get_country_data(country: str, year_end: str):
     return_data_mask = (data['Country'] == country) & (data['Assessment date'].str[-4:] == str(year_end))
     return_data = data[return_data_mask]
