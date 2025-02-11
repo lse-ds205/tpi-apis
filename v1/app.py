@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 from fastapi import FastAPI
-from .models import CountryData, Area
+from .models import CountryData, Metrics, Indicators, Area, Pillars
 
 
 df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
@@ -10,81 +10,113 @@ df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment da
 df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])
 
 def __is_running_on_nuvolos():
-    """
-    If we are running this script from Nuvolos Cloud, 
-    there will be an environment variable called HOSTNAME
-    which starts with 'nv-'
-    """
 
     hostname = os.getenv("HOSTNAME")
     return hostname is not None and hostname.startswith('nv-')
 
 if __is_running_on_nuvolos():
-    # Nuvolos alters the URL of the API (likely for security reasons)
-    # Instead of https://A-BIG-IP-ADDRESS:8000/
-    # The API is actually served at https://A-BIG-IP-ADDRESS/proxy/8000/
     app = FastAPI(root_path="/proxy/8000/")
 else:
-    # No need to set up anything else if running this on local machine
     app = FastAPI()
+
 
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
 
+
 @app.get("/v1/country-data/{country}/{assessment_year}", response_model=CountryData)
 async def get_country_data(country: str, assessment_year: int):
+
+    #### filter data to match country-year request####
 
     selected_row = (
         (df_assessments["Country"] == country) &
         (df_assessments['Assessment date'].dt.year == assessment_year)
     )
 
-    # Filter the data
     data = df_assessments[selected_row]
-    data = data.iloc[0]
 
-    EP = {col: data[col] for col in data.index if col.startswith("EP")}
-    CP = {col: data[col] for col in data.index if col.startswith("CP")}
-    CF = {col: data[col] for col in data.index if col.startswith("CF")}
+    data = data.fillna('')          #replace NAs as not valid in Json
 
-    if data.empty:
-        raise HTTPException(status_code=404, 
-                            detail=f"There is no data for country: {country} and year: {assessment_year}")
-
-    # Selected and filter columns
-    area_columns = [col for col in df_assessments.columns if col.startswith("area")]
-    data = data[area_columns]
-
-    # JSON does not allow for NaN or NULL. 
-    # The equivalent is just to leave an empty string instead
-    data = data.fillna('')
-
-    #Rename columns
-    data['country'] = country
-    data['assessment_year'] = assessment_year
-
-    remap_area_column_names = {
-        col: col.replace('area ', '').replace('.', '_')
-        for col in area_columns
+    remap_column_names = {          #remove . in column names
+        col: col.replace('.', '_')
+        for col in data.columns
     }
-
-    # data = data.rename(columns=remap_area_column_names)
-    # output_dict = data.iloc[0].to_dict()
-
-#add mirror of nested json-class thing insdie of this dictionary!!!!!!!!!!!!!!!!!!!!
-    output_dict = {
-    "country": country,
-    "assessment_year": assessment_year,
-    "EP": {"indicators": EP,},
-    "CP": {"indicators": CP},
-    "CF": {"indicators": CF}
-    }
-
-    output = CountryData(**output_dict)
-
-    # Grab just the first element (there should only be one anyway)
-    # and return it as a dictionary
-    return output
+    data.rename(columns = remap_column_names, inplace=True)
 
 
+    #### functions to create different objects from dataset ####
+
+    def get_area(pillar, data):
+        pillar_name = pillar
+        area_columns = [
+            col for col in data.columns if pillar_name and 'area' in col
+            ]
+
+        for area in area_columns:
+            area_list = []
+            area_name = area[-4:]          #extracts just the part of column name describing area
+            assesment = data[area]
+            indicator = get_indicator(area, data)
+            individual_area = Area(
+                  name = area_name, assessment = assesment, indicators = indicator
+                  )
+            area_list.append(individual_area)
+        
+        return area_list
+
+    def get_indicator(area, data):
+        area_name = area 
+        indicator_columns = [
+            col for col in data.columns if area_name and 'indicator' in col
+            ]
+
+        for indicator in indicator_columns:
+            indicator_list = []
+            indicator_name = indicator[-6:]
+            assesment = data[indicator]
+            metrics = get_metric(indicator, data)
+            individual_indicator = Indicators(
+                  name = indicator_name, assessment = assesment, metrics = metrics
+                                              )
+            indicator_list.append(individual_indicator)
+
+        return indicator_list
+            
+    def get_metric(indicator, data):
+        indicator_name = indicator 
+        metric_columns = [
+            col for col in data.columns if indicator_name and 'metric' in col
+            ]
+
+        for metric in metric_columns:
+            metric_list = []
+            metric_name = metric[-8:]
+            value = data[metric]
+            individual_metric = Metrics(
+                  name = metric_name, value = value
+                                              )
+            metric_list.append(individual_metric)
+    
+        return metric_list
+    
+
+    ### create pilar object and call functions to construct output dictionary ###
+
+    pillar_names = ['EP', 'CP', 'CF']
+   
+    for pillar in pillar_names:
+        pillars_list = []
+        individual_pillar = Pillars(
+            name = pillar, areas = get_area(pillar, data)
+        )
+        pillars_list.append(individual_pillar)
+
+    output_dict = CountryData(
+        country = country,
+        assessment_year = assessment_year,
+        pillars = pillars_list,
+    )
+    
+    return output_dict 
