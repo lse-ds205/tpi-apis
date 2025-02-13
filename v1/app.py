@@ -93,7 +93,7 @@ async def get_country_data(country: str, assessment_year: int):
         for metric in metric_columns:
             metric_list = []
             metric_name = metric[-8:]
-            value = data[metric]
+            value = str(data[metric].iloc[0])
             individual_metric = Metrics(
                   name = metric_name, value = value
                                               )
