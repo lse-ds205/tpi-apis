@@ -17,11 +17,12 @@ class CountryData(BaseModel):
     CF_3: str
     CF_4: str
 
+# ✅ Define Metric first
+class Metric(BaseModel):
+    name: str
+    value: float
+
+# Now reference Metric in Indicator
 class Indicator(BaseModel):
     assessment: str
     metric: Metric
-
-
-class Metric(BaseModel):
-    name: str
-    value: str

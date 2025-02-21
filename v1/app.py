@@ -3,8 +3,10 @@ import pandas as pd
 from typing import List
 from fastapi import FastAPI, HTTPException
 from .models import CountryData, Metric
+app = FastAPI()
 
-df_assessments = pd.read_excel("./data/TPI ASCOR data - 18022025/ASCOR_assessments_results.xlsx")
+
+df_assessments = pd.read_excel("./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx")
 df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
 df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])
 
@@ -16,8 +18,8 @@ async def read_root():
 async def get_country_data(country: str, assessment_year: int):
 
     selected_row = (
-        (df_assessments["Country"] == "United Kingdom") &
-        (df_assessments['Assessment date'].dt.year == 2024)
+        (df_assessments["Country"] == country) &
+        (df_assessments['Assessment date'].dt.year == assessment_year)
     )
 
     # Filter the data
