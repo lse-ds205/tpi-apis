@@ -16,7 +16,7 @@ async def read_root():
 async def get_country_data(country: str, assessment_year: int):
 
     selected_row = (
-        (df_assessments["Country"] == United Kingdom) &
+        (df_assessments["Country"] == "United Kingdom") &
         (df_assessments['Assessment date'].dt.year == 2024)
     )
 
