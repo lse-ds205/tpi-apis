@@ -7,19 +7,16 @@
 
 Welcome to the ASCOR API repository!
 
-This project is part of the LSE Data Science Institute's <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:0.9em;height:0.9em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) and is in collaboration with the [Transition Pathway Initiative Centre](https://www.transitionpathwayinitiative.org/) (TPI Centre). It provides a fully functional API for serving data from the [ASCOR](https://www.transitionpathwayinitiative.org/ascor)[^1] assessment framework developed by the TPI Centre.
+This project, led by Dr [Jon Cardoso-Silva](https://jonjoncardoso.github.io) in collaboration with Sylvan Lutz, is part of the LSE Data Science Institute's <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:1em;height:1em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) and is in collaboration with the [Transition Pathway Initiative Centre](https://www.transitionpathwayinitiative.org/) (TPI Centre). It provides a fully functional API for serving data from the [ASCOR](https://www.transitionpathwayinitiative.org/ascor)[^1] assessment framework developed by the TPI Centre.
 
 A partnership:
 
 <div style="display: flex; justify-content: top; vertical-align: middle; align-items: center; gap: 2em; margin: 2em 0;">
-<img src="./icons/LSE_DSI.png" alt="LSE Data Science Institute" role="presentation" style="object-fit: contain;width:5em;height:4em;">
-<span style="color: #666;">+</span>
-<img src="./icons/TPI.png" alt="Transition Pathway Initiative" role="presentation" style="object-fit: contain;width:5em;height:4em;">
-<span style="color: #666;">+</span>
-<figure style="align-items: center;">
-<img src="./icons/DS205_2024_25_icon_200px.png" alt="DS205 Students" role="presentation" style="object-fit: contain;width:2.5em;height:2.5em;">
-<span style="display:block;font-size:0.5em;width:30%;float:right;vertical-align:top;"><a href="https://lse-dsi.github.io/DS205">DS205 students (WT 2024/25)</a></span>
-</figure>
+<a href="https://lse.ac.uk/dsi"><img src="./icons/LSE_DSI.png" alt="LSE Data Science Institute" role="presentation" style="object-fit: contain;height:3em;margin-right:2em"/></a>
+
+<a href="https://www.transitionpathwayinitiative.org/"><img src="./icons/TPI.png" alt="Transition Pathway Initiative" role="presentation" style="object-fit: contain;height:3em;"/></a>
+
+<a href="https://lse-dsi.github.io/DS205" style="align-items:middle"><img src="./icons/DS205_2024_25_icon_200px.png" alt="DS205 Students" role="presentation" style="object-fit: contain;height:3em;"><span style="display:block;float:right">DS205 students <br>(Winter Term 2024/25)</span></a>
 </div>
 
 
@@ -33,7 +30,7 @@ A partnership:
 
 If you want to discuss new ideas or have questions, use the [Discussions](https://github.com/lse-ds205/ascor-api/discussions) feature on GitHub. To report bugs, use the [Issues](https://github.com/lse-ds205/ascor-api/issues) feature on GitHub.
 
-As a <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:0.9em;height:0.9em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) student, you can also contact Jon directly on Slack.
+As a <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:1em;height:1em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) student, you can also contact Jon directly on Slack.
 
 ## 🤝 Contributing
 
