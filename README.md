@@ -9,7 +9,7 @@ Welcome to the ASCOR API repository!
 
 This project, led by Dr [Jon Cardoso-Silva](https://jonjoncardoso.github.io) in collaboration with Sylvan Lutz, is part of the LSE Data Science Institute's <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:1em;height:1em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) and is in collaboration with the [Transition Pathway Initiative Centre](https://www.transitionpathwayinitiative.org/) (TPI Centre). It provides a fully functional API for serving data from the [ASCOR](https://www.transitionpathwayinitiative.org/ascor)[^1] assessment framework developed by the TPI Centre.
 
-A partnership:
+**A partnership:**
 
 <div style="display: flex; justify-content: top; vertical-align: middle; align-items: center; gap: 2em; margin: 2em 0;">
 <a href="https://lse.ac.uk/dsi"><img src="./icons/LSE_DSI.png" alt="LSE Data Science Institute" role="presentation" style="object-fit: contain;height:3em;margin-right:2em"/></a>

@@ -65,7 +65,7 @@ This is a public repository and anyone can send a pull request to the repository
 
 **DS205 Students**
 
-Students who are currently enrolled in the <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:0.9em;height:0.9em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) (or auditing) are eligible to contribute directly to this repository without the need for a fork.
+Students who are currently enrolled in the <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:1em;height:1em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) (or auditing) are eligible to contribute directly to this repository without the need for a fork.
 
 To be granted push permission:
 
