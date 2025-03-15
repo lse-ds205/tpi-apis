@@ -1,38 +1,54 @@
 # ASCOR API
 
-Welcome to the ASCOR API repository! This project is part of the [DS205 course](https://lse-dsi.github.io/DS205) and is designed to help you build and deploy APIs for analysing and serving the ASCOR dataset.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Getting Started
 
-### 1. Clone the Repository
-To get started, clone this repository to your local machine:
+Welcome to the ASCOR API repository!
+
+This project, led by Dr [Jon Cardoso-Silva](https://jonjoncardoso.github.io) in collaboration with Sylvan Lutz, is part of the LSE Data Science Institute's <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:1em;height:1em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) and is in collaboration with the [Transition Pathway Initiative Centre](https://www.transitionpathwayinitiative.org/) (TPI Centre). It provides a fully functional API for serving data from the [ASCOR](https://www.transitionpathwayinitiative.org/ascor)[^1] assessment framework developed by the TPI Centre.
+
+**A partnership:**
+
+<div style="display: flex; justify-content: top; vertical-align: middle; align-items: center; gap: 2em; margin: 2em 0;">
+<a href="https://lse.ac.uk/dsi"><img src="./icons/LSE_DSI.png" alt="LSE Data Science Institute" role="presentation" style="object-fit: contain;height:3em;margin-right:2em"/></a>
+
+<a href="https://www.transitionpathwayinitiative.org/"><img src="./icons/TPI.png" alt="Transition Pathway Initiative" role="presentation" style="object-fit: contain;height:3em;"/></a>
+
+<a href="https://lse-dsi.github.io/DS205" style="align-items:middle"><img src="./icons/DS205_2024_25_icon_200px.png" alt="DS205 Students" role="presentation" style="object-fit: contain;height:3em;"><span style="display:block;float:right">DS205 students <br>(Winter Term 2024/25)</span></a>
+</div>
+
+
+[^1]: **ASCOR** stands for "**A**ssessing **S**overeign **C**limate-related **O**pportunities and **R**isks". You can read more about their methodology [here](https://www.transitionpathwayinitiative.org/publications/2024-ascor-framework-methodology-note-version-1-1).
+
+
+## How to Run
+
+After [setting up your Python environment](CONTRIBUTING.md#development-setup), you can run the API locally using the following command:
+
 ```bash
-git clone https://github.com/lse-ds205/ascor-api.git
 cd ascor-api
+
+uvicorn v1.app:app --reload
 ```
 
-### 2. Install Dependencies
-Ensure you have Python 3.10+ installed. Use the following command to install all required dependencies:
-```bash
-pip install -r requirements.txt
-```
+This will start the API server on `http://127.0.0.1:8000`. You can then use the API by making requests to the endpoints documented in the API Documentation (visible at `http://127.0.0.1:8000/docs`).
 
-### 3. Run the FastAPI App
-Navigate to the `v1/` folder and start the server:
-```bash
-cd v1
-uvicorn app:app --reload
-```
+## 🗄️ Data Model
 
-Visit `http://127.0.0.1:8000` in your browser to test the default endpoint. You can explore the interactive API documentation at `http://127.0.0.1:8000/docs`.
+(WIP)
 
+## 📟 Contact
 
-## Collaborator Access
+If you want to discuss new ideas or have questions, use the [Discussions](https://github.com/lse-ds205/ascor-api/discussions) feature on GitHub. To report bugs, use the [Issues](https://github.com/lse-ds205/ascor-api/issues) feature on GitHub.
 
-Students who are currently enrolled in the DS205 course (or auditing) are eligible to contribute to this repository. To be granted push permission on this repository, please send a message to Jon on Slack with your GitHub username. Once approved, you'll receive an invite to contribute.
+As a <img src="./icons/DS205_2024_25_icon_200px.png" alt="Image Created with AI Designer" role="presentation" style="object-fit: cover;width:1em;height:1em;vertical-align: middle;padding-bottom: 0.2em;"/> [DS205 course](https://lse-dsi.github.io/DS205) (Winter Term 2024/2025) student, you can also contact Jon directly on Slack.
 
-## Need Help?
-For issues or questions:
-- Post in the `#help` channel on Slack.
-- Check out the [FastAPI Documentation](https://fastapi.tiangolo.com/).
-- Contact Jon directly if you face persistent issues.
+## 🤝 Contributing
+
+We welcome contributions from DS205 students! Please see our [Contributing Guidelines](CONTRIBUTING.md) for detailed instructions on how to get started.
+
+## 📝 License
+
+This project is licensed under the MIT License. This means that you are free to use, modify, and distribute the code as long as you provide attribution to the original authors. We do not provide any warranty or guarantee of any kind, so use it at your own risk. See the [LICENSE](LICENSE) file for details.
