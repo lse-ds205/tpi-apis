@@ -38,7 +38,7 @@ async def get_country_data(country: str, assessment_year: int) -> CountryDataRes
     try:
         processor = CountryDataProcessor(df_assessments, country, assessment_year)
         return processor.process_country_data()
-    except HTTPException as he:
-        raise he
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -206,7 +206,7 @@ def test_get_country_data_structure(client, df_assessments):
 
                     for indicator in area["indicators"]:
                         
-                        expected_indicator_keys = ["name", "assessment", "metrics"]
+                        expected_indicator_keys = ["name", "assessment", "metrics", "source"]
                         for key in expected_indicator_keys:
                             msg = base_error_msg + f"Expected a '{key}' key under each indicator."
                             assert key in list(indicator.keys()), msg
@@ -216,6 +216,7 @@ def test_get_country_data_structure(client, df_assessments):
                         if len(metrics) != 0:
                             for metric in metrics:
                                 assert type(metric) == dict, base_error_msg + "Each metric should be a dict"
-                                assert len(metric) == 2, base_error_msg + "Each metric should have exactly 2 keys"
+                                assert len(metric) == 3, base_error_msg + "Each metric should have exactly 2 keys"
                                 assert metric['name'] is not None, base_error_msg + "Each metric should have a 'name' key"
                                 assert metric['value'] is not None, base_error_msg + "Each metric should have a 'value' key"
+                                assert metric['source'] is not None, base_error_msg + "Each metric should have a 'source' key"

@@ -19,7 +19,8 @@ class CountryDataProcessor:
         self.filtered_df = self.filter_data()  # Filters the DataFrame 
         
     def filter_data(self) -> pd.DataFrame:  # We are returning a dataframe
-        self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], errors='coerce')
+        self.df['Publication date'] = pd.to_datetime(self.df['Publication date'], format='%d/%m/%Y')
+        self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], format='%d/%m/%Y')
         mask = (
             (self.df['Country'].str.lower() == self.country) & 
             (self.df['Assessment date'].dt.year == self.assessment_year)
