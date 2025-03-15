@@ -1,10 +1,32 @@
+import os
 import pandas as pd
-from fastapi import FastAPI, HTTPException
-from .models import Metric, Indicator, Area, Pillar, CountryDataResponse #Need to specify .models because . represents where I'm at
-from typing import List, Dict, Union
-from pydantic import BaseModel, Field
 
-app = FastAPI()
+from typing import Dict
+from fastapi import FastAPI, HTTPException
+
+#Need to specify .models because . represents where I'm at
+from .models import Metric, Indicator, Area, Pillar, CountryDataResponse 
+
+def __is_running_on_nuvolos():
+    """
+    If we are running this script from Nuvolos Cloud, 
+    there will be an environment variable called HOSTNAME
+    which starts with 'nv-'
+    """
+
+    hostname = os.getenv("HOSTNAME")
+    return hostname is not None and hostname.startswith('nv-')
+
+if __is_running_on_nuvolos():
+    # Nuvolos alters the URL of the API (likely for security reasons)
+    # Instead of https://A-BIG-IP-ADDRESS:8000/
+    # The API is actually served at https://A-BIG-IP-ADDRESS/proxy/8000/
+    app = FastAPI(root_path="/proxy/8000/")
+else:
+    # No need to set up anything else if running this on local machine
+    app = FastAPI()
+
+# TODO: Handle the data loading in a better way
 filepath = "./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx"
 df_assessments = pd.read_excel(filepath, engine='openpyxl')
 
@@ -32,14 +54,22 @@ class CountryDataProcessor:
         
         return filtered_df.iloc[0]  # Return the first matching row
     
-    def process_column(self, col: str, pillar: str, area_dict: Dict[str, Dict]): #This is the key function that processes the DataFrame
-        parts = col.split() # Split the column name by space
-        if len(parts) < 2: # Note that this only applies to column names with at least 2 parts
+    def process_column(self, col: str, pillar: str, area_dict: Dict[str, Dict]): 
+        #This is the key function that processes the DataFrame
+
+        # Split the column name by space
+        parts = col.split() 
+
+        # Note that this only applies to column names with at least 2 parts
+        if len(parts) < 2:
             return
         
-        col_type, col_path = parts[0], parts[1] # Realize that in the dataframe, the first word is the area/indicator/metric, second word tells me further information
+        # Realize that in the dataframe, the first word is the area/indicator/metric, second word tells me further information
+        col_type, col_path = parts[0], parts[1]
         path_parts = col_path.split('.')
-        if len(path_parts) < 2: #Exit if there are less than 2 words in the column -- dont apply to other columns such as "ID" or "Country"
+
+        #Exit if there are less than 2 words in the column -- dont apply to other columns such as "ID" or "Country"
+        if len(path_parts) < 2: 
             return
         
         area_num = path_parts[1]
@@ -51,7 +81,8 @@ class CountryDataProcessor:
                 'indicators': {}
             }
         
-        if len(path_parts) >= 3 and col_type == 'indicator': #If the column type is an indicator AND it has the form a.b.c
+        #If the column type is an indicator AND it has the form a.b.c
+        if len(path_parts) >= 3 and col_type == 'indicator': 
             indicator_num = path_parts[2]
             indicator_key = f"{area_key}.{indicator_num}"
             area_dict[area_key]['indicators'][indicator_key] = {
@@ -99,8 +130,3 @@ async def get_country_data(country: str, assessment_year: int) -> CountryDataRes
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# A list in python for javascript is an array of objects
-
-
-#Can use list comprehension instead of for loop. Instantiate a list, append those items to the list, return list at the end

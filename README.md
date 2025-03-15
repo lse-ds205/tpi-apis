@@ -22,6 +22,19 @@ This project, led by Dr [Jon Cardoso-Silva](https://jonjoncardoso.github.io) in 
 
 [^1]: **ASCOR** stands for "**A**ssessing **S**overeign **C**limate-related **O**pportunities and **R**isks". You can read more about their methodology [here](https://www.transitionpathwayinitiative.org/publications/2024-ascor-framework-methodology-note-version-1-1).
 
+
+## How to Run
+
+After [setting up your Python environment](CONTRIBUTING.md#development-setup), you can run the API locally using the following command:
+
+```bash
+cd ascor-api
+
+uvicorn v1.app:app --reload
+```
+
+This will start the API server on `http://127.0.0.1:8000`. You can then use the API by making requests to the endpoints documented in the API Documentation (visible at `http://127.0.0.1:8000/docs`).
+
 ## 🗄️ Data Model
 
 (WIP)
