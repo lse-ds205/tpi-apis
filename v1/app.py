@@ -1,19 +1,10 @@
 import os
 import pandas as pd
 
-from fastapi import FastAPI
-from typing import List
-from .models import CountryData, Pillar, Area, Indicator, Metric, Metadata
-import re
+from fastapi import FastAPI, HTTPException
 
-# Load the data
-filepath = "./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx" # Specify the correct path to the file
-df_assessments = pd.read_excel(filepath)
-
-# Convert the date columns to datetime type so we can filter by year later
-df_assessments['Assessment date'] = pd.to_datetime(df_assessments['Assessment date'])
-df_assessments['Publication date'] = pd.to_datetime(df_assessments['Publication date'])
-
+from .models import CountryDataResponse
+from .services import CountryDataProcessor
 
 def __is_running_on_nuvolos():
     """
@@ -34,43 +25,20 @@ else:
     # No need to set up anything else if running this on local machine
     app = FastAPI()
 
-@app.get("/v1/country-data/{country}/{assessment_year}", response_model = CountryData)
-async def get_country_data(country: str, assessment_year: int) -> CountryData:
-    data = df_assessments[(df_assessments["Country"] == country) & (df_assessments["Assessment date"].dt.year == assessment_year)]
+# TODO: Handle the data loading in a better way
+filepath = "./data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx"
+df_assessments = pd.read_excel(filepath, engine='openpyxl')
 
-    #remember which columns are area, indicator, metric
-    area_cols = [re.sub(".*?\s", "", col) for col in data.columns if col.startswith("area")]
-    indicator_cols = [re.sub(".*?\s", "", col) for col in data.columns if col.startswith("indicator")]
-    metric_cols =  [re.sub(".*?\s", "", col) for col in data.columns if col.startswith("metric")] 
+@app.get("/")
+async def read_root():
+    return {"Hello": "World"} 
 
-    #remove unecessary columns
-    data = data[[col for col in data.columns if col.startswith(("area", "indicator", "metric"))]]
-
-    #rename columns so they align with output
-    remap_column_names = {col: re.sub(".*?\s", "", col) for col in data.columns}
-    data = data.rename(columns=remap_column_names)
-
-    #get flat Pandas series of country data
-    data = data.iloc[0]
-    data = data.fillna("")
-
-    #get metric
-    metrics = [{'name': metric, 'value': data[f'{metric}']} for metric in metric_cols]
-
-    #get indicator
-    indicators = [{'name': indicator, 'assessment': data[f"{indicator}"],
-                   'metrics': next((met for met in metrics if met["name"].startswith(indicator)), "")} for indicator in indicator_cols]   
-
-    #get area
-    areas = [{'name': area, 'assessment': data[f"{area}"],
-              'indicators': [ind for ind in indicators if ind["name"].startswith(area)]} for area in area_cols]
-
-    #get pillar
-    pillars = [{'name': pillar, 'areas': areas} for pillar in ["EP","CP","CF"]]
-
-    output_dict = {'metadata': {'country': country, 'assessment_year': assessment_year},
-                   'pillars': [pillar for pillar in pillars]}
-
-    output = CountryData(**output_dict)
-
-    return output
+@app.get("/v1/country-data/{country}/{assessment_year}", response_model=CountryDataResponse)
+async def get_country_data(country: str, assessment_year: int) -> CountryDataResponse:
+    try:
+        processor = CountryDataProcessor(df_assessments, country, assessment_year)
+        return processor.process_country_data()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
