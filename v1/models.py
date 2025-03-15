@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Union, List, Optional
+from typing import Literal, Optional, List, Union
 
 class MetricSource(BaseModel):
     source_name: Optional[str]
@@ -14,13 +14,19 @@ class IndicatorSource(BaseModel):
 
 class Indicator(BaseModel):
     name: str
-    assessment: str
-    metrics: List[Union[Metric, str]] = Field(default_factory=list)
+    assessment: Literal['Not Applicable',
+                        'No Data',
+                        'Not applicable',
+                        'Yes',
+                        'No',
+                        'No data',
+                        'Exempt']
+    metrics: List[Union[Metric, Literal[""]]] = Field(default_factory=list)
     source: Optional[IndicatorSource] = None
 
 class Area(BaseModel):
     name: str
-    assessment: str
+    assessment: Literal['Exempt', 'No', 'Not applicable', 'Partial', 'Yes', '']
     indicators: List[Indicator]
 
 class Pillar(BaseModel):
