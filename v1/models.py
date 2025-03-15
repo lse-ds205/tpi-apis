@@ -1,18 +1,22 @@
 from pydantic import BaseModel, Field
-from typing import Union, List
+from typing import Union, List, Optional
 
-# Data input error - not sending a number into year do it on the front-end (typos)
-# Country not included in the data or year not included in the data to be included in the backend
+class MetricSource(BaseModel):
+    source_name: Optional[str]
 
 class Metric(BaseModel):
     name: str
     value: str
+    source: Optional[MetricSource] = None
+
+class IndicatorSource(BaseModel):
+    source_name: Optional[str]
 
 class Indicator(BaseModel):
     name: str
     assessment: str
-    metrics: List[Union[Metric, str]] = Field(
-        default_factory=list)
+    metrics: List[Union[Metric, str]] = Field(default_factory=list)
+    source: Optional[IndicatorSource] = None
 
 class Area(BaseModel):
     name: str
@@ -25,7 +29,5 @@ class Pillar(BaseModel):
 
 class CountryDataResponse(BaseModel):
     country: str
-    assessment_year: int
+    assessment_year: int = Field(ge=2023, le=2024)
     pillars: List[Pillar]
-
-#None in python is represented as Null in JSON

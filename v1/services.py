@@ -100,5 +100,54 @@ class CountryDataProcessor:
         return Area(name=area_name, assessment=area_data['assessment'], indicators=indicators)
     
     def process_country_data(self) -> CountryDataResponse:
+        # Bryan's version (to be reconciled)
         pillars = [self.process_pillar(pillar) for pillar in ['EP', 'CP', 'CF']]
-        return CountryDataResponse(country=self.country, assessment_year=self.assessment_year, pillars=pillars) 
+
+        # data = df_assessments[selected_row]
+
+        # if data.empty:
+        #     raise HTTPException(status_code=404, detail="Data not found for the specified country and year")
+
+        # # JSON does not allow for NaN or NULL. 
+        # # The equivalent is just to leave an empty string instead
+        # data = data.fillna('')
+
+        # # Create areas, indicators, and metrics
+        # def create_metrics(indicator_name):
+        #     metrics = []
+        #     for col in column_headings:
+        #         if col.startswith(f"metric {indicator_name}."):
+        #             metric_name = col
+        #             metric_value = data.iloc[0][col]
+        #             source_col = f"source {col}"
+        #             metric_source = MetricSource(source_name=data.iloc[0][source_col]) if source_col in data else None
+        #             if metric_value != '':
+        #                 metrics.append(Metric(name=metric_name, value=metric_value, source=metric_source))
+        #     return metrics
+
+        # def create_indicators(area_name):
+        #     indicators = []
+        #     for col in column_headings:
+        #         if col.startswith(f"indicator {area_name}."):
+        #             indicator_name = col
+        #             metrics = create_metrics(col.split(" ")[1])
+        #             source_col = f"source {col}"
+        #             indicator_source = IndicatorSource(source_name=data.iloc[0][source_col]) if source_col in data else None
+        #             if metrics:  # Only add indicators with non-empty metrics
+        #                 indicators.append(Indicator(name=indicator_name, metrics=metrics, source=indicator_source))
+        #     return indicators
+
+        # def create_areas():
+        #     areas = []
+        #     for col in column_headings:
+        #         if col.startswith("area "):
+        #             area_name = col.replace("area ", "")
+        #             indicators = create_indicators(area_name)
+        #             if indicators:  # Only add areas with non-empty indicators
+        #                 areas.append(Area(name=area_name, indicators=indicators))
+        #     return areas
+
+        # areas = create_areas()
+
+        output_dict =  CountryDataResponse(country=self.country, assessment_year=self.assessment_year, pillars=pillars) 
+        return output_dict
