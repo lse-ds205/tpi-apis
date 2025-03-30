@@ -1,29 +1,44 @@
 """
-This module initializes the FastAPI application and includes the route modules for the TPI API.
-It integrates endpoints for Company, Management Quality (MQ), and Carbon Performance (CP) assessments,
-and provides a basic home endpoint for a welcome message.
+This module initializes the FastAPI application and registers the route modules for the TPI API.
+
+It integrates endpoints for:
+- Company assessments
+- Management Quality (MQ) assessments
+- Carbon Performance (CP) assessments
+
+It also defines a basic root endpoint for a welcome message.
 """
 
 from fastapi import FastAPI
-from routes.company_routes import router as company_router  # Import the company router
-from routes.mq_routes import mq_router  # Import MQ router
-from routes.cp_routes import cp_router  # Import CP router 
+from routes.company_routes import (
+    router as company_router,
+)
+from routes.mq_routes import mq_router
+from routes.cp_routes import cp_router
 
-# Initialize FastAPI app
-app = FastAPI()
+# -------------------------------------------------------------------------
+# App Initialization
+# -------------------------------------------------------------------------
+app = FastAPI(
+    title="Transition Pathway Initiative API",
+    version="1.0",
+    description="Provides company, MQ, and CP assessments via REST endpoints.",
+)
 
-# Include routers to add endpoints from different modules into the main app.
-# This integrates the Company, MQ, and CP endpoints into one unified API.
-app.include_router(company_router)
-app.include_router(mq_router) 
-app.include_router(cp_router) 
+# -------------------------------------------------------------------------
+# Root Registration
+# -------------------------------------------------------------------------
+app.include_router(company_router, prefix="/v1")
+app.include_router(mq_router, prefix="/v1")
+app.include_router(cp_router, prefix="/v1")
 
+
+# -------------------------------------------------------------------------
+# Root Endpoint
+# -------------------------------------------------------------------------
 @app.get("/")
 def home():
     """
-    Home endpoint that returns a basic welcome message.
-
-    Returns:
-        dict: A dictionary containing the welcome message.
+    Root endpoint that returns a welcome message.
     """
     return {"message": "Welcome to the TPI API!"}

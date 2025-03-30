@@ -4,11 +4,20 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A FastAPI-based application to retrieve, process, and compare data from the [Transition Pathway Initiative Centre](https://www.transitionpathwayinitiative.org/) (TPI).
-It provides a fully functional API for serving data from the following assessment frameworks developed by the TPI Centre: 
+A FastAPI-based application to retrieve, process, and compare data from the [Transition Pathway Initiative Centre](https://www.transitionpathwayinitiative.org/) (TPI). It provides a fully functional API for serving data from the following assessment frameworks developed by the TPI Centre: 
 
 * [ASCOR](https://www.transitionpathwayinitiative.org/ascor)[^1]
 * [Carbon Performance and Management Quality](https://www.transitionpathwayinitiative.org/corporates)
+
+**A partnership:**
+
+<div style="display: flex; justify-content: top; vertical-align: middle; align-items: center; gap: 2em; margin: 2em 0;">
+<a href="https://lse.ac.uk/dsi"><img src="./icons/LSE_DSI.png" alt="LSE Data Science Institute" role="presentation" style="object-fit: contain;height:3em;margin-right:2em"/></a>
+
+<a href="https://www.transitionpathwayinitiative.org/"><img src="./icons/TPI.png" alt="Transition Pathway Initiative" role="presentation" style="object-fit: contain;height:3em;"/></a>
+
+<a href="https://lse-dsi.github.io/DS205" style="align-items:middle"><img src="./icons/DS205_2024_25_icon_200px.png" alt="DS205 Students" role="presentation" style="object-fit: contain;height:3em;"><span style="display:block;float:right">DS205 students <br>(Winter Term 2024/25)</span></a>
+</div>
 
 [^1]: **ASCOR** stands for "**A**ssessing **S**overeign **C**limate-related **O**pportunities and **R**isks". You can read more about their methodology [here](https://www.transitionpathwayinitiative.org/publications/2024-ascor-framework-methodology-note-version-1-1).
 
@@ -22,10 +31,7 @@ The application is structured to meet good standards for data validation, error 
 3. [Prerequisites and Installation](#prerequisites-and-installation)
 4. [Running the Application](#running-the-application)
 5. [Usage and API Endpoints](#usage-and-api-endpoints)
-7. [Data Source and Format](#data-source-and-format)
-8. [Unit Testing](#unit-testing)
-9. [Future Improvements](#future-improvements)
-10. [Conclusion](#conclusion)
+6. 📟 [Contact Us](#-contact-us)
 
 ## Guiding Architectural Design Principles
 
