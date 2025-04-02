@@ -9,7 +9,7 @@ See: https://lse-dsi.github.io/DS205/2024-2025/winter-term/weeks/week02/slides.h
 
 import pandas as pd
 
-from .models import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
+from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
 
 class CountryDataProcessor:
     def __init__(self, df: pd.DataFrame, country: str, assessment_year: int):

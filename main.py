@@ -10,6 +10,7 @@ It also defines a basic root endpoint for a welcome message.
 """
 
 from fastapi import FastAPI
+from routes.ascor_routes import router as ascor_router
 from routes.company_routes import (
     router as company_router,
 )
@@ -28,6 +29,7 @@ app = FastAPI(
 # -------------------------------------------------------------------------
 # Root Registration
 # -------------------------------------------------------------------------
+app.include_router(ascor_router, prefix="/v1")
 app.include_router(company_router, prefix="/v1")
 app.include_router(mq_router, prefix="/v1")
 app.include_router(cp_router, prefix="/v1")
