@@ -284,3 +284,25 @@ class PerformanceComparisonInsufficientDataResponse(BaseModel):
     company_id: str
     message: str
     available_assessment_years: List[int]
+
+
+
+# ------------------------------------------------------------------------------
+# Authentication models
+# ------------------------------------------------------------------------------
+
+# Public-aviliable user model
+class User(BaseModel):
+    username: str
+    email: Optional[str] = None
+    disabled: Optional[bool] = None
+
+
+# Internal user model with password
+class UserInDB(User):
+    hashed_password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
