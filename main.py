@@ -16,6 +16,8 @@ from routes.company_routes import (
 )
 from routes.mq_routes import mq_router
 from routes.cp_routes import cp_router
+from authentication.auth_router import router as auth_router
+from authentication.post_router import router as post_router
 
 # -------------------------------------------------------------------------
 # App Initialization
@@ -33,6 +35,9 @@ app.include_router(ascor_router, prefix="/v1")
 app.include_router(company_router, prefix="/v1")
 app.include_router(mq_router, prefix="/v1")
 app.include_router(cp_router, prefix="/v1")
+app.include_router(auth_router, prefix="/v1")
+app.include_router(post_router, prefix="/v1")
+
 
 
 # -------------------------------------------------------------------------
@@ -44,3 +49,5 @@ def home():
     Root endpoint that returns a welcome message.
     """
     return {"message": "Welcome to the TPI API!"}
+
+
