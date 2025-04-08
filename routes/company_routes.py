@@ -62,7 +62,7 @@ router = APIRouter(prefix="/company", tags=["Company Endpoints"])
 # --------------------------------------------------------------------------
 @router.get("/companies", response_model=CompanyListResponse)
 @limiter.limit("100/minute")
-def get_all_companies(
+async def get_all_companies(
     request: Request,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Results per page"),
@@ -112,7 +112,7 @@ def get_all_companies(
 # ------------------------------------------------------------------------------
 @router.get("/company/{company_id}", response_model=CompanyDetail)
 @limiter.limit("100/minute")
-def get_company_details(request: Request, company_id: str):
+async def get_company_details(request: Request, company_id: str):
     """
     Retrieve the latest MQ & CP scores for a specific company.
 
@@ -158,7 +158,7 @@ def get_company_details(request: Request, company_id: str):
     "/company/{company_id}/history", response_model=CompanyHistoryResponse
 )
 @limiter.limit("100/minute")
-def get_company_history(request: Request, company_id: str):
+async def get_company_history(request: Request, company_id: str):
     """
     Retrieve a company's historical MQ & CP scores.
 
@@ -246,7 +246,7 @@ def get_company_history(request: Request, company_id: str):
     ],
 )
 @limiter.limit("100/minute")
-def compare_company_performance(request: Request, company_id: str):
+async def compare_company_performance(request: Request, company_id: str):
     """
     Compare a company's latest performance against the previous year.
 

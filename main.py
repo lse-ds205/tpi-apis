@@ -48,7 +48,8 @@ app.include_router(cp_router, prefix="/v1")
 # Root Endpoint
 # -------------------------------------------------------------------------
 @app.get("/")
-def home():
+@limiter.limit("100/minute")
+async def home(request: Request):
     """
     Root endpoint that returns a welcome message.
     """

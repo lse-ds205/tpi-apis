@@ -61,8 +61,8 @@ mq_router = APIRouter(prefix="/mq", tags=["MQ Endpoints"])
 # Endpoint: GET /latest - Latest MQ Assessments with Pagination
 # ------------------------------------------------------------------------------
 @mq_router.get("/latest", response_model=PaginatedMQResponse)
-@limiter.limit("2/minute")
-def get_latest_mq_assessments(
+@limiter.limit("100/minute")
+async def get_latest_mq_assessments(
     request: Request, 
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
     page_size: int = Query(
@@ -119,7 +119,7 @@ def get_latest_mq_assessments(
     "/methodology/{methodology_id}", response_model=PaginatedMQResponse
 )
 @limiter.limit("100/minute")
-def get_mq_by_methodology(
+async def get_mq_by_methodology(
     request: Request, 
     methodology_id: int = Path(
         ..., ge=1, le=len(mq_files), description="Methodology cycle ID"
@@ -171,7 +171,7 @@ def get_mq_by_methodology(
     "/trends/sector/{sector_id}", response_model=PaginatedMQResponse
 )
 @limiter.limit("100/minute")
-def get_mq_trends_sector(
+async def get_mq_trends_sector(
     request: Request, 
     sector_id: str,
     page: int = Query(1, ge=1, description="Page number"),

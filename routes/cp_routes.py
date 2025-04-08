@@ -52,8 +52,8 @@ cp_router = APIRouter(prefix="/cp", tags=["CP Endpoints"])
 # Endpoint: GET /latest - Latest CP Assessments with Pagination
 # ------------------------------------------------------------------------------
 @cp_router.get("/latest", response_model=List[CPAssessmentDetail])
-@limiter.limit("100/minute")
-def get_latest_cp_assessments(
+@limiter.limit("2/minute")
+async def get_latest_cp_assessments(
     request: Request, 
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
     page_size: int = Query(
@@ -103,7 +103,7 @@ def get_latest_cp_assessments(
     "/company/{company_id}", response_model=List[CPAssessmentDetail]
 )
 @limiter.limit("100/minute")
-def get_company_cp_history(request: Request, company_id: str):
+async def get_company_cp_history(request: Request, company_id: str):
     """
     Retrieve all CP assessments for a specific company across different assessment cycles.
     """
@@ -141,7 +141,7 @@ def get_company_cp_history(request: Request, company_id: str):
     "/company/{company_id}/alignment", response_model=Dict[str, str]
 )
 @limiter.limit("100/minute")
-def get_company_cp_alignment(request: Request, company_id: str):
+async def get_company_cp_alignment(request: Request, company_id: str):
     """
     Retrieves a company's carbon performance alignment status across target years
     """
@@ -176,7 +176,7 @@ def get_company_cp_alignment(request: Request, company_id: str):
     ],
 )
 @limiter.limit("100/minute")
-def compare_company_cp(request: Request, company_id: str):
+async def compare_company_cp(request: Request, company_id: str):
     """
     Compare the most recent CP assessment to the previous one for a company.
     """
