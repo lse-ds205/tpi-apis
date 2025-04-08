@@ -10,11 +10,12 @@ and exposes endpoints for fetching the latest assessments, assessments by method
 # Imports
 # ------------------------------------------------------------------------------
 import re
-from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi import APIRouter, HTTPException, Query, Path, Request
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
 from typing import List, Optional
+from middleware.rate_limiter import limiter
 from schemas import (
     MQAssessmentDetail,
     MQIndicatorsResponse,
@@ -60,7 +61,9 @@ mq_router = APIRouter(prefix="/mq", tags=["MQ Endpoints"])
 # Endpoint: GET /latest - Latest MQ Assessments with Pagination
 # ------------------------------------------------------------------------------
 @mq_router.get("/latest", response_model=PaginatedMQResponse)
+@limiter.limit("2/minute")
 def get_latest_mq_assessments(
+    request: Request, 
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
     page_size: int = Query(
         10, ge=1, le=100, description="Number of results per page (max 100)"
@@ -115,7 +118,9 @@ def get_latest_mq_assessments(
 @mq_router.get(
     "/methodology/{methodology_id}", response_model=PaginatedMQResponse
 )
+@limiter.limit("100/minute")
 def get_mq_by_methodology(
+    request: Request, 
     methodology_id: int = Path(
         ..., ge=1, le=len(mq_files), description="Methodology cycle ID"
     ),
@@ -165,7 +170,9 @@ def get_mq_by_methodology(
 @mq_router.get(
     "/trends/sector/{sector_id}", response_model=PaginatedMQResponse
 )
+@limiter.limit("100/minute")
 def get_mq_trends_sector(
+    request: Request, 
     sector_id: str,
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(

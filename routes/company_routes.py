@@ -9,11 +9,12 @@ and comparing performance between assessment cycles.
 # Imports
 # -------------------------------------------------------------------------
 import re
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
 from typing import Union
+from middleware.rate_limiter import limiter
 from schemas import (
     CompanyBase,
     CompanyDetail,
@@ -60,7 +61,9 @@ router = APIRouter(prefix="/company", tags=["Company Endpoints"])
 # Endpoint: GET /companies - List All Companies with Pagination
 # --------------------------------------------------------------------------
 @router.get("/companies", response_model=CompanyListResponse)
+@limiter.limit("100/minute")
 def get_all_companies(
+    request: Request,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Results per page"),
 ):
@@ -108,7 +111,8 @@ def get_all_companies(
 # Endpoint: GET /company/{company_id} - Retrieve Company Details
 # ------------------------------------------------------------------------------
 @router.get("/company/{company_id}", response_model=CompanyDetail)
-def get_company_details(company_id: str):
+@limiter.limit("100/minute")
+def get_company_details(request: Request, company_id: str):
     """
     Retrieve the latest MQ & CP scores for a specific company.
 
@@ -153,7 +157,8 @@ def get_company_details(company_id: str):
 @router.get(
     "/company/{company_id}/history", response_model=CompanyHistoryResponse
 )
-def get_company_history(company_id: str):
+@limiter.limit("100/minute")
+def get_company_history(request: Request, company_id: str):
     """
     Retrieve a company's historical MQ & CP scores.
 
@@ -240,7 +245,8 @@ def get_company_history(company_id: str):
         PerformanceComparisonInsufficientDataResponse,
     ],
 )
-def compare_company_performance(company_id: str):
+@limiter.limit("100/minute")
+def compare_company_performance(request: Request, company_id: str):
     """
     Compare a company's latest performance against the previous year.
 
