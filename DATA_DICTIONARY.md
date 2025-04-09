@@ -3,6 +3,28 @@
 ## Overview
 This document provides detailed information about the data structures and fields used in the Corporate Carbon Performance and Assessment API. The API provides endpoints for accessing company data, management quality (MQ) assessments, carbon performance (CP) assessments, and ASCOR data.
 
+## Data Categories
+
+### Company Data
+*Core company information and assessment results.*
+Basic company attributes and performance metrics, including identifiers, sector, and assessment scores. Data is loaded from the latest company assessment CSV files.
+
+### Management Quality (MQ) Assessments
+*Climate management practice evaluations.*
+Scoring system (0-5 stars) and methodology for assessing companies' climate risk management and opportunities. Data is loaded from MQ_Assessments_Methodology_*.csv files and includes methodology cycle tracking.
+
+### Carbon Performance (CP) Assessments
+*Climate target alignment evaluations.*
+Company emissions trajectories and their alignment with various climate scenarios (2025, 2027, 2035, 2050). Data is loaded from CP_Assessments_*.csv files.
+
+### ASCOR Data
+*Assessment framework structure.*
+Hierarchical evaluation system from country-level down to individual metrics. Data is loaded from ASCOR_assessments_results.xlsx.
+
+### API Response Models
+*API response formats.*
+Structured data delivery formats including pagination and metadata. All endpoints support pagination with a maximum of 100 items per page.
+
 ## Company Data
 
 ### Company Base Information
