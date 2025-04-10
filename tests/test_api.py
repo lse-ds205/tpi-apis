@@ -15,7 +15,6 @@ Current tests:
 Author: @jonjoncardoso
 """
 
-import pycountry
 import pytest 
 import warnings
 

@@ -622,70 +622,70 @@ def expected_all_companies_response():
         "name": "yankuang energy",
         "sector": "Coal Mining",
         "geography": "China",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "3m",
         "name": "3m",
         "sector": "Industrials",
         "geography": "United States of America",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "a2a",
         "name": "a2a",
         "sector": "Electricity Utilities",
         "geography": "Italy",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "abb",
         "name": "abb",
         "sector": "Industrials",
         "geography": "Switzerland",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "acc",
         "name": "acc",
         "sector": "Cement",
         "geography": "India",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "acs_group",
         "name": "acs group",
         "sector": "Industrials",
         "geography": "Spain",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "acwa_power",
         "name": "acwa power",
         "sector": "Electricity Utilities",
         "geography": "Saudi Arabia",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "adama",
         "name": "adama",
         "sector": "Chemicals",
         "geography": "China",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "adbri",
         "name": "adbri",
         "sector": "Cement",
         "geography": "Australia",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         },
         {
         "company_id": "adnoc_drilling_company",
         "name": "adnoc drilling company",
         "sector": "Oil & Gas",
         "geography": "United Arab Emirates",
-        "latest_assessment_year": null
+        "latest_assessment_year": None
         }
     ]
     }
@@ -698,7 +698,7 @@ def expected_company_details_response():
   "name": "3m",
   "sector": "Industrials",
   "geography": "United States of America",
-  "latest_assessment_year": null,
+  "latest_assessment_year": None,
   "management_quality_score": 3,
   "carbon_performance_alignment_2035": "N/A",
   "emissions_trend": "down"
@@ -752,7 +752,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Basic Materials",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Loln Electric Holdings",
@@ -760,7 +760,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Industrials",
       "geography": "United States of America",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Beacon Roofing Supply",
@@ -768,7 +768,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Industrials",
       "geography": "United States of America",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "SDIC Power Holdings",
@@ -776,7 +776,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Electricity Utilities",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "HBIS",
@@ -784,7 +784,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Steel",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Hengtong Optic-Electric",
@@ -792,7 +792,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Technology",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Wens Foodstuff Group",
@@ -800,7 +800,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Food Producers",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Shanghai Jin Jiang International Hotels",
@@ -808,7 +808,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Consumer Services",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Shenzhen Energy Group",
@@ -816,7 +816,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Electricity Utilities",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Yunnan Chihong Z & Germanium",
@@ -824,7 +824,7 @@ def expected_latest_mq_assessment_reponse():
       "sector": "Basic Materials",
       "geography": "China",
       "latest_assessment_year": 2024,
-      "management_quality_score": null
+      "management_quality_score": None
     }
   ]
 }
@@ -843,7 +843,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Coal Mining",
       "geography": "China",
       "latest_assessment_year": 2017,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "ADBRI",
@@ -851,7 +851,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Cement",
       "geography": "Australia",
       "latest_assessment_year": 2016,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "APA Corporation",
@@ -859,7 +859,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Oil & Gas",
       "geography": "United States of America",
       "latest_assessment_year": 2015,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Acerinox",
@@ -867,7 +867,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Steel",
       "geography": "Spain",
       "latest_assessment_year": 2016,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Adaro Energy",
@@ -875,7 +875,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Coal Mining",
       "geography": "Indonesia",
       "latest_assessment_year": 2017,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "African Rainbow Minerals",
@@ -883,7 +883,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Coal Mining",
       "geography": "South Africa",
       "latest_assessment_year": 2017,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Ambuja Cements",
@@ -891,7 +891,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Cement",
       "geography": "India",
       "latest_assessment_year": 2016,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "American Electric Power",
@@ -899,7 +899,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Electricity Utilities",
       "geography": "United States of America",
       "latest_assessment_year": 2016,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Anadarko Petroleum",
@@ -907,7 +907,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Oil & Gas",
       "geography": "United States of America",
       "latest_assessment_year": 2015,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Anglo American (Coal Mining)",
@@ -915,7 +915,7 @@ def expected_latest_mq_methodology_reponse():
       "sector": "Coal Mining",
       "geography": "United Kingdom",
       "latest_assessment_year": 2016,
-      "management_quality_score": null
+      "management_quality_score": None
     }
   ]
 }
@@ -934,7 +934,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "Canada",
       "latest_assessment_year": 2019,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "African Rainbow Minerals",
@@ -942,7 +942,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "South Africa",
       "latest_assessment_year": 2018,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Whitehaven Coal",
@@ -950,7 +950,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "Australia",
       "latest_assessment_year": 2023,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Whitehaven Coal",
@@ -958,7 +958,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "Australia",
       "latest_assessment_year": 2023,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Whitehaven Coal",
@@ -966,7 +966,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "Australia",
       "latest_assessment_year": 2021,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Bumi",
@@ -974,7 +974,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "Indonesia",
       "latest_assessment_year": 2021,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "ENN Ecological Holdings",
@@ -982,7 +982,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "China",
       "latest_assessment_year": 2021,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "DMCI",
@@ -990,7 +990,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "Philippines",
       "latest_assessment_year": 2021,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Coronado Global Resources",
@@ -998,7 +998,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "Australia",
       "latest_assessment_year": 2021,
-      "management_quality_score": null
+      "management_quality_score": None
     },
     {
       "company_id": "Consol Energy",
@@ -1006,7 +1006,7 @@ def expected_mq_sector_trends_reponse():
       "sector": "Coal Mining",
       "geography": "United States of America",
       "latest_assessment_year": 2021,
-      "management_quality_score": null
+      "management_quality_score": None
     }
   ]
     }
