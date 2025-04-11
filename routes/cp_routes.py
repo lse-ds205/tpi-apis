@@ -7,7 +7,7 @@ loads and normalizes the data, and exposes endpoints to retrieve and compare CP 
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
-from data_utils import DataHandler
+from data_utils import CPHandler
 from fastapi import APIRouter, HTTPException, Query, Path
 import pandas as pd
 from pathlib import Path as FilePath
@@ -18,17 +18,12 @@ from schemas import (
     CPComparisonResponse,
     PerformanceComparisonInsufficientDataResponse,
 )
-from utils import (
-    get_latest_data_dir,
-    get_latest_assessment_file,
-    get_latest_cp_file,
-)
 
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
 cp_router = APIRouter(prefix="/cp", tags=["CP Endpoints"])
-data_handler = DataHandler()
+cp_handler = CPHandler()
 
 # ------------------------------------------------------------------------------
 # Endpoint: GET /latest - Latest CP Assessments with Pagination
@@ -49,7 +44,7 @@ def get_latest_cp_assessments(
     3. Apply pagination based on page/page_size.
     4. Return a list of CPAssessmentDetail objects.
     """
-    latest_records = data_handler.cp.get_latest_assessments(page, page_size)
+    latest_records = cp_handler.get_latest_assessments(page, page_size)
 
     results = [
         CPAssessmentDetail(
@@ -79,7 +74,7 @@ def get_company_cp_history(company_id: str):
     """
     Retrieve all CP assessments for a specific company across different assessment cycles.
     """
-    company_history = data_handler.cp.get_company_history(company_id)
+    company_history = cp_handler.get_company_history(company_id)
 
     # Error handling: Raise a 404 if the company isn't found.
     if company_history.empty:
@@ -114,7 +109,7 @@ def get_company_cp_alignment(company_id: str):
     Retrieves a company's carbon performance alignment status across target years
     """
     try:
-        company_data_latest = data_handler.cp.get_company_alignment(company_id)
+        company_data_latest = cp_handler.get_company_alignment(company_id)
     except ValueError as e:
         raise HTTPException(
             status_code=404, detail=f"Company '{company_id}' not found."
@@ -141,7 +136,7 @@ def compare_company_cp(company_id: str):
     """
     Compare the most recent CP assessment to the previous one for a company.
     """
-    company_data = data_handler.cp.compare_company_cp(company_id)
+    company_data = cp_handler.compare_company_cp(company_id)
 
     if company_data[0] is None:
         return PerformanceComparisonInsufficientDataResponse(
