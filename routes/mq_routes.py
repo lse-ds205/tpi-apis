@@ -10,7 +10,7 @@ and exposes endpoints for fetching the latest assessments, assessments by method
 # Imports
 # ------------------------------------------------------------------------------
 import re
-from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi import APIRouter, HTTPException, Query, Path, Depends
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
@@ -21,6 +21,7 @@ from schemas import (
     PaginatedMQResponse,
 )
 from data_utils import MQHandler
+from filters import CompanyFilters
 # ------------------------------------------------------------------------------
 # Constants and Data Loading
 # ------------------------------------------------------------------------------
@@ -49,7 +50,8 @@ def get_latest_mq_assessments(
     page_size: int = Query(
         10, ge=1, le=100, description="Number of results per page (max 100)"
     ),
-):
+    filter: CompanyFilters = Depends(CompanyFilters)
+):  
     """
     Fetches the latest Management Quality (MQ) assessment for all companies with pagination.
 
@@ -59,6 +61,8 @@ def get_latest_mq_assessments(
     3. Applies pagination based on the provided page and page_size parameters.
     4. Maps STAR rating strings to numeric scores using a pre-defined dictionary.
     """
+    
+
     latest_records = mq_handler.get_latest_assessments(page, page_size)
     total_records = mq_handler.get_df_length()
 

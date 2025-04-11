@@ -7,6 +7,7 @@ from utils import (
     normalize_company_id,
 )
 from datetime import datetime
+from filters import CompanyFilters
 
 class BaseDataHandler:
     """Base class for handling data operations with common functionality.
@@ -89,6 +90,66 @@ class BaseDataHandler:
         )
         return self.paginate(latest_records, page, page_size)
     
+    def apply_company_filter(self, filters: CompanyFilters):
+        """Apply filters to the DataFrame.
+
+        Args:
+            filters (CompanyFilters): Filter object containing filter parameters for filtering companies
+            
+        Returns:
+            pd.DataFrame: Filtered DataFrame with only matching records
+        """
+        if filters is None:
+            return self._df
+            
+        # Create a copy of the DataFrame to avoid modifying original
+        filtered_df = self._df.copy()
+        
+        # Apply geography filter
+        if filters.geography:
+            filtered_df = filtered_df[filtered_df["geography"] == filters.geography]
+            
+        # Apply geography code filter
+        if filters.geography_code:
+            print('here')
+            filtered_df = filtered_df[filtered_df["geography code"] == filters.geography_code]
+            
+        # Apply sector filter
+        if filters.sector:
+            filtered_df = filtered_df[filtered_df["sector"] == filters.sector]
+            
+        # Apply CA100 filter
+        if filters.ca100_focus_company is not None:
+            # Find the column containing 'ca100' (case-insensitive)
+            ca100_cols = [col for col in filtered_df.columns if 'ca100' in col.lower()]            
+            ca100_col = ca100_cols[0] 
+            if filters.ca100_focus_company:
+                filtered_df = filtered_df[filtered_df[ca100_col] == "Yes"]
+            else:
+                filtered_df = filtered_df[filtered_df[ca100_col] != "Yes"]
+                
+        # Apply company size filter
+        if filters.large_medium_classification:
+            filtered_df = filtered_df[filtered_df["large/medium classification"] == filters.large_medium_classification]
+            
+        # Apply ISIN filter
+        if filters.isins:
+            if isinstance(filters.isins, str):
+                filtered_df = filtered_df[filtered_df["isins"].str.contains(filters.isins, na=False)]
+            else:
+                mask = filtered_df["isins"].apply(lambda x: any(isin in str(x) for isin in filters.isins))
+                filtered_df = filtered_df[mask]
+                
+        # Apply SEDOL filter
+        if filters.sedol:
+            if isinstance(filters.sedol, str):
+                filtered_df = filtered_df[filtered_df["sedol"].str.contains(filters.sedol, na=False)]
+            else:
+                mask = filtered_df["sedol"].apply(lambda x: any(sedol in str(x) for sedol in filters.sedol))
+                filtered_df = filtered_df[mask]
+            
+        self._df = filtered_df
+
 class MQHandler(BaseDataHandler):
     """Handler for Management Quality (MQ) assessment data.
     

@@ -8,8 +8,7 @@ and comparing performance between assessment cycles.
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
-import re
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
@@ -24,13 +23,12 @@ from schemas import (
 )
 from utils import normalize_company_id
 from data_utils import CompanyDataHandler
-
+from filters import CompanyFilters
 
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
 router = APIRouter(prefix="/company", tags=["Company Endpoints"])
-company_handler =CompanyDataHandler()
 
 # --------------------------------------------------------------------------
 # Endpoint: GET /companies - List All Companies with Pagination
@@ -39,6 +37,7 @@ company_handler =CompanyDataHandler()
 def get_all_companies(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Results per page"),
+    filter: CompanyFilters = Depends(CompanyFilters)
 ):
     """
     Retrieve a paginated list of all companies and their latest assessments.
@@ -49,6 +48,15 @@ def get_all_companies(
     3. Normalize each company record, generating a unique ID
     """
     # Error handling: Ensure that the company dataset is loaded and not empty.
+    company_handler = CompanyDataHandler()
+    try:
+        print(filter)
+        company_handler.apply_company_filter(filter)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
     company_df = company_handler.get_df()
     if company_df is None or company_df.empty:
         raise HTTPException(
@@ -77,13 +85,22 @@ def get_all_companies(
 # Endpoint: GET /company/{company_id} - Retrieve Company Details
 # ------------------------------------------------------------------------------
 @router.get("/company/{company_id}", response_model=CompanyDetail)
-def get_company_details(company_id: str):
+def get_company_details(company_id: str,
+                        filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve the latest MQ & CP scores for a specific company.
 
     Raises 404 if the company is not found
     """
-
+    company_handler = CompanyDataHandler()
+    try:
+        company_handler.apply_company_filter(filter)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
+    
     normalized_input = normalize_company_id(company_id)
 
     company = company_handler.get_latest_details(normalized_input)
@@ -115,7 +132,7 @@ def get_company_details(company_id: str):
 @router.get(
     "/company/{company_id}/history", response_model=CompanyHistoryResponse
 )
-def get_company_history(company_id: str):
+def get_company_history(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve a company's historical MQ & CP scores.
 
@@ -124,6 +141,14 @@ def get_company_history(company_id: str):
     - Returns a list of historical assessment details.
     """
 
+    company_handler = CompanyDataHandler()
+    try:
+        company_handler.apply_company_filter(filter)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )    
     # Error handling: Check if the essential column "mq assessment date" exists.
 
     normalized_input = normalize_company_id(company_id)
@@ -180,7 +205,7 @@ def get_company_history(company_id: str):
         PerformanceComparisonInsufficientDataResponse,
     ],
 )
-def compare_company_performance(company_id: str):
+def compare_company_performance(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Compare a company's latest performance against the previous year.
     
@@ -189,6 +214,14 @@ def compare_company_performance(company_id: str):
     2. Check if we have enough data for comparison (at least 2 records)
     3. Compare latest and previous records
     """
+    company_handler = CompanyDataHandler()
+    try:
+        company_handler.apply_company_filter(filter)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
     normalized_input = normalize_company_id(company_id)
     
     comparison = company_handler.compare_performance(normalized_input)
@@ -224,4 +257,5 @@ def compare_company_performance(company_id: str):
         previous_cp_alignment=str(previous.get("carbon performance alignment 2035", "N/A")),
     )
         
+
 
