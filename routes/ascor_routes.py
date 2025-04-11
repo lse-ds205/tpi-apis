@@ -2,9 +2,9 @@ import os
 import pandas as pd
 
 from fastapi import APIRouter, HTTPException, Depends
-from ..schemas import CountryDataResponse
-from ..services import CountryDataProcessor
-from ..log_config import get_logger
+from schemas import CountryDataResponse
+from services import CountryDataProcessor
+from log_config import get_logger
 
 from fastapi import FastAPI, HTTPException
 
@@ -61,6 +61,18 @@ except FileNotFoundError as e:
 # Router Initialization
 # -------------------------------------------------------------------------
 router = APIRouter(prefix="/ascor", tags=["ASCOR Endpoints"])
+
+@router.get("/countries")
+async def get_countries():
+    """Get a list of all available countries in the dataset."""
+    try:
+        logger.info("Getting list of all countries")
+        countries = df_assessments['Country'].unique().tolist()
+        logger.info(f"Found {len(countries)} countries in the dataset")
+        return {"countries": countries}
+    except Exception as e:
+        logger.exception(f"Error getting countries list: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/country-data/{country}/{assessment_year}", response_model=CountryDataResponse)
 async def get_country_data(country: str, assessment_year: int) -> CountryDataResponse:

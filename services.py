@@ -9,8 +9,8 @@ See: https://lse-dsi.github.io/DS205/2024-2025/winter-term/weeks/week02/slides.h
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException
-from .log_config import get_logger  # Make sure this uses log_config, not config_logging
-from .schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
+from log_config import get_logger
+from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
 
 class CountryDataProcessor:
     def __init__(self, df: pd.DataFrame, country: str, assessment_year: int):

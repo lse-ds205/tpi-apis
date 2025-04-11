@@ -6,11 +6,11 @@ from starlette.responses import Response # Import Response for type hint
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 
-# Import your routes...
-from .routes.ascor_routes import router as ascor_router
-from .log_config import get_logger
-from .services import fetch_company_data, CompanyNotFoundError, CompanyDataError
-from .schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
+# Change relative imports to absolute imports
+from routes.ascor_routes import router as ascor_router
+from log_config import get_logger
+from services import fetch_company_data, CompanyNotFoundError, CompanyDataError
+from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
 
 logger = get_logger(__name__) # Get logger for main module
 
@@ -56,6 +56,25 @@ app.include_router(ascor_router, prefix="/v1")
 
 # Add company routes for testing the fetch_company_data function
 company_router = APIRouter(prefix="/companies", tags=["Company Endpoints"])
+
+@company_router.get("/")
+async def get_companies():
+    """Get a list of sample companies."""
+    try:
+        logger.info("Fetching list of sample companies")
+        # Create sample company data
+        companies = [
+            {"id": 1, "name": "Company 1"},
+            {"id": 2, "name": "Company 2"},
+            {"id": 3, "name": "Company 3"},
+            {"id": 42, "name": "Company 42"},
+            {"id": 100, "name": "Company 100"}
+        ]
+        logger.info(f"Successfully retrieved {len(companies)} sample companies")
+        return {"companies": companies}
+    except Exception as e:
+        logger.exception(f"Error retrieving company list: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @company_router.get("/{company_id}")
 async def get_company(company_id: int):
