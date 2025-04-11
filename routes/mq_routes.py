@@ -20,7 +20,7 @@ from schemas import (
     PaginatedMQResponse,
 )
 from data_utils import MQHandler
-from filters import CompanyFilters
+from filters import CompanyFilters, MQFilter
 # ------------------------------------------------------------------------------
 # Constants and Data Loading
 # ------------------------------------------------------------------------------
@@ -49,7 +49,8 @@ def get_latest_mq_assessments(
     page_size: int = Query(
         10, ge=1, le=100, description="Number of results per page (max 100)"
     ),
-    filter: CompanyFilters = Depends(CompanyFilters)
+    company_filter: CompanyFilters = Depends(CompanyFilters),
+    mq_filter: MQFilter = Depends(MQFilter)
 ):  
     """
     Fetches the latest Management Quality (MQ) assessment for all companies with pagination.
@@ -62,10 +63,9 @@ def get_latest_mq_assessments(
     """
     mq_handler = MQHandler()
     try:
-        mq_handler.apply_company_filter(filter)
+        mq_handler.apply_company_filter(company_filter)
+        mq_handler.apply_mq_filter(mq_filter)
     except Exception as e:
-        print('im here casuing an error')
-
         raise HTTPException(
             status_code=500,
             detail=f"Error filtering company data: {str(e)}"
@@ -112,14 +112,16 @@ def get_mq_by_methodology(
     page_size: int = Query(
         10, ge=1, le=100, description="Records per page (max 100)"
     ),
-    filter: CompanyFilters = Depends(CompanyFilters)
+    company_filter: CompanyFilters = Depends(CompanyFilters),
+    mq_filter: MQFilter = Depends(MQFilter)
 ):
     """
     Returns MQ assessments based on a specific research methodology cycle with pagination.
     """
     mq_handler = MQHandler()
     try:
-        mq_handler.apply_company_filter(filter)
+        mq_handler.apply_company_filter(company_filter)
+        mq_handler.apply_mq_filter(mq_filter)
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -165,14 +167,16 @@ def get_mq_trends_sector(
     page_size: int = Query(
         10, ge=1, le=100, description="Records per page (max 100)"
     ),
-    filter: CompanyFilters = Depends(CompanyFilters)
+    company_filter: CompanyFilters = Depends(CompanyFilters),
+    mq_filter: MQFilter = Depends(MQFilter)
 ):
     """
     Fetches MQ trends for all companies in a given sector with pagination.
     """
     mq_handler = MQHandler()
     try:
-        mq_handler.apply_company_filter(filter)
+        mq_handler.apply_company_filter(company_filter)
+        mq_handler.apply_mq_filter(mq_filter)
     except Exception as e:
         print(e)
         raise HTTPException(

@@ -7,7 +7,7 @@ from utils import (
     normalize_company_id,
 )
 from datetime import datetime
-from filters import CompanyFilters
+from filters import CompanyFilters, MQFilter
 
 class BaseDataHandler:
     """Base class for handling data operations with common functionality.
@@ -191,6 +191,38 @@ class MQHandler(BaseDataHandler):
         mq_df.columns = mq_df.columns.str.strip().str.lower()
 
         return mq_df
+    
+    
+    def apply_mq_filter(self, filters: MQFilter):
+        """Apply filters to the DataFrame.
+
+        Args:
+            filters (MQFilter): Filter object containing filter parameters for filtering companies
+        """
+        filtered_df = self._df.copy()
+        
+        if filters.assessment_year:
+            filtered_df = filtered_df[filtered_df['Assessment Date'].str.contains(str(filters.assessment_year))]
+        if filtered_df.empty:
+            raise ValueError(f"Assessment Year is not valid: {filters.assessment_year}")
+        
+        # both of these can be simplified by using a service layer and simplying into check if valid in column name
+        if filters.mq_levels:
+            valid_mq_levels = filtered_df['MQ Level'].unique()
+            invalid_levels = [level for level in filters.mq_levels if level not in valid_mq_levels]
+            if invalid_levels:
+                raise ValueError(f"MQ Levels are not valid: {invalid_levels}")
+            filtered_df = filtered_df[filtered_df['MQ Level'].isin(filters.mq_levels)]
+
+        if filters.level:
+            valid_levels = filtered_df['Overall Management Level'].unique()
+            invalid_levels = [level for level in filters.level if level not in valid_levels]
+            if invalid_levels:
+                raise ValueError(f"Overall Management Level is not valid: {invalid_levels}")
+            filtered_df = filtered_df[filtered_df['Overall Management Level'].isin(filters.level)]
+
+        self._df = filtered_df
+
 
     def get_methodology_data(self, methodology_id: int):
         """Get MQ assessments for a specific methodology cycle.
