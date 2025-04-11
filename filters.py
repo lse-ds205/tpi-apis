@@ -72,3 +72,57 @@ class CompanyFilters(BaseModel):
         example=["2000019", "B03MLX2"]
     )
 
+
+class CPFilter(BaseModel):
+    # for the years we want to have min or max float values
+    # regional benchmark id
+    # alignment takes 2025, 2035, 2050, 2027, 2028
+
+
+    """Filter parameters for Carbon Performance endpoints."""
+    alignment_2035: Optional[list[str]] = Field(
+        None,
+        description="Filter by 2035 alignment status",
+        example=["1.5C", "2C", "3C"]
+    )
+    alignment_2050: Optional[list[str]] = Field(
+        None,
+        description="Filter by 2050 alignment status",
+        example=["1.5C", "2C", "3C"]
+    )
+    target_years: Optional[list[int]] = Field(
+        None,
+        description="Filter by target years",
+        example=[2025, 2035, 2050]
+    )
+    score_range: Optional[RangeFilter] = Field(
+        None,
+        description="Filter by score range"
+    )
+    assessment_date: Optional[DateRangeFilter] = Field(
+        None,
+        description="Filter by assessment date range"
+    )
+    include_regional: Optional[bool] = Field(
+        False,
+        description="Include regional assessments in the response"
+    )
+
+# class CombinedFilter(BaseModel):
+#     """Combined filter parameters for endpoints that need multiple filter types."""
+#     company: Optional[CompanyFilter] = Field(
+#         None,
+#         description="Company-specific filters"
+#     )
+#     cp: Optional[CPFilter] = Field(
+#         None,
+#         description="Carbon Performance filters"
+#     )
+#     mq: Optional[MQFilter] = Field(
+#         None,
+#         description="Management Quality filters"
+#     )
+#     include_related: Optional[bool] = Field(
+#         False,
+#         description="Include related data in the response"
+#     ) 

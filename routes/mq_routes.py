@@ -9,7 +9,6 @@ and exposes endpoints for fetching the latest assessments, assessments by method
 # ------------------------------------------------------------------------------
 # Imports
 # ------------------------------------------------------------------------------
-import re
 from fastapi import APIRouter, HTTPException, Query, Path, Depends
 import pandas as pd
 from pathlib import Path as FilePath
@@ -61,7 +60,16 @@ def get_latest_mq_assessments(
     3. Applies pagination based on the provided page and page_size parameters.
     4. Maps STAR rating strings to numeric scores using a pre-defined dictionary.
     """
-    
+    mq_handler = MQHandler()
+    try:
+        mq_handler.apply_company_filter(filter)
+    except Exception as e:
+        print('im here casuing an error')
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
 
     latest_records = mq_handler.get_latest_assessments(page, page_size)
     total_records = mq_handler.get_df_length()
@@ -104,10 +112,19 @@ def get_mq_by_methodology(
     page_size: int = Query(
         10, ge=1, le=100, description="Records per page (max 100)"
     ),
+    filter: CompanyFilters = Depends(CompanyFilters)
 ):
     """
     Returns MQ assessments based on a specific research methodology cycle with pagination.
     """
+    mq_handler = MQHandler()
+    try:
+        mq_handler.apply_company_filter(filter)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
     methodology_data = mq_handler.get_methodology_data(methodology_id)
     paginated_data = mq_handler.paginate(methodology_data, page, page_size)
     total_records = mq_handler.get_df_length()
@@ -148,10 +165,20 @@ def get_mq_trends_sector(
     page_size: int = Query(
         10, ge=1, le=100, description="Records per page (max 100)"
     ),
+    filter: CompanyFilters = Depends(CompanyFilters)
 ):
     """
     Fetches MQ trends for all companies in a given sector with pagination.
     """
+    mq_handler = MQHandler()
+    try:
+        mq_handler.apply_company_filter(filter)
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
     sector_data = mq_handler.get_sector_data(sector_id)
     # Error handling: If no records are found for the given sector, raise an HTTP 404 error.
     if sector_data.empty:

@@ -50,7 +50,6 @@ def get_all_companies(
     # Error handling: Ensure that the company dataset is loaded and not empty.
     company_handler = CompanyDataHandler()
     try:
-        print(filter)
         company_handler.apply_company_filter(filter)
     except Exception as e:
         raise HTTPException(
@@ -140,7 +139,6 @@ def get_company_history(company_id: str, filter: CompanyFilters = Depends(Compan
     - Filters records by company ID.
     - Returns a list of historical assessment details.
     """
-
     company_handler = CompanyDataHandler()
     try:
         company_handler.apply_company_filter(filter)

@@ -98,11 +98,9 @@ class BaseDataHandler:
             
         Returns:
             pd.DataFrame: Filtered DataFrame with only matching records
-        """
-        if filters is None:
-            return self._df
-            
+        """    
         # Create a copy of the DataFrame to avoid modifying original
+
         filtered_df = self._df.copy()
         
         # Apply geography filter
@@ -111,7 +109,6 @@ class BaseDataHandler:
             
         # Apply geography code filter
         if filters.geography_code:
-            print('here')
             filtered_df = filtered_df[filtered_df["geography code"] == filters.geography_code]
             
         # Apply sector filter
