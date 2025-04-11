@@ -931,7 +931,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "Teck Resources (Coal Mining)",
       "name": "Teck Resources (Coal Mining)",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "Canada",
       "latest_assessment_year": 2019,
       "management_quality_score": None
@@ -939,7 +939,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "African Rainbow Minerals",
       "name": "African Rainbow Minerals",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "South Africa",
       "latest_assessment_year": 2018,
       "management_quality_score": None
@@ -947,7 +947,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "Whitehaven Coal",
       "name": "Whitehaven Coal",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "Australia",
       "latest_assessment_year": 2023,
       "management_quality_score": None
@@ -955,7 +955,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "Whitehaven Coal",
       "name": "Whitehaven Coal",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "Australia",
       "latest_assessment_year": 2023,
       "management_quality_score": None
@@ -963,7 +963,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "Whitehaven Coal",
       "name": "Whitehaven Coal",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "Australia",
       "latest_assessment_year": 2021,
       "management_quality_score": None
@@ -971,7 +971,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "Bumi",
       "name": "Bumi",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "Indonesia",
       "latest_assessment_year": 2021,
       "management_quality_score": None
@@ -979,7 +979,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "ENN Ecological Holdings",
       "name": "ENN Ecological Holdings",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "China",
       "latest_assessment_year": 2021,
       "management_quality_score": None
@@ -987,7 +987,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "DMCI",
       "name": "DMCI",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "Philippines",
       "latest_assessment_year": 2021,
       "management_quality_score": None
@@ -995,7 +995,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "Coronado Global Resources",
       "name": "Coronado Global Resources",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "Australia",
       "latest_assessment_year": 2021,
       "management_quality_score": None
@@ -1003,7 +1003,7 @@ def expected_mq_sector_trends_reponse():
     {
       "company_id": "Consol Energy",
       "name": "Consol Energy",
-      "sector": "Coal Mining",
+      "sector": "coal mining",
       "geography": "United States of America",
       "latest_assessment_year": 2021,
       "management_quality_score": None

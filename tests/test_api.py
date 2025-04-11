@@ -223,7 +223,7 @@ def test_get_country_data_structure(client, df_assessments):
 # Now lets test if the JSON response matches the expected fixture response for canada, 2023
 def test_ascor_response_matches_fixture(client, expected_ascor_response):
     """Test that country data endpoint matches expected fixture response"""
-    response = client.get("/v1/country-data/canada/2023")
+    response = client.get("/v1/ascor/country-data/canada/2023")
     assert response.status_code == 200
     
     assert response.json() == expected_ascor_response
