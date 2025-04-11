@@ -27,34 +27,35 @@ from utils import (
     get_latest_assessment_file,
     normalize_company_id,
 )
+from data_utils import DataHandler
 
 # -------------------------------------------------------------------------
 # Constants and Data Loading
 # -------------------------------------------------------------------------
-BASE_DIR = FilePath(__file__).resolve().parent.parent
-BASE_DATA_DIR = BASE_DIR / "data"
-DATA_DIR = get_latest_data_dir(BASE_DATA_DIR)
+# BASE_DIR = FilePath(__file__).resolve().parent.parent
+# BASE_DATA_DIR = BASE_DIR / "data"
+# DATA_DIR = get_latest_data_dir(BASE_DATA_DIR)
 
-# Define the path for the company assessments CSV file.
-latest_file = get_latest_assessment_file(
-    "Company_Latest_Assessments*.csv", DATA_DIR
-)
+# # Define the path for the company assessments CSV file.
+# latest_file = get_latest_assessment_file(
+#     "Company_Latest_Assessments*.csv", DATA_DIR
+# )
 
-# Load the company dataset into a DataFrame.
-company_df = pd.read_csv(latest_file)
+# # Load the company dataset into a DataFrame.
+# company_df = pd.read_csv(latest_file)
 
-# Standardize column names: strip extra spaces and convert to lowercase.
-company_df.columns = company_df.columns.str.strip().str.lower()
-expected_column = "company name"
-company_df[expected_column] = (
-    company_df[expected_column].str.strip().str.lower()
-)
+# # Standardize column names: strip extra spaces and convert to lowercase.
+# company_df.columns = company_df.columns.str.strip().str.lower()
+# expected_column = "company name"
+# company_df[expected_column] = (
+#     company_df[expected_column].str.strip().str.lower()
+# )
 
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
 router = APIRouter(prefix="/company", tags=["Company Endpoints"])
-
+data_handler = DataHandler()
 
 # --------------------------------------------------------------------------
 # Endpoint: GET /companies - List All Companies with Pagination
@@ -73,29 +74,22 @@ def get_all_companies(
     3. Normalize each company record, generating a unique ID
     """
     # Error handling: Ensure that the company dataset is loaded and not empty.
+    company_df = data_handler.company.get_all()
     if company_df is None or company_df.empty:
         raise HTTPException(
             status_code=503, detail="Company dataset not loaded or empty"
         )
+    
+    try:
+        total_companies = len(company_df)
+        paginated_data = data_handler.paginate(company_df, page, per_page)
+        companies = data_handler.company.format_data(paginated_data)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing company data: {str(e)}"
+        )
 
-    total_companies = len(company_df)
-    start_idx = (page - 1) * per_page
-    end_idx = start_idx + per_page
-
-    # Apply pagination and replace any missing values with "N/A".
-    paginated_data = company_df.iloc[start_idx:end_idx].fillna("N/A")
-
-    # Map each row to a company dictionary with a normalized unique ID.
-    companies = [
-        {
-            "company_id": normalize_company_id(row["company name"]),
-            "name": row["company name"],  # Original company name
-            "sector": row.get("sector", None),
-            "geography": row.get("geography", None),
-            "latest_assessment_year": row.get("latest assessment year", None),
-        }
-        for _, row in paginated_data.iterrows()
-    ]
     return CompanyListResponse(
         total=total_companies,
         page=page,
@@ -114,38 +108,31 @@ def get_company_details(company_id: str):
 
     Raises 404 if the company is not found
     """
-    normalized_input = normalize_company_id(company_id)
-    mask = (
-        company_df["company name"].apply(normalize_company_id)
-        == normalized_input
-    )
-    company = company_df[mask]
 
-    # Error handling: If the company is not found, raise a 404 error.
+    normalized_input = normalize_company_id(company_id)
+
+    company = data_handler.company.get_latest_details(normalized_input)
     if company.empty:
         raise HTTPException(
             status_code=404, detail=f"Company '{company_id}' not found."
         )
 
-    latest_record = company.iloc[-1].fillna("N/A")
-
     return CompanyDetail(
         company_id=normalized_input,
-        name=latest_record.get("company name", "N/A"),
-        sector=latest_record.get("sector", "N/A"),
-        geography=latest_record.get("geography", "N/A"),
-        latest_assessment_year=latest_record.get(
+        name=company.get("company name", "N/A"),
+        sector=company.get("sector", "N/A"),
+        geography=company.get("geography", "N/A"),
+        latest_assessment_year=company.get(
             "latest assessment year", None
         ),
-        management_quality_score=latest_record.get("level", None),
+        management_quality_score=company.get("level", None),
         carbon_performance_alignment_2035=str(
-            latest_record.get("carbon performance alignment 2035", "N/A")
+            company.get("carbon performance alignment 2035", "N/A")
         ),
-        emissions_trend=latest_record.get(
+        emissions_trend=company.get(
             "performance compared to previous year", "Unknown"
         ),
     )
-
 
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_id}/history - Retrieve Company History
@@ -161,26 +148,21 @@ def get_company_history(company_id: str):
     - Filters records by company ID.
     - Returns a list of historical assessment details.
     """
-    expected_columns = {col.strip().lower(): col for col in company_df.columns}
 
     # Error handling: Check if the essential column "mq assessment date" exists.
-    if "mq assessment date" not in expected_columns:
-        raise HTTPException(
-            status_code=500,
-            detail="Column 'MQ Assessment Date' not found in dataset. Check CSV structure.",
-        )
 
     normalized_input = normalize_company_id(company_id)
-    mask = (
-        company_df["company name"].apply(normalize_company_id)
-        == normalized_input
-    )
-    history = company_df[mask]
+    history = data_handler.company.get_details(normalized_input)
 
     # Error handling: If no records are found, raise a 404 error.
     if history.empty:
         raise HTTPException(
             status_code=404, detail=f"Company '{company_id}' not found."
+        )
+    if "mq assessment date" not in history.columns:
+        raise HTTPException(
+            status_code=500,
+            detail="Column 'MQ Assessment Date' not found in dataset. Check CSV structure.",
         )
 
     return CompanyHistoryResponse(
@@ -188,42 +170,25 @@ def get_company_history(company_id: str):
         history=[
             CompanyDetail(
                 company_id=normalized_input,
-                name=row.get(expected_columns.get("company name"), "N/A"),
-                sector=row.get(expected_columns.get("sector"), "N/A"),
-                geography=row.get(expected_columns.get("geography"), "N/A"),
+                name=row.get("company name", "N/A"),
+                sector=row.get("sector", "N/A"),
+                geography=row.get("geography", "N/A"),
                 # Convert the assessment date to an integer year; use a default if not present.
                 latest_assessment_year=(
                     int(
                         datetime.strptime(
-                            row.get(
-                                expected_columns.get("mq assessment date"),
-                                "01/01/1900",
-                            ),
+                            row.get("mq assessment date", "01/01/1900"),
                             "%d/%m/%Y",
                         ).year
                     )
-                    if pd.notna(
-                        row.get(expected_columns.get("mq assessment date"))
-                    )
+                    if pd.notna(row.get("mq assessment date"))
                     else None
                 ),
-                management_quality_score=row.get(
-                    expected_columns.get("level"), "N/A"
-                ),
+                management_quality_score=row.get("level", None),
                 carbon_performance_alignment_2035=str(
-                    row.get(
-                        expected_columns.get(
-                            "carbon performance alignment 2035"
-                        ),
-                        "N/A",
-                    )
+                    row.get("carbon performance alignment 2035", "N/A")
                 ),  # Ensuring string conversion
-                emissions_trend=row.get(
-                    expected_columns.get(
-                        "performance compared to previous year"
-                    ),
-                    "Unknown",
-                ),
+                emissions_trend=row.get("performance compared to previous year", "Unknown"),
             )
             for _, row in history.iterrows()
         ],
@@ -243,79 +208,41 @@ def get_company_history(company_id: str):
 def compare_company_performance(company_id: str):
     """
     Compare a company's latest performance against the previous year.
-
-    - Requires at least two records to compare.
-    - Returns 'insufficient data' if only one record exists.
+    
+    Steps:
+    1. Get company history using DataHandler
+    2. Check if we have enough data for comparison (at least 2 records)
+    3. Compare latest and previous records
     """
-    expected_columns = {col.strip().lower(): col for col in company_df.columns}
-
-    # Error handling: Check if the essential column "mq assessment date" exists.
-    if "mq assessment date" not in expected_columns:
+    normalized_input = normalize_company_id(company_id)
+    
+    try:
+        comparison = data_handler.company.compare_performance(normalized_input)
+        
+        if comparison is None:
+            available_years = data_handler.company.get_available_years(normalized_input)
+            return PerformanceComparisonInsufficientDataResponse(
+                company_id=normalized_input,
+                message=f"Only one record exists for '{company_id}', so performance comparison is not possible.",
+                available_assessment_years=available_years,
+            )
+            
+        latest, previous = comparison
+        
+        return PerformanceComparisonResponse(
+            company_id=normalized_input,
+            current_year=latest["assessment_year"],
+            previous_year=previous["assessment_year"],
+            latest_mq_score=float(latest.get("level")) if pd.notna(latest.get("level")) else None,
+            previous_mq_score=float(previous.get("level")) if pd.notna(previous.get("level")) else None,
+            latest_cp_alignment=str(latest.get("carbon performance alignment 2035", "N/A")),
+            previous_cp_alignment=str(previous.get("carbon performance alignment 2035", "N/A")),
+        )
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="Column 'MQ Assessment Date' not found in dataset. Check CSV structure.",
+            detail=f"Error comparing company performance: {str(e)}"
         )
-
-    normalized_input = normalize_company_id(company_id)
-    mask = (
-        company_df["company name"].apply(normalize_company_id)
-        == normalized_input
-    )
-    history = company_df[mask]
-
-    # Error handling: If no records are found for the company, raise a 404 error.
-    if history.empty:
-        raise HTTPException(
-            status_code=404, detail=f"Company '{company_id}' not found."
-        )
-
-    if len(history) < 2:
-        # Safely parse available dates as DD/MM/YYYY, skipping unparseable ones
-        available_years = []
-        for date_str in history[
-            expected_columns["mq assessment date"]
-        ].dropna():
-            dt = datetime.strptime(date_str, "%d/%m/%Y") if date_str else None
-            if dt:
-                available_years.append(dt.year)
-
-        return PerformanceComparisonInsufficientDataResponse(
-            company_id=normalized_input,
-            message=f"Only one record exists for '{company_id}', so performance comparison is not possible.",
-            available_assessment_years=available_years,
-        )
-
-    # Convert 'MQ Assessment Date' to integer year (DD/MM/YYYY)
-    history = history.copy()
-    history["assessment_year"] = history[
-        expected_columns["mq assessment date"]
-    ].apply(
-        lambda x: (
-            int(datetime.strptime(x, "%d/%m/%Y").year) if pd.notna(x) else None
-        )
-    )
-    history = history.sort_values(by="assessment_year", ascending=False)
-    latest = history.iloc[0]
-    previous = history.iloc[1]
-
-    return PerformanceComparisonResponse(
-        company_id=normalized_input,
-        current_year=latest["assessment_year"],
-        previous_year=previous["assessment_year"],
-        latest_mq_score=str(latest.get(expected_columns.get("level"), "N/A")),
-        previous_mq_score=str(
-            previous.get(expected_columns.get("level"), "N/A")
-        ),
-        latest_cp_alignment=str(
-            latest.get(
-                expected_columns.get("carbon performance alignment 2035"),
-                "N/A",
-            )
-        ),
-        previous_cp_alignment=str(
-            previous.get(
-                expected_columns.get("carbon performance alignment 2035"),
-                "N/A",
-            )
-        ),
-    )

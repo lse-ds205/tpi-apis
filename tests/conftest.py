@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 
-from v1.app import app
+from main import app
 
 from fastapi.testclient import TestClient
 
