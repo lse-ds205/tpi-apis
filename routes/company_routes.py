@@ -273,13 +273,13 @@ def compare_company_performance(company_id: str):
     if len(history) < 2:
         # Safely parse available dates as DD/MM/YYYY, skipping unparseable ones
         available_years = []
-        for date_str in history[
-            expected_columns["mq assessment date"]
-        ].dropna():
-            dt = datetime.strptime(date_str, "%d/%m/%Y") if date_str else None
-            if dt:
+        for date_str in history[expected_columns["mq assessment date"]].dropna():
+            try:
+                dt = datetime.strptime(date_str, "%d/%m/%Y")
                 available_years.append(dt.year)
-
+            except ValueError:
+                # Invalid date format — skip or optionally log
+                continue
         return PerformanceComparisonInsufficientDataResponse(
             company_id=normalized_input,
             message=f"Only one record exists for '{company_id}', so performance comparison is not possible.",
