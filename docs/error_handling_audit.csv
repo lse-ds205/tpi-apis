@@ -1,0 +1,13 @@
+Route,Method,Route File,Current Error Handling,Status Codes Used,Problems Identified,Suggested Fix
+/ascor/country-data/{country}/{assessment_year},GET,ascor_routes.py,"ValueError (404), generic Exception (500)","404, 500",Generic 500 error could be more specific,Catch more specific exceptions; add logging
+/company/companies,GET,company_routes.py,Checks if DataFrame is empty,503,503 message could be clearer,Update message to indicate data loading issue and action
+/company/{company_id},GET,company_routes.py,404 if company not found,404,None,✅ Well-handled
+/company/{company_id}/history,GET,company_routes.py,"500 if missing column, 404 if no records","404, 500",500 may be better as 503,Change 500 to 503; improve guidance in message
+/company/{company_id}/performance-comparison,GET,company_routes.py,"404 if not found, returns custom response if <2 records","404, 200",datetime parsing may raise ValueError,Wrap strptime in try/except for robustness
+/mq/latest,GET,mq_routes.py,None,None,No check for empty dataset,Add 503 if mq_df is empty
+/mq/methodology/{methodology_id},GET,mq_routes.py,None,None,No check for invalid ID or empty result,Add 404 if methodology_id is invalid or data is empty
+/mq/trends/sector/{sector_id},GET,mq_routes.py,404 if no records found,404,None,✅ Well-handled
+/cp/latest,GET,cp_routes.py,None,None,Missing file or CSV load errors not handled,Add 503 if no files; wrap CSV loading in try/except
+/cp/company/{company_id},GET,cp_routes.py,404 if not found,404,None,✅ Well-handled
+/cp/company/{company_id}/alignment,GET,cp_routes.py,404 if not found,404,None,✅ Well-handled
+/cp/company/{company_id}/comparison,GET,cp_routes.py,Custom response if <2 records,200,datetime conversion may fail silently,Check for NaT after pd.to_datetime with errors='coerce'
