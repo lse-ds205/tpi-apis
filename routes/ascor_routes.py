@@ -23,5 +23,7 @@ async def get_country_data(country: str, assessment_year: int) -> CountryDataRes
         return processor.process_country_data()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Missing key: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Unexpected server error.")
