@@ -166,9 +166,10 @@ def get_company_history(company_id: str):
     # Error handling: Check if the essential column "mq assessment date" exists.
     if "mq assessment date" not in expected_columns:
         raise HTTPException(
-            status_code=500,
-            detail="Column 'MQ Assessment Date' not found in dataset. Check CSV structure.",
+            status_code=503,
+            detail="Required column 'MQ Assessment Date' missing from dataset."
         )
+
 
     normalized_input = normalize_company_id(company_id)
     mask = (
@@ -252,8 +253,8 @@ def compare_company_performance(company_id: str):
     # Error handling: Check if the essential column "mq assessment date" exists.
     if "mq assessment date" not in expected_columns:
         raise HTTPException(
-            status_code=500,
-            detail="Column 'MQ Assessment Date' not found in dataset. Check CSV structure.",
+            status_code=503,
+            detail="Required column 'MQ Assessment Date' missing from dataset."
         )
 
     normalized_input = normalize_company_id(company_id)
