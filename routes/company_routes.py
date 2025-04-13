@@ -75,7 +75,7 @@ def get_all_companies(
     # Error handling: Ensure that the company dataset is loaded and not empty.
     if company_df is None or company_df.empty:
         raise HTTPException(
-            status_code=503, detail="Company dataset not loaded or empty"
+            status_code=503, detail="Company dataset is not loaded. Please ensure the data file exists in the /data folder."
         )
 
     total_companies = len(company_df)
