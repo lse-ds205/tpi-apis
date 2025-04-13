@@ -33,7 +33,13 @@ DATA_DIR = get_latest_data_dir(BASE_DATA_DIR)
 
 cp_files = get_latest_cp_file("CP_Assessments_*.csv", DATA_DIR)
 
-cp_df_list = [pd.read_csv(f) for f in cp_files]
+if not cp_files:
+    raise HTTPException(status_code=503, detail="No CP files found in the data directory.")
+
+try:
+    cp_df_list = [pd.read_csv(f) for f in cp_files]
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Error loading CP files: {str(e)}")
 
 for idx, df in enumerate(cp_df_list, start=1):
     df["assessment_cycle"] = idx
@@ -181,19 +187,16 @@ def compare_company_cp(company_id: str):
 
     # Error handling: If fewer than 2 records, return an insufficient data response.
     if len(company_data) < 2:
-        available_years = [
-            pd.to_datetime(date, errors="coerce").year
-            for date in company_data["assessment date"]
-        ]
-        available_years = [
-            year for year in available_years if year is not None
-        ]
-
-        return PerformanceComparisonInsufficientDataResponse(
-            company_id=company_id,
-            message="Insufficient data for comparison",
-            available_assessment_years=available_years,
-        )
+        available_years = []
+        for date in company_data["assessment date"]:
+            try:
+                dt = pd.to_datetime(date, errors="raise")
+                available_years.append(dt.year)
+            except Exception:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Invalid assessment date found in data: '{date}'"
+                )
 
     sorted_data = company_data.sort_values("assessment date", ascending=False)
     latest, previous = sorted_data.iloc[0], sorted_data.iloc[1]
