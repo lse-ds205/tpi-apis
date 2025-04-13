@@ -75,6 +75,9 @@ def get_latest_mq_assessments(
     3. Applies pagination based on the provided page and page_size parameters.
     4. Maps STAR rating strings to numeric scores using a pre-defined dictionary.
     """
+    if mq_df.empty:
+        raise HTTPException(status_code=503, detail="MQ dataset is not available.")
+    
     latest_records = (
         mq_df.sort_values("assessment date").groupby("company name").tail(1)
     )
@@ -124,10 +127,13 @@ def get_mq_by_methodology(
         10, ge=1, le=100, description="Records per page (max 100)"
     ),
 ):
-    """
-    Returns MQ assessments based on a specific research methodology cycle with pagination.
-    """
+    if methodology_id > len(mq_files):
+       raise HTTPException(status_code=404, detail="Methodology cycle not found.")
+
     methodology_data = mq_df[mq_df["methodology_cycle"] == methodology_id]
+
+    if methodology_data.empty:
+        raise HTTPException(status_code=404, detail=f"No data found for methodology cycle {methodology_id}.")
 
     # Apply pagination to the filtered data
     total_records = len(methodology_data)
