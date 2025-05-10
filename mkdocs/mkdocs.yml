@@ -31,7 +31,5 @@ nav:
         - Overview: README_V2.md
         - Getting Started: GETTING_STARTED.md
         - About API: ENDPOINTS_REVISED.md
-    - Reference: 
-        - Test: test.md
-
-    
+    - API Documentation: 
+        - Endpoints: test.md
