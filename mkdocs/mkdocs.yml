@@ -12,6 +12,7 @@ theme:
     - content.code.annotation
     - content.code.copy
   language: en
+  
   palette:
     - scheme: default
       toggle:
@@ -28,8 +29,12 @@ theme:
 
 nav:
     - Home:
-        - Overview: README_V2.md
-        - Getting Started: GETTING_STARTED.md
-        - About API: ENDPOINTS_REVISED.md
+        - FOR DEVELOPING Index: index.md
+        - Overview: Overview_Home.md
+        - Tutorial: Tutorial.md
     - API Documentation: 
-        - Endpoints: test.md
+        - Documentation: Overview_Documentation.md
+        - ASCOR Endpoints: Ascor_EP.md
+        - Company Enpoints: Company_EP.md
+        - CP Endpoints: CP_EP.md
+        - MQ Endpoints: MQ_EP.md
