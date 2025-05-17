@@ -15,8 +15,8 @@ Current tests:
 Author: @jonjoncardoso
 """
 
-import pytest 
 import warnings
+import pycountry
 
 INSTRUCTIONS_URL = "https://moodle.lse.ac.uk/mod/page/view.php?id=1563098#here-comes-a-challenge-1-hour--"
 
@@ -50,7 +50,10 @@ def test_get_valid_country_data(client, df_assessments):
     print(valid_requests)
 
     for country, year in zip(valid_requests["Country"], valid_requests["Year"]):
-        response = client.get(f"/v1/country-data/{country}/{year}")
+        response = client.get(f"/v1/ascor/country-data/{country}/{year}")
+
+        print(f"Testing {country} {year} →", response.status_code, response.json())
+
         msg = (
             f"Failed for {country} and {year}. "
             f"Expected 200 status code for a valid country-year combination."
@@ -152,7 +155,8 @@ def test_get_country_data_structure(client, df_assessments):
 
     # As a tester, I have to pretend I don't know anything about pydantic models
     for country, year in zip(valid_requests["Country"], valid_requests["Year"]):
-        response = client.get(f"/v1/country-data/{country}/{year}")
+        response = client.get(f"/v1/ascor/country-data/{country}/{year}")
+        print(f"[TEST DEBUG] Response JSON for {country} {year}:", response.json())
         data = response.json()
 
         base_error_msg = f"FAILED TEST:  {country} and {year} | "

@@ -14,23 +14,31 @@ from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pill
 class CountryDataProcessor:
     def __init__(self, df: pd.DataFrame, country: str, assessment_year: int):
         self.df = df
-        self.country = country.lower()  # Converts the country name to lowercase
+        self.country = country.strip().lower()  # Converts the country name to lowercase
         self.assessment_year = assessment_year
         self.filtered_df = self.filter_data()  # Filters the DataFrame 
         
     def filter_data(self) -> pd.DataFrame:  # We are returning a dataframe
-        self.df['Publication date'] = pd.to_datetime(self.df['Publication date'], format='%d/%m/%Y')
-        self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], format='%d/%m/%Y')
+        self.df['Publication date'] = pd.to_datetime(self.df['Publication date'], errors="coerce", dayfirst=True)
+        self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], errors="coerce", dayfirst=True)
+        
+        # Debugging START
+        print(f"[DEBUG] Matching for: {self.country=} {self.assessment_year=}")
+        print(f"[DEBUG] Unique countries in df: {self.df['Country'].unique()}")
+        print(f"[DEBUG] Unique years in df: {self.df['Assessment date'].dt.year.unique()}")
+
         mask = (
             (self.df['Country'].str.lower() == self.country) & 
             (self.df['Assessment date'].dt.year == self.assessment_year)
         )
+        print("[DEBUG] Rows matched:", mask.sum())
+        # Debugging END
 
         # Copy the dataframe to avoid SettingWithCopyWarning
         filtered_df = self.df[mask].copy()
         
         if filtered_df.empty:
-            raise ValueError("No data found for the specified country and year")
+            raise ValueError("No data found for the country={self.country} in year={self.assessment_year}")
 
         # JSON does not allow for NaN or NULL. 
         # The equivalent is just to leave an empty string instead

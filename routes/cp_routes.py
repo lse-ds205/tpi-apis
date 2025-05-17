@@ -126,7 +126,7 @@ def get_company_cp_history(company_id: str):
             name=row["company name"],
             sector=row.get("sector", "N/A"),
             geography=row.get("geography", "N/A"),
-            latest_assessment_year=pd.to_datetime(row["assessment date"]).year,
+            latest_assessment_year=pd.to_datetime(row["assessment date"],dayfirst=True).year,
             carbon_performance_2025=row.get("carbon performance 2025", "N/A"),
             carbon_performance_2027=row.get("carbon performance 2027", "N/A"),
             carbon_performance_2035=row.get("carbon performance 2035", "N/A"),
@@ -197,14 +197,20 @@ def compare_company_cp(company_id: str):
                     status_code=422,
                     detail=f"Invalid assessment date found in data: '{date}'"
                 )
+            
+        return PerformanceComparisonInsufficientDataResponse(
+            company_id=company_id,
+            message="Insufficient data for comparison",
+            available_assessment_years=available_years
+        )       
 
     sorted_data = company_data.sort_values("assessment date", ascending=False)
     latest, previous = sorted_data.iloc[0], sorted_data.iloc[1]
 
     return CPComparisonResponse(
         company_id=company_id,
-        current_year=pd.to_datetime(latest["assessment date"]).year,
-        previous_year=pd.to_datetime(previous["assessment date"]).year,
+        current_year=pd.to_datetime(latest["assessment date"], dayfirst=True).year,
+        previous_year=pd.to_datetime(previous["assessment date"], dayfirst=True).year,
         latest_cp_2025=latest.get("carbon performance 2025", "N/A"),
         previous_cp_2025=previous.get("carbon performance 2025", "N/A"),
         latest_cp_2035=latest.get("carbon performance 2035", "N/A"),

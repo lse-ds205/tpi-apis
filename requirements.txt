@@ -29,5 +29,4 @@ typing_extensions==4.12.2
 tzdata==2025.1
 urllib3==2.3.0
 uvicorn==0.34.0
-warnings==3.13.3
 
