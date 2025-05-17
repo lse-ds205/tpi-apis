@@ -15,8 +15,7 @@ Current tests:
 Author: @jonjoncardoso
 """
 
-import pycountry
-
+import pytest 
 import warnings
 
 INSTRUCTIONS_URL = "https://moodle.lse.ac.uk/mod/page/view.php?id=1563098#here-comes-a-challenge-1-hour--"
@@ -220,3 +219,11 @@ def test_get_country_data_structure(client, df_assessments):
                                 assert metric['name'] is not None, base_error_msg + "Each metric should have a 'name' key"
                                 assert metric['value'] is not None, base_error_msg + "Each metric should have a 'value' key"
                                 assert metric['source'] is not None, base_error_msg + "Each metric should have a 'source' key"
+
+# Now lets test if the JSON response matches the expected fixture response for canada, 2023
+def test_ascor_response_matches_fixture(client, expected_ascor_response):
+    """Test that country data endpoint matches expected fixture response"""
+    response = client.get("/v1/ascor/country-data/canada/2023")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_ascor_response
