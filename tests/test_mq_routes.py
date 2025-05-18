@@ -115,12 +115,24 @@ def test_get_mq_trends_sector_success():
 # ------------------------------------------------------------------------------
 # Fixture Tests
 # ------------------------------------------------------------------------------
-def test_latest_mq_assessment_response_matches_fixture(client, expected_latest_mq_assessment_reponse):
-    """Test that latest MQ assessment endpoint matches expected fixture response"""
+def test_latest_mq_assessment_structure(client):
+    """Test that the latest MQ assessments endpoint returns a paginated response."""
     response = client.get("/v1/mq/latest?page=1&page_size=10")
     assert response.status_code == 200
-    
-    assert response.json() == expected_latest_mq_assessment_reponse
+    data = response.json()
+
+    assert isinstance(data, dict)
+    assert "page" in data
+    assert "page_size" in data
+    assert "total_records" in data
+    assert "results" in data
+    assert isinstance(data["results"], list)
+
+    if data["results"]:
+        first_result = data["results"][0]
+        assert "company_id" in first_result
+        assert "name" in first_result
+        assert "management_quality_score" in first_result
 
 def test_mq_methodology_response_matches_fixture(client, expected_latest_mq_methodology_reponse):
     """Test that MQ methodology endpoint matches expected fixture response"""

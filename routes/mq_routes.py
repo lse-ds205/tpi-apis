@@ -9,8 +9,7 @@ and exposes endpoints for fetching the latest assessments, assessments by method
 # ------------------------------------------------------------------------------
 # Imports
 # ------------------------------------------------------------------------------
-import re
-from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi import APIRouter, HTTPException, Query, Path, Depends
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
@@ -20,14 +19,11 @@ from schemas import (
     MQIndicatorsResponse,
     PaginatedMQResponse,
 )
-from utils import get_latest_data_dir, get_latest_assessment_file
-
+from data_utils import MQHandler
+from filters import CompanyFilters, MQFilter
 # ------------------------------------------------------------------------------
 # Constants and Data Loading
 # ------------------------------------------------------------------------------
-BASE_DIR = FilePath(__file__).resolve().parent.parent
-BASE_DATA_DIR = BASE_DIR / "data"
-DATA_DIR = get_latest_data_dir(BASE_DATA_DIR)
 
 STAR_MAPPING = {
     "0STAR": 0.0,
@@ -38,23 +34,10 @@ STAR_MAPPING = {
     "5STAR": 5.0,
 }
 
-mq_files = sorted(DATA_DIR.glob("MQ_Assessments_Methodology_*.csv"))
-if not mq_files:
-    raise FileNotFoundError(f"No MQ datasets found in {DATA_DIR}")
-
-mq_df_list = [pd.read_csv(f) for f in mq_files]
-
-for idx, df in enumerate(mq_df_list, start=1):
-    df["methodology_cycle"] = idx
-
-mq_df = pd.concat(mq_df_list, ignore_index=True)
-mq_df.columns = mq_df.columns.str.strip().str.lower()
-
 # ------------------------------------------------------------------------------
 # Router Initialization
 # ------------------------------------------------------------------------------
 mq_router = APIRouter(prefix="/mq", tags=["MQ Endpoints"])
-
 
 # ------------------------------------------------------------------------------
 # Endpoint: GET /latest - Latest MQ Assessments with Pagination
@@ -65,7 +48,9 @@ def get_latest_mq_assessments(
     page_size: int = Query(
         10, ge=1, le=100, description="Number of results per page (max 100)"
     ),
-):
+    company_filter: CompanyFilters = Depends(CompanyFilters),
+    mq_filter: MQFilter = Depends(MQFilter)
+):  
     """
     Fetches the latest Management Quality (MQ) assessment for all companies with pagination.
 
@@ -75,18 +60,22 @@ def get_latest_mq_assessments(
     3. Applies pagination based on the provided page and page_size parameters.
     4. Maps STAR rating strings to numeric scores using a pre-defined dictionary.
     """
-    if mq_df.empty:
+    mq_handler = MQHandler()
+
+    if mq_handler.get_df().empty:
         raise HTTPException(status_code=503, detail="MQ dataset is not available.")
     
-    latest_records = (
-        mq_df.sort_values("assessment date").groupby("company name").tail(1)
-    )
+    try:
+        mq_handler.apply_company_filter(company_filter)
+        mq_handler.apply_mq_filter(mq_filter)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
 
-    # Calculate pagination indices
+    latest_records = mq_handler.get_latest_assessments(page, page_size)
     total_records = len(latest_records)
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    paginated_records = latest_records.iloc[start_idx:end_idx]
 
     results = [
         MQAssessmentDetail(
@@ -101,7 +90,7 @@ def get_latest_mq_assessments(
                 row.get("level", "N/A"), None
             ),
         )
-        for _, row in paginated_records.iterrows()
+        for _, row in latest_records.iterrows()
     ]
 
     return PaginatedMQResponse(
@@ -119,43 +108,50 @@ def get_latest_mq_assessments(
     "/methodology/{methodology_id}", response_model=PaginatedMQResponse
 )
 def get_mq_by_methodology(
-    methodology_id: int = Path(
-        ..., ge=1, le=len(mq_files), description="Methodology cycle ID"
-    ),
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Records per page (max 100)"
-    ),
+    methodology_id: int = Path(..., ge=1, le=100),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    company_filter: CompanyFilters = Depends(),
+    mq_filter: MQFilter = Depends()
 ):
-    if methodology_id > len(mq_files):
-       raise HTTPException(status_code=404, detail="Methodology cycle not found.")
+    """
+    Returns MQ assessments based on a specific research methodology cycle with pagination.
+    """
+    mq_handler = MQHandler()
 
-    methodology_data = mq_df[mq_df["methodology_cycle"] == methodology_id]
+    if methodology_id > mq_handler.get_mq_files_length():
+        raise HTTPException(status_code=404, detail="Invalid methodology cycle.")
 
-    if methodology_data.empty:
-        raise HTTPException(status_code=404, detail=f"No data found for methodology cycle {methodology_id}.")
-
-    # Apply pagination to the filtered data
+    try:
+        mq_handler.apply_company_filter(company_filter)
+        mq_handler.apply_mq_filter(mq_filter)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
+    methodology_data = mq_handler.get_methodology_data(methodology_id)
+    paginated_data = mq_handler.paginate(methodology_data, page, page_size)
     total_records = len(methodology_data)
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    paginated_data = methodology_data.iloc[start_idx:end_idx]
 
-    results = [
-        MQAssessmentDetail(
+    results = []
+    for _, row in paginated_data.iterrows():
+        try:
+            year = pd.to_datetime(row["assessment date"], format="%d/%m/%Y").year
+        except Exception:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Invalid date format for company: {row.get('company name')}"
+            )
+
+        results.append(MQAssessmentDetail(
             company_id=row["company name"],
             name=row["company name"],
             sector=row.get("sector", "N/A"),
             geography=row.get("geography", "N/A"),
-            latest_assessment_year=pd.to_datetime(
-                row["assessment date"], format="%d/%m/%Y"
-            ).year,
-            management_quality_score=STAR_MAPPING.get(
-                row.get("level", "N/A"), None
-            ),
-        )
-        for _, row in paginated_data.iterrows()
-    ]
+            latest_assessment_year=year,
+            management_quality_score=STAR_MAPPING.get(row.get("level", "N/A"), None),
+        ))
 
     return PaginatedMQResponse(
         total_records=total_records,
@@ -177,27 +173,30 @@ def get_mq_trends_sector(
     page_size: int = Query(
         10, ge=1, le=100, description="Records per page (max 100)"
     ),
+    company_filter: CompanyFilters = Depends(CompanyFilters),
+    mq_filter: MQFilter = Depends(MQFilter)
 ):
     """
     Fetches MQ trends for all companies in a given sector with pagination.
     """
-    sector_data = mq_df[
-        mq_df["sector"].str.strip().str.lower() == sector_id.strip().lower()
-    ]
-
+    mq_handler = MQHandler()
+    try:
+        mq_handler.apply_company_filter(company_filter)
+        mq_handler.apply_mq_filter(mq_filter)
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error filtering company data: {str(e)}"
+        )
+    sector_data = mq_handler.get_sector_data(sector_id)
     # Error handling: If no records are found for the given sector, raise an HTTP 404 error.
     if sector_data.empty:
         raise HTTPException(
             status_code=404, detail=f"Sector '{sector_id}' not found."
         )
-
-    sector_data = sector_data.sort_values("assessment date", ascending=False)
-
-    # Apply pagination logic.
+    paginated_data = mq_handler.paginate(sector_data, page, page_size)
     total_records = len(sector_data)
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    paginated_data = sector_data.iloc[start_idx:end_idx]
 
     results = [
         MQAssessmentDetail(

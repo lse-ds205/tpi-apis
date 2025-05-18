@@ -96,12 +96,16 @@ def test_compare_company_performance_3m_insufficient_data():
 # Fixture Tests: 3M
 # --------------------------------------------------------------------------
 
-def test_all_companies_response_matches_fixture(client, expected_all_companies_response):
-    """Test that all companies endpoint matches expected fixture response"""
-    response = client.get("/v1/company/companies?page=1&per_page=10")
+def test_all_companies_response_matches_fixture(snapshot):
+    response = client.get("/v1/company/companies")
     assert response.status_code == 200
-    
-    assert response.json() == expected_all_companies_response
+
+    result = response.json()
+
+    import json
+    print(json.dumps(result, indent=2))
+
+    snapshot.assert_match(json.dumps(result, indent=2), "all_companies_response")
 
 def test_company_details_response_matches_fixture(client, expected_company_details_response):
     """Test that company details endpoint matches expected fixture response"""
