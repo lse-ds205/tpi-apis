@@ -7,8 +7,11 @@ loads and normalizes the data, and exposes endpoints to retrieve and compare CP 
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
+import io
 import re
+from typing import Any, Dict, List, Optional, Union
 from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi.responses import Response, JSONResponse, StreamingResponse
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
@@ -22,6 +25,8 @@ from utils import (
     get_latest_data_dir,
     get_latest_assessment_file,
     get_latest_cp_file,
+    get_company_carbon_intensity,
+    CarbonPerformanceVisualizer
 )
 
 # -------------------------------------------------------------------------
@@ -31,15 +36,32 @@ BASE_DIR = FilePath(__file__).resolve().parent.parent
 BASE_DATA_DIR = BASE_DIR / "data"
 DATA_DIR = get_latest_data_dir(BASE_DATA_DIR)
 
+# load all CP assessment CSVs
 cp_files = get_latest_cp_file("CP_Assessments_*.csv", DATA_DIR)
-
-cp_df_list = [pd.read_csv(f) for f in cp_files]
-
-for idx, df in enumerate(cp_df_list, start=1):
+cp_df_list = []
+for idx, file_path in enumerate(cp_files, start=1):
+    df = pd.read_csv(file_path)
     df["assessment_cycle"] = idx
+    cp_df_list.append(df)
+
+if not cp_df_list:
+    raise RuntimeError("No Carbon Performance assessment files found in data directory")
 
 cp_df = pd.concat(cp_df_list, ignore_index=True)
 cp_df.columns = cp_df.columns.str.strip().str.lower()
+
+bench_filename = "Sector_Benchmarks_08032025.csv"
+bench_path = DATA_DIR / bench_filename
+if not bench_path.exists():
+    raise FileNotFoundError(f"Benchmark file not found at {bench_path}")
+sector_bench_df = pd.read_csv(
+    bench_path,
+    dayfirst=True,
+    engine="python",
+    on_bad_lines="skip"  # skip malformed rows
+)
+sector_bench_df.columns = sector_bench_df.columns.str.strip().str.lower()
+
 
 # -------------------------------------------------------------------------
 # Router Initialization
@@ -207,3 +229,45 @@ def compare_company_cp(company_id: str):
         latest_cp_2035=latest.get("carbon performance 2035", "N/A"),
         previous_cp_2035=previous.get("carbon performance 2035", "N/A"),
     )
+
+# ------------------------------------------------------------------------------
+# Endpoint: GET /company/{company_id}/carbon-performance-graph" - Graph endpoint
+# ------------------------------------------------------------------------------
+@cp_router.get(
+    "/company/{company_id}/carbon-performance-graph",
+    responses={200: {"content": {"image/png": {}}, "description": "PNG graph"}}
+)
+def get_company_carbon_performance_graph(
+    company_id: str = Path(..., description="Company identifier"),
+    include_sector_benchmarks: bool = Query(True, description="Include benchmarks"),
+    as_image: bool = Query(True, description="Return PNG if true"),
+    image_format: str = Query("png", description="png|jpeg"),
+    width: int = Query(1000, ge=400, le=2000),
+    height: int = Query(600, ge=300, le=1200),
+    title: Optional[str] = Query(None, description="Custom title")
+):
+    data = get_company_carbon_intensity(company_id, include_sector_benchmarks, cp_df, sector_bench_df)
+    sub = cp_df[cp_df["company name"].str.lower() == company_id.lower()]
+    if sub.empty:
+        raise HTTPException(404, f"Company '{company_id}' not found")
+    row = sub.sort_values("assessment_cycle").iloc[-1]
+    target_years, target_values = [], []
+    for col in row.index:
+        m = re.search(r"carbon performance.*?(\d{4})$", col)
+        if m:
+            yr = int(m.group(1))
+            val = pd.to_numeric(row[col], errors="coerce")
+            if pd.notnull(val):
+                target_years.append(yr)
+                target_values.append(float(val))
+    if target_years:
+        yrs, vals = zip(*sorted(zip(target_years, target_values)))
+        data["target_years"] = list(yrs)
+        data["target_values"] = list(vals)
+    chart_title = title or f"Carbon Performance for {company_id}"
+    fig_or_resp = CarbonPerformanceVisualizer.generate_carbon_intensity_graph(
+        data, chart_title, width, height, as_image, image_format
+    )
+    if as_image:
+        return fig_or_resp
+    return JSONResponse(content=fig_or_resp)
