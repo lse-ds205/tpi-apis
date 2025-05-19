@@ -83,12 +83,12 @@ def get_all_companies(
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_id} - Retrieve Company Details
 # ------------------------------------------------------------------------------
+
 @router.get("/company/{company_id}", response_model=CompanyDetail)
 def get_company_details(company_id: str,
                         filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve the latest MQ & CP scores for a specific company.
-
     Raises 404 if the company is not found
     """
     company_handler = CompanyDataHandler()
@@ -102,8 +102,10 @@ def get_company_details(company_id: str,
     
     normalized_input = normalize_company_id(company_id)
 
-    company = company_handler.get_latest_details(normalized_input)
-    if company.empty:
+    try:
+        company = company_handler.get_latest_details(normalized_input)
+    except (ValueError, IndexError) as e:
+        # Catch the out-of-bounds error or manual ValueError
         raise HTTPException(
             status_code=404, detail=f"Company '{company_id}' not found."
         )
@@ -113,9 +115,7 @@ def get_company_details(company_id: str,
         name=company.get("company name", "N/A"),
         sector=company.get("sector", "N/A"),
         geography=company.get("geography", "N/A"),
-        latest_assessment_year=company.get(
-            "latest assessment year", None
-        ),
+        latest_assessment_year=company.get("latest assessment year", None),
         management_quality_score=company.get("level", None),
         carbon_performance_alignment_2035=str(
             company.get("carbon performance alignment 2035", "N/A")

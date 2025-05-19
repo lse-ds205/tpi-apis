@@ -10,6 +10,7 @@ loads and normalizes the data, and exposes endpoints to retrieve and compare CP 
 from data_utils import CPHandler
 from fastapi import APIRouter, HTTPException, Query, Path, Depends
 import pandas as pd
+import os
 from pathlib import Path as FilePath
 from datetime import datetime
 from typing import List, Optional, Dict, Union
@@ -19,6 +20,11 @@ from schemas import (
     PerformanceComparisonInsufficientDataResponse,
 )
 from filters import CompanyFilters
+
+# -------------------------------------------------------------------------
+# Data Loading
+# -------------------------------------------------------------------------
+CP_DATA_DIR = os.getenv("CP_DATA_DIR", "data/")
 
 # -------------------------------------------------------------------------
 # Router Initialization
@@ -45,7 +51,7 @@ def get_latest_cp_assessments(
     3. Apply pagination based on page/page_size.
     4. Return a list of CPAssessmentDetail objects.
     """
-    cp_handler = CPHandler()
+    cp_handler = CPHandler(prefix=CP_DATA_DIR)
     try:
         cp_handler.apply_company_filter(filter)
     except Exception as e:
@@ -83,7 +89,7 @@ def get_company_cp_history(company_id: str, filter: CompanyFilters = Depends(Com
     """
     Retrieve all CP assessments for a specific company across different assessment cycles.
     """
-    cp_handler = CPHandler()
+    cp_handler = CPHandler(prefix=CP_DATA_DIR)
     try:
         cp_handler.apply_company_filter(filter)
     except Exception as e:
@@ -125,7 +131,7 @@ def get_company_cp_alignment(company_id: str, filter: CompanyFilters = Depends(C
     """
     Retrieves a company's carbon performance alignment status across target years
     """
-    cp_handler = CPHandler()
+    cp_handler = CPHandler(prefix=CP_DATA_DIR)
     try:
         cp_handler.apply_company_filter(filter)
     except Exception as e:
@@ -161,7 +167,7 @@ def compare_company_cp(company_id: str, filter: CompanyFilters = Depends(Company
     """
     Compare the most recent CP assessment to the previous one for a company.
     """
-    cp_handler = CPHandler()
+    cp_handler = CPHandler(prefix=CP_DATA_DIR)
     try:
         cp_handler.apply_company_filter(filter)
     except Exception as e:

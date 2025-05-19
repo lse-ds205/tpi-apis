@@ -19,9 +19,7 @@ from typing import List
 # -------------------------------------------------------------------------
 # Utility Functions for Data Loading, File Selection, and Normalization
 # -------------------------------------------------------------------------
-def get_latest_data_dir(
-    base_data_dir: Path, prefix: str = "TPI sector data - All sectors - "
-) -> Path:
+def get_latest_data_dir(base_path: Path, prefix: str = "TPI_sector_data_All_sectors_") -> Path:
     """
     Finds and returns the latest data directory whose name starts with the given prefix
     and ends with an 8-digit date in MMDDYYYY format.
@@ -41,13 +39,13 @@ def get_latest_data_dir(
     """
     matching_dirs = [
         d
-        for d in base_data_dir.iterdir()
+        for d in base_path.iterdir()
         if d.is_dir() and d.name.startswith(prefix)
     ]
 
     if not matching_dirs:
         raise FileNotFoundError(
-            "No data directories found with the specified prefix."
+            "No data directories found with the specified prefix in the base path."
         )
 
     # Match directories with valid MMDDYYYY suffixes

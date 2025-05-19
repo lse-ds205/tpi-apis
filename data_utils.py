@@ -78,6 +78,8 @@ class BaseDataHandler:
     
     def get_latest_details(self, company_id: str):
         company = self.get_company_history(company_id)
+        if company.empty:
+            raise ValueError(f"Company '{company_id}' not found.")
         latest_record = company.iloc[-1]
         return latest_record.fillna("N/A")
     
@@ -276,7 +278,10 @@ class CPHandler(BaseDataHandler):
         Raises:
             ValueError: If no CP assessment files are found or required columns are missing
         """
-        DATA_DIR = get_latest_data_dir(FilePath(__file__).resolve().parent / "data")
+        DATA_DIR = get_latest_data_dir(
+            FilePath(__file__).resolve().parent / "data",
+            prefix="TPI_sector_data_All_sectors_"
+        )
 
         # Get CP assessment files
         cp_files = get_latest_cp_file("CP_Assessments_*.csv", DATA_DIR)
@@ -301,7 +306,6 @@ class CPHandler(BaseDataHandler):
         if missing_columns:
             raise ValueError(f"Required columns missing in CP dataset: {', '.join(missing_columns)}")
         
-
         return cp_df
 
     def get_company_alignment(self, company_id: str):

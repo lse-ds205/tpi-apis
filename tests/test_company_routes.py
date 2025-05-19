@@ -22,7 +22,7 @@ def test_get_all_companies():
 
 def test_get_company_details_not_found():
     """Test the company details endpoint returns 404 for a non-existent company."""
-    response = client.get("/v1/company/nonexistent_company")
+    response = client.get("/v1/company/company/nonexistent_company")
     assert response.status_code == 404
     
 # --------------------------------------------------------------------------
