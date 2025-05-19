@@ -65,6 +65,7 @@ def get_latest_mq_assessments(
     page_size: int = Query(
         10, ge=1, le=100, description="Number of results per page (max 100)"
     ),
+    isin: str = Query(None, description="ISIN identifier")
 ):
     """
     Fetches the latest Management Quality (MQ) assessment for all companies with pagination.
@@ -75,9 +76,13 @@ def get_latest_mq_assessments(
     3. Applies pagination based on the provided page and page_size parameters.
     4. Maps STAR rating strings to numeric scores using a pre-defined dictionary.
     """
-    latest_records = (
-        mq_df.sort_values("assessment date").groupby("company name").tail(1)
-    )
+    if isin:
+        mask = mq_df["isins"].str.lower().str.split(";").apply(lambda x: isin.lower() in [i.strip().lower() for i in x if i])
+        latest_records = mq_df[mask]
+    else:
+        latest_records = (
+            mq_df.sort_values("assessment date").groupby("company name").tail(1)
+        )
 
     # Calculate pagination indices
     total_records = len(latest_records)

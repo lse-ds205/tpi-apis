@@ -12,31 +12,33 @@ import pandas as pd
 from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
 
 class CountryDataProcessor:
-    def __init__(self, df: pd.DataFrame, country: str, assessment_year: int):
+    def __init__(self, df: pd.DataFrame, country_identifier: str, assessment_year: int):
         self.df = df
-        self.country = country.lower()  # Converts the country name to lowercase
+        self.country_identifier = str(country_identifier).strip().lower()
         self.assessment_year = assessment_year
-        self.filtered_df = self.filter_data()  # Filters the DataFrame 
+        self.filtered_df = self.filter_data()
         
-    def filter_data(self) -> pd.DataFrame:  # We are returning a dataframe
+    def filter_data(self) -> pd.DataFrame:
         self.df['Publication date'] = pd.to_datetime(self.df['Publication date'], format='%d/%m/%Y')
         self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], format='%d/%m/%Y')
-        mask = (
-            (self.df['Country'].str.lower() == self.country) & 
-            (self.df['Assessment date'].dt.year == self.assessment_year)
-        )
-
-        # Copy the dataframe to avoid SettingWithCopyWarning
-        filtered_df = self.df[mask].copy()
-        
+        # Try to match by ISIN (semicolon-separated, case-insensitive)
+        if 'ISIN' in self.df.columns:
+            mask_isin = self.df['ISIN'].astype(str).str.lower().str.split(';').apply(lambda x: self.country_identifier in [i.strip().lower() for i in x if i])
+            filtered_df = self.df[mask_isin & (self.df['Assessment date'].dt.year == self.assessment_year)]
+        else:
+            filtered_df = pd.DataFrame()
         if filtered_df.empty:
-            raise ValueError("No data found for the specified country and year")
-
-        # JSON does not allow for NaN or NULL. 
-        # The equivalent is just to leave an empty string instead
+            # Try to match by Country Id (as string)
+            mask_id = self.df['Country Id'].astype(str).str.strip().str.lower() == self.country_identifier
+            filtered_df = self.df[mask_id & (self.df['Assessment date'].dt.year == self.assessment_year)]
+        if filtered_df.empty:
+            # Fallback to Country name
+            mask_name = self.df['Country'].str.strip().str.lower() == self.country_identifier
+            filtered_df = self.df[mask_name & (self.df['Assessment date'].dt.year == self.assessment_year)]
+        if filtered_df.empty:
+            raise ValueError("No data found for the specified country identifier and year")
         filtered_df = filtered_df.fillna('')
-        
-        return filtered_df.iloc[0]  # Return the first matching row
+        return filtered_df.iloc[0]
     
     def create_pillar(self, pillar: str) -> Pillar:  #We are returning a pillar
         areas = []
@@ -105,5 +107,5 @@ class CountryDataProcessor:
 
     def process_country_data(self) -> CountryDataResponse:
         pillars = [self.create_pillar(pillar) for pillar in ['EP', 'CP', 'CF']]
-        output_dict =  CountryDataResponse(country=self.country, assessment_year=self.assessment_year, pillars=pillars) 
+        output_dict =  CountryDataResponse(country=self.country_identifier, assessment_year=self.assessment_year, pillars=pillars) 
         return output_dict

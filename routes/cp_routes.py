@@ -116,26 +116,22 @@ def get_latest_cp_assessments(
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id} - Company CP History
+# Endpoint: GET /company/{company_identifier} - Company CP History
 # ------------------------------------------------------------------------------
-@cp_router.get(
-    "/company/{company_id}", response_model=List[CPAssessmentDetail]
-)
-def get_company_cp_history(company_id: str):
+@cp_router.get("/company/{company_identifier}", response_model=List[CPAssessmentDetail])
+def get_company_cp_history(company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)")):
     """
-    Retrieve all CP assessments for a specific company across different assessment cycles.
+    Retrieve CP assessment history for a company.
+    The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
-    company_history = cp_df[
-        cp_df["company name"].str.strip().str.lower()
-        == company_id.strip().lower()
-    ]
-
-    # Error handling: Raise a 404 if the company isn't found.
+    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+    company_history = cp_df[mask]
     if company_history.empty:
-        raise HTTPException(
-            status_code=404, detail=f"Company '{company_id}' not found."
-        )
-
+        # Fallback to company name/id
+        normalized_input = company_identifier.strip().lower()
+        company_history = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
+    if company_history.empty:
+        raise HTTPException(404, f"Company '{company_identifier}' not found.")
     return [
         CPAssessmentDetail(
             company_id=row["company name"],
@@ -153,28 +149,22 @@ def get_company_cp_history(company_id: str):
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/alignment - Alignment Status
+# Endpoint: GET /company/{company_identifier}/alignment - Alignment Status
 # ------------------------------------------------------------------------------
-@cp_router.get(
-    "/company/{company_id}/alignment", response_model=Dict[str, str]
-)
-def get_company_cp_alignment(company_id: str):
+@cp_router.get("/company/{company_identifier}/alignment", response_model=Dict[str, str])
+def get_company_cp_alignment(company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)")):
     """
-    Retrieves a company's carbon performance alignment status across target years
+    Retrieve CP alignment status for a company.
+    The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
-    company_data = cp_df[
-        cp_df["company name"].str.strip().str.lower()
-        == company_id.strip().lower()
-    ]
-
-    # Error handling: Raise a 404 if no matching company is found.
+    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+    company_data = cp_df[mask]
     if company_data.empty:
-        raise HTTPException(
-            status_code=404, detail=f"Company '{company_id}' not found."
-        )
-
+        normalized_input = company_identifier.strip().lower()
+        company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
+    if company_data.empty:
+        raise HTTPException(404, f"Company '{company_identifier}' not found.")
     latest_record = company_data.sort_values("assessment date").iloc[-1]
-
     return {
         "2025": latest_record.get("carbon performance 2025", "N/A"),
         "2027": latest_record.get("carbon performance 2027", "N/A"),
@@ -184,44 +174,39 @@ def get_company_cp_alignment(company_id: str):
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/comparison - Compare CP over Time
+# Endpoint: GET /company/{company_identifier}/comparison - Compare CP over Time
 # ------------------------------------------------------------------------------
 @cp_router.get(
-    "/company/{company_id}/comparison",
+    "/company/{company_identifier}/comparison",
     response_model=Union[
         CPComparisonResponse, PerformanceComparisonInsufficientDataResponse
     ],
 )
-def compare_company_cp(company_id: str):
+def compare_company_cp(company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)")):
     """
-    Compare the most recent CP assessment to the previous one for a company.
+    Compare CP performance for a company over time.
+    The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
-    company_data = cp_df[
-        cp_df["company name"].str.strip().str.lower()
-        == company_id.strip().lower()
-    ]
-
-    # Error handling: If fewer than 2 records, return an insufficient data response.
+    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+    company_data = cp_df[mask]
+    if company_data.empty:
+        normalized_input = company_identifier.strip().lower()
+        company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
     if len(company_data) < 2:
         available_years = [
             pd.to_datetime(date, errors="coerce").year
             for date in company_data["assessment date"]
         ]
-        available_years = [
-            year for year in available_years if year is not None
-        ]
-
+        available_years = [year for year in available_years if year is not None]
         return PerformanceComparisonInsufficientDataResponse(
-            company_id=company_id,
+            company_id=company_identifier,
             message="Insufficient data for comparison",
             available_assessment_years=available_years,
         )
-
     sorted_data = company_data.sort_values("assessment date", ascending=False)
     latest, previous = sorted_data.iloc[0], sorted_data.iloc[1]
-
     return CPComparisonResponse(
-        company_id=company_id,
+        company_id=company_identifier,
         current_year=pd.to_datetime(latest["assessment date"]).year,
         previous_year=pd.to_datetime(previous["assessment date"]).year,
         latest_cp_2025=latest.get("carbon performance 2025", "N/A"),
@@ -231,14 +216,14 @@ def compare_company_cp(company_id: str):
     )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/carbon-performance-graph" - Graph endpoint
+# Endpoint: GET /company/{company_identifier}/carbon-performance-graph" - Graph endpoint
 # ------------------------------------------------------------------------------
 @cp_router.get(
-    "/company/{company_id}/carbon-performance-graph",
+    "/company/{company_identifier}/carbon-performance-graph",
     responses={200: {"content": {"image/png": {}}, "description": "PNG graph"}}
 )
 def get_company_carbon_performance_graph(
-    company_id: str = Path(..., description="Company identifier"),
+    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
     include_sector_benchmarks: bool = Query(True, description="Include benchmarks"),
     as_image: bool = Query(True, description="Return PNG if true"),
     image_format: str = Query("png", description="png|jpeg"),
@@ -246,10 +231,21 @@ def get_company_carbon_performance_graph(
     height: int = Query(600, ge=300, le=1200),
     title: Optional[str] = Query(None, description="Custom title")
 ):
-    data = get_company_carbon_intensity(company_id, include_sector_benchmarks, cp_df, sector_bench_df)
-    sub = cp_df[cp_df["company name"].str.lower() == company_id.lower()]
+    """
+    Generate a carbon performance graph for a company.
+    The company_identifier can be a company name/id or an ISIN (case-insensitive).
+    """
+    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+    sub = cp_df[mask]
     if sub.empty:
-        raise HTTPException(404, f"Company '{company_id}' not found")
+        normalized_input = company_identifier.strip().lower()
+        sub = cp_df[cp_df["company name"].str.lower() == normalized_input]
+        if sub.empty:
+            raise HTTPException(404, f"Company '{company_identifier}' not found")
+        company_id_for_graph = company_identifier
+    else:
+        company_id_for_graph = sub.iloc[-1]["company name"]
+    data = get_company_carbon_intensity(company_id_for_graph, include_sector_benchmarks, cp_df, sector_bench_df)
     row = sub.sort_values("assessment_cycle").iloc[-1]
     target_years, target_values = [], []
     for col in row.index:
@@ -264,7 +260,7 @@ def get_company_carbon_performance_graph(
         yrs, vals = zip(*sorted(zip(target_years, target_values)))
         data["target_years"] = list(yrs)
         data["target_values"] = list(vals)
-    chart_title = title or f"Carbon Performance for {company_id}"
+    chart_title = title or f"Carbon Performance for {company_id_for_graph}"
     fig_or_resp = CarbonPerformanceVisualizer.generate_carbon_intensity_graph(
         data, chart_title, width, height, as_image, image_format
     )

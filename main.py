@@ -16,6 +16,7 @@ from routes.company_routes import (
 )
 from routes.mq_routes import mq_router
 from routes.cp_routes import cp_router
+from routes.bank_routes import router as bank_router
 
 # -------------------------------------------------------------------------
 # App Initialization
@@ -33,6 +34,7 @@ app.include_router(ascor_router, prefix="/v1")
 app.include_router(company_router, prefix="/v1")
 app.include_router(mq_router, prefix="/v1")
 app.include_router(cp_router, prefix="/v1")
+app.include_router(bank_router, prefix="/v1")
 
 
 # -------------------------------------------------------------------------
