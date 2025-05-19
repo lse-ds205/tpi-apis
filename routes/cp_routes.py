@@ -29,7 +29,7 @@ CP_DATA_DIR = os.getenv("CP_DATA_DIR", "data/")
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
-cp_router = APIRouter(prefix="/cp", tags=["CP Endpoints"])
+cp_router = APIRouter(tags=["CP Endpoints"])
 
 # ------------------------------------------------------------------------------
 # Endpoint: GET /latest - Latest CP Assessments with Pagination

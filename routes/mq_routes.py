@@ -37,7 +37,7 @@ STAR_MAPPING = {
 # ------------------------------------------------------------------------------
 # Router Initialization
 # ------------------------------------------------------------------------------
-mq_router = APIRouter(prefix="/mq", tags=["MQ Endpoints"])
+mq_router = APIRouter(tags=["MQ Endpoints"])
 
 # ------------------------------------------------------------------------------
 # Endpoint: GET /latest - Latest MQ Assessments with Pagination

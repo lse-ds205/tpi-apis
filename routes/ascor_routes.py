@@ -60,7 +60,7 @@ except FileNotFoundError as e:
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
-router = APIRouter(prefix="/ascor", tags=["ASCOR Endpoints"])
+router = APIRouter(tags=["ASCOR Endpoints"])
 
 @router.get("/countries")
 async def get_countries():

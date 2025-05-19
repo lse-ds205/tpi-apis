@@ -28,7 +28,7 @@ from filters import CompanyFilters
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
-router = APIRouter(prefix="/company", tags=["Company Endpoints"])
+router = APIRouter(tags=["Company Endpoints"])
 
 # --------------------------------------------------------------------------
 # Endpoint: GET /companies - List All Companies with Pagination
