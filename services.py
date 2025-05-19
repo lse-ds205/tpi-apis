@@ -15,28 +15,34 @@ from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pill
 class CountryDataProcessor:
     def __init__(self, df: pd.DataFrame, country: str, assessment_year: int):
         self.df = df
-        self.country = country.strip().lower()  # Converts the country name to lowercase
+        self.country = country.strip()
         self.assessment_year = assessment_year
-        self.filtered_df = self.filter_data()  # Filters the DataFrame 
+        self.filtered_df = self.filter_data()  
         
-    def filter_data(self) -> pd.DataFrame:  # We are returning a dataframe
+    def filter_data(self) -> pd.DataFrame: 
         self.df['Publication date'] = pd.to_datetime(self.df['Publication date'], errors="coerce", dayfirst=True)
         self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], errors="coerce", dayfirst=True)
+
+        self.df['Country'] = self.df['Country'].astype(str).str.strip().str.lower()
+        input_country = self.country.strip().lower()
 
         logger.debug(f"[FILTER] Filtering for: country={self.country}, assessment_year={self.assessment_year}")
         logger.debug(f"[FILTER] Unique countries: {self.df['Country'].unique()}")
         logger.debug(f"[FILTER] Unique years: {self.df['Assessment date'].dt.year.unique()}")
 
         mask = (
-            (self.df['Country'].str.lower() == self.country) & 
+            (self.df['Country'] == input_country) &
             (self.df['Assessment date'].dt.year == self.assessment_year)
         )
+
         logger.debug(f"[FILTER] Rows matched: {mask.sum()}")
 
         filtered_df = self.df[mask].copy()
         
         if filtered_df.empty:
-            raise ValueError("No data found for the country={self.country} in year={self.assessment_year}")
+            logger.error(f"[FILTER] No match found for: {self.country=} {self.assessment_year=}")
+            logger.error(f"[FILTER] Available country/year pairs:\n{self.df[['Country', 'Assessment date']].dropna().head(10)}")
+            raise ValueError(f"No data found for country={self.country} in year={self.assessment_year}")
 
         filtered_df = filtered_df.fillna('')
         return filtered_df.iloc[0]  

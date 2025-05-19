@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 TODO: Create a config.py file to store these constants
 """
 
-EXCEL_PATH = './data/TPI ASCOR data - 13012025/ASCOR_assessments_results.xlsx'
+EXCEL_PATH = 'data/TPI_ASCOR_data_13012025/ASCOR_assessments_results.xlsx'
 
 """SETUP FIXTURES"""
 

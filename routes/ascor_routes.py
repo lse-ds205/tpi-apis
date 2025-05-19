@@ -76,11 +76,13 @@ async def get_countries():
 
 @router.get("/country-data/{country}/{assessment_year}", response_model=CountryDataResponse)
 async def get_country_data(country: str, assessment_year: int) -> CountryDataResponse:
+    country = country.strip().lower()
+    
     print(f"[ROUTE DEBUG] Received request: {country=}, {assessment_year=}")
 
     try:
         logger.info(f"Processing request for country: {country}, year: {assessment_year}")
-        processor = CountryDataProcessor(df_assessments, country, assessment_year)
+        processor = CountryDataProcessor(df_assessments.copy(), country, assessment_year)
         result = processor.process_country_data()
         logger.info(f"Successfully processed data for {country}, {assessment_year}")
         # Use when debugging

@@ -264,7 +264,8 @@ class CPHandler(BaseDataHandler):
     providing methods to access and analyze the data.
     """
 
-    def __init__(self):
+    def __init__(self, prefix=None, *args, **kwargs):
+        self.prefix = prefix
         """Initialize the CP handler and load CP data."""
         super().__init__()
         self._df = self.load_cp_data()
