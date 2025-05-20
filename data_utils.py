@@ -53,7 +53,7 @@ class BaseDataHandler:
         """
         return len(self._files)
     
-    def paginate(self, df: pd.DataFrame, page: int, per_page: int):
+    def paginate(self, df: pd.DataFrame, page: int, per_page: int) -> pd.DataFrame:
         """Paginate a DataFrame based on page number and items per page.
         
         Args:
@@ -68,6 +68,54 @@ class BaseDataHandler:
         end_idx = start_idx + per_page
         return df.iloc[start_idx:end_idx].fillna("N/A").infer_objects(copy=False)
     
+    def _sanitize_text(self, text: str, preserve_case: bool = False) -> str:
+        """
+        Sanitize text by stripping whitespace and optionally converting to lowercase.
+        
+        Args:
+            text (str): The text to sanitize.
+            preserve_case (bool): Whether to preserve the original case.
+            
+        Returns:
+            str: Sanitized text.
+        """
+        if not isinstance(text, str):
+            return text
+        text = text.strip()
+        return text if preserve_case else text.lower()
+    
+    def _sanitize_data(self) -> None:
+        """Sanitize all text fields in the dataframes."""
+        # Sanitize company data
+        text_columns = self.company_df.select_dtypes(include=['object']).columns
+        for col in text_columns:
+            if col == "company name":
+                self.company_df[col] = self.company_df[col].apply(
+                    lambda x: self._sanitize_text(x, preserve_case=True)
+                )
+            else:
+                self.company_df[col] = self.company_df[col].apply(self._sanitize_text)
+        
+        # Sanitize MQ data
+        text_columns = self.mq_df.select_dtypes(include=['object']).columns
+        for col in text_columns:
+            if col == "company name":
+                self.mq_df[col] = self.mq_df[col].apply(
+                    lambda x: self._sanitize_text(x, preserve_case=True)
+                )
+            else:
+                self.mq_df[col] = self.mq_df[col].apply(self._sanitize_text)
+        
+        # Sanitize CP data
+        text_columns = self.cp_df.select_dtypes(include=['object']).columns
+        for col in text_columns:
+            if col == "company name":
+                self.cp_df[col] = self.cp_df[col].apply(
+                    lambda x: self._sanitize_text(x, preserve_case=True)
+                )
+            else:
+                self.cp_df[col] = self.cp_df[col].apply(self._sanitize_text)
+
     def get_company_history(self,company_id: str):
         normalized_company_id = normalize_company_id(company_id)
         mask = (
