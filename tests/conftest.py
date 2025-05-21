@@ -5,6 +5,9 @@ from main import app
 
 from fastapi.testclient import TestClient
 
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=".env")
+
 """CONSTANTS
 
 TODO: Create a config.py file to store these constants
