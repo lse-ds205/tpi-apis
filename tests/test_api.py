@@ -154,10 +154,11 @@ def test_get_country_data_structure(client, df_assessments):
 
     # As a tester, I have to pretend I don't know anything about pydantic models
     for country, year in zip(valid_requests["Country"], valid_requests["Year"]):
-        # response = client.get(f"/v1/ascor/country-data/{country}/{year}")
+        response = client.get(f"/v1/country-data/{country}/{year}")
    
         base_error_msg = f"FAILED TEST:  {country} and {year} | "
 
+        data = response.json() 
         nice_to_have_keys = ["country", "assessment_year"]
         for key in nice_to_have_keys:
             base_msg = (
@@ -224,7 +225,7 @@ def test_get_country_data_structure(client, df_assessments):
 # Now lets test if the JSON response matches the expected fixture response for canada, 2023
 def test_ascor_response_matches_fixture(client, expected_ascor_response):
     """Test that country data endpoint matches expected fixture response"""
-    response = client.get("/v1/ascor/country-data/canada/2023")
+    response = client.get("/v1/country-data/canada/2023")
     assert response.status_code == 200
     
     assert response.json() == expected_ascor_response
