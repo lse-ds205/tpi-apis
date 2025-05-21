@@ -158,7 +158,3 @@ These principles are based on research from the following sources:
 
 3. Dev.to: "Path vs. Query Parameters: Choosing the Right Approach for API Requests" (September 8, 2024)
    https://dev.to/farhatsharifh/path-vs-query-parameters-choosing-the-right-approach-for-api-requests-2lah
-
-## Conclusion
-
-By following these ten principles, we aim to create a consistent, intuitive, and developer-friendly API that stands the test of time. These guidelines should be considered during the design of new endpoints and when refactoring existing ones to ensure a cohesive experience across our entire API surface.
