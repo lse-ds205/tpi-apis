@@ -231,10 +231,10 @@ def get_company_history(company_id: str):
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/performance-comparison - Compare Performance
+# Endpoint: GET /company/{company_id}/performance_comparison - Compare Performance
 # ------------------------------------------------------------------------------
 @router.get(
-    "/company/{company_id}/performance-comparison",
+    "/company/{company_id}/performance_comparison",
     response_model=Union[
         PerformanceComparisonResponse,
         PerformanceComparisonInsufficientDataResponse,

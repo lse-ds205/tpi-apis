@@ -16,7 +16,7 @@ df_assessments = pd.read_excel(filepath, engine='openpyxl')
 # -------------------------------------------------------------------------
 router = APIRouter(prefix="/ascor", tags=["ASCOR Endpoints"])
 
-@router.get("/country-data/{country}/{assessment_year}", response_model=CountryDataResponse)
+@router.get("/country_data/{country}/{assessment_year}", response_model=CountryDataResponse)
 async def get_country_data(country: str, assessment_year: int) -> CountryDataResponse:
     try:
         processor = CountryDataProcessor(df_assessments, country, assessment_year)

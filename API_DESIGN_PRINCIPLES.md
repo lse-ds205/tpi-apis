@@ -4,7 +4,7 @@
 
 This document establishes the core principles for consistent parameter usage across our API endpoints. These principles are designed to ensure intuitive, maintainable, and developer-friendly APIs that follow industry best practices. By adhering to these guidelines, we aim to create a unified experience for API consumers while maintaining the flexibility needed for diverse use cases.
 
-The following "Ten Commandments" represent our commitment to thoughtful API design, specifically focusing on the usage of path and query parameters. These principles are based on extensive research of industry best practices and are tailored to our specific needs as a carbon assessment platform.
+The following "Ten Commandments" represent our commitment to thoughtful API design, specifically focusing on the usage of path and query parameters. These principles are based on extensive research of industry best practices and are tailored to our specific needs as a carbon assessment platform with both Carbon Performance (CP) and Management Quality (MQ) APIs.
 
 ## The Ten Commandments of API Parameter Design
 
@@ -12,9 +12,9 @@ The following "Ten Commandments" represent our commitment to thoughtful API desi
 
 Path parameters shall be used exclusively for identifying specific resources or collections of resources. They represent the hierarchical structure of our data model and provide a clear, intuitive way to navigate our API.
 
-**Example:**
-- `/cp/companies/{company_id}` - Identifies a specific company
-- `/mq/assessments/{assessment_id}` - Identifies a specific assessment
+**Examples:**
+- CP: `/cp/company/{company_id}` - Identifies a specific company's carbon performance history
+- MQ: `/mq/methodology/{methodology_id}` - Identifies assessments from a specific methodology cycle
 
 **Rationale:** Path parameters improve URL readability and make the API self-documenting. They clearly communicate the resource being accessed, making the API more intuitive for developers to understand and use.
 
@@ -22,19 +22,19 @@ Path parameters shall be used exclusively for identifying specific resources or 
 
 Query parameters shall be used for optional modifications to the request, such as filtering, sorting, pagination, and specifying response format or fields. They should never be required for basic resource access.
 
-**Example:**
-- `/cp/companies?sector=energy&region=europe` - Filters companies by sector and region
-- `/mq/assessments?sort=date&order=desc&page=2&limit=20` - Sorts and paginates assessment results
+**Examples:**
+- CP: `/cp/latest?page=2&page_size=20` - Paginates the latest CP assessments
+- MQ: `/mq/methodology/{methodology_id}?page=1&page_size=50` - Paginates assessments for a specific methodology
 
 **Rationale:** Query parameters are designed to be optional by nature. Keeping them optional ensures backward compatibility when new parameters are added and provides flexibility for different use cases.
 
 ### 3. Consistent Parameter Naming Conventions
 
-Parameter names shall follow consistent naming conventions across all endpoints. Use camelCase for query parameters and snake_case for path parameters. Parameter names should be descriptive, concise, and avoid abbreviations unless they are widely understood.
+Parameter names shall follow consistent naming conventions across all endpoints. All path and query parameters must use snake_case (all lowercase letters with words separated by underscores) to align with Python conventions. Parameter names should be descriptive, concise, and avoid abbreviations unless they are widely understood.
 
-**Example:**
-- Path: `/cp/companies/{company_id}/assessments/{assessment_id}`
-- Query: `/mq/assessments?sortBy=date&orderDirection=desc`
+**Examples:**
+- CP: `/cp/company/{company_id}/alignment`
+- MQ: `/mq/latest?page=1&page_size=10`
 
 **Rationale:** Consistent naming conventions reduce cognitive load for API consumers and make the API more predictable. This improves developer experience and reduces the likelihood of errors.
 
@@ -42,9 +42,9 @@ Parameter names shall follow consistent naming conventions across all endpoints.
 
 Nested resources shall be represented through hierarchical path structures, clearly indicating parent-child relationships between resources.
 
-**Example:**
-- `/cp/companies/{company_id}/assessments` - All assessments for a specific company
-- `/cp/companies/{company_id}/assessments/{assessment_id}` - A specific assessment for a specific company
+**Examples:**
+- CP: `/cp/company/{company_id}/alignment` - Alignment status for a specific company
+- MQ: `/mq/companies/{company_id}/assessments` - All MQ assessments for a specific company
 
 **Rationale:** Hierarchical paths naturally express the relationships between resources, making the API more intuitive and easier to understand. This approach aligns with REST principles and improves discoverability.
 
@@ -52,15 +52,15 @@ Nested resources shall be represented through hierarchical path structures, clea
 
 Common operations shall use standardized query parameter patterns across all endpoints:
 
-- Pagination: `page` and `limit` or `offset` and `limit`
-- Sorting: `sortBy` and `orderDirection` (values: `asc` or `desc`)
+- Pagination: `page` and `page_size`
+- Sorting: `sort_by` and `order` (values: `asc` or `desc`)
 - Filtering: parameter name matching the field being filtered
 - Field selection: `fields` with comma-separated values
 - Search: `q` for general search terms
 
-**Example:**
-- `/cp/companies?page=2&limit=20&sortBy=name&orderDirection=asc`
-- `/mq/assessments?fields=id,date,score&sector=energy`
+**Examples:**
+- CP: `/cp/latest?page=2&page_size=20&sort_by=assessment_date&order=desc`
+- MQ: `/mq/latest?fields=company_id,name,management_quality_score&sector=energy`
 
 **Rationale:** Standardized patterns create a consistent experience across the API, making it more intuitive and reducing the learning curve for developers.
 
@@ -68,7 +68,7 @@ Common operations shall use standardized query parameter patterns across all end
 
 Sensitive data shall never be included in URL parameters (path or query). Instead, use request headers or request body for authentication tokens, credentials, or other sensitive information.
 
-**Example:**
+**Examples:**
 - Use Authorization header for authentication tokens
 - Use request body for password changes or sensitive operations
 
@@ -78,15 +78,15 @@ Sensitive data shall never be included in URL parameters (path or query). Instea
 
 Arrays in query parameters shall be represented using one of the following consistent approaches across all endpoints:
 
-1. Repeated parameters: `?color=red&color=blue`
-2. Comma-separated values: `?colors=red,blue,green`
+1. Repeated parameters: `?geography=EU&geography=US`
+2. Comma-separated values: `?geographies=EU,US,APAC`
 
 For complex filtering operations, use dot notation to represent relationships:
-- `?price.gt=100&price.lt=200` (price greater than 100 and less than 200)
+- `?score.gt=3&score.lt=5` (score greater than 3 and less than 5)
 
-**Example:**
-- `/cp/companies?sectors=energy,manufacturing&regions=europe,asia`
-- `/mq/assessments?score.gt=75&date.gte=2023-01-01`
+**Examples:**
+- CP: `/cp/latest?sectors=energy,manufacturing&years=2025,2035`
+- MQ: `/mq/assessments?score.gt=3&assessment_year.gte=2023`
 
 **Rationale:** Consistent handling of complex data types improves developer experience and ensures predictable behavior across the API.
 
@@ -94,9 +94,9 @@ For complex filtering operations, use dot notation to represent relationships:
 
 API versioning shall be handled through URL path prefixing rather than query parameters. All endpoints should include a version indicator to ensure backward compatibility as the API evolves.
 
-**Example:**
-- `/v1/cp/companies/{company_id}`
-- `/v2/mq/assessments?sector=energy`
+**Examples:**
+- CP: `/v1/cp/latest`
+- MQ: `/v2/mq/methodology/{methodology_id}`
 
 **Rationale:** Explicit versioning in the path makes it immediately clear which version of the API is being used and ensures that breaking changes don't affect existing clients.
 
@@ -108,8 +108,8 @@ All parameter validation errors shall return descriptive error messages that cle
 ```json
 {
   "error": "Invalid parameter",
-  "message": "The 'limit' parameter must be a positive integer less than or equal to 100",
-  "parameter": "limit",
+  "message": "The 'page_size' parameter must be a positive integer less than or equal to 100",
+  "parameter": "page_size",
   "value": "500"
 }
 ```
@@ -127,13 +127,11 @@ All parameters shall be thoroughly documented with:
 
 **Example:**
 ```
-GET /cp/companies
+GET /cp/latest
 
 Query Parameters:
-- sector (string, optional): Filter by industry sector. Example: "energy"
-- region (string, optional): Filter by geographic region. Example: "europe"
 - page (integer, optional): Page number for pagination, starting from 1. Default: 1
-- limit (integer, optional): Number of results per page, max 100. Default: 20
+- page_size (integer, optional): Number of results per page, max 100. Default: 10
 ```
 
 **Rationale:** Comprehensive documentation reduces the learning curve for new developers and serves as a reference for experienced users, improving the overall usability of the API.
