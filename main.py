@@ -20,6 +20,9 @@ from routes.ascor_routes import router as ascor_router
 from routes.company_routes import router as company_router
 from routes.cp_routes import cp_router
 from routes.mq_routes import mq_router
+from routes.cp_routes import cp_router
+from authentication.auth_router import router as auth_router
+from authentication.post_router import router as post_router
 from log_config import get_logger
 from services import fetch_company_data, CompanyNotFoundError, CompanyDataError
 from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
@@ -29,6 +32,7 @@ load_dotenv()
 
 logger = get_logger(__name__) # Get logger for main module
 
+# -------------------------------------------------------------------------
 # App Initialization
 app = FastAPI(
     title="Transition Pathway Initiative API",
@@ -151,6 +155,9 @@ async def get_sector_company_assessments():
         raise HTTPException(status_code=500, detail=f"Error loading sector data: {str(e)}")
 
 app.include_router(sector_router, prefix="/v1")
+app.include_router(auth_router, prefix="/v1")
+app.include_router(post_router, prefix="/v1")
+
 # ... other routers go here
 
 # --- Root Endpoint ---
