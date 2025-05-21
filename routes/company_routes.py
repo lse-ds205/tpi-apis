@@ -57,9 +57,9 @@ router = APIRouter(prefix="/company", tags=["Company Endpoints"])
 
 
 # --------------------------------------------------------------------------
-# Endpoint: GET /companies - List All Companies with Pagination
+# Endpoint: GET /company/all - List All Companies with Pagination
 # --------------------------------------------------------------------------
-@router.get("/companies", response_model=CompanyListResponse)
+@router.get("/all", response_model=CompanyListResponse)
 def get_all_companies(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Results per page"),
@@ -107,7 +107,7 @@ def get_all_companies(
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_id} - Retrieve Company Details
 # ------------------------------------------------------------------------------
-@router.get("/company/{company_id}", response_model=CompanyDetail)
+@router.get("/{company_id}", response_model=CompanyDetail)
 def get_company_details(company_id: str):
     """
     Retrieve the latest MQ & CP scores for a specific company.
@@ -151,7 +151,7 @@ def get_company_details(company_id: str):
 # Endpoint: GET /company/{company_id}/history - Retrieve Company History
 # ------------------------------------------------------------------------------
 @router.get(
-    "/company/{company_id}/history", response_model=CompanyHistoryResponse
+    "/{company_id}/history", response_model=CompanyHistoryResponse
 )
 def get_company_history(company_id: str):
     """
@@ -234,7 +234,7 @@ def get_company_history(company_id: str):
 # Endpoint: GET /company/{company_id}/performance_comparison - Compare Performance
 # ------------------------------------------------------------------------------
 @router.get(
-    "/company/{company_id}/performance_comparison",
+    "/{company_id}/performance_comparison",
     response_model=Union[
         PerformanceComparisonResponse,
         PerformanceComparisonInsufficientDataResponse,
