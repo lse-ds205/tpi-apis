@@ -9,11 +9,13 @@ and exposes endpoints for fetching the latest assessments, assessments by method
 # ------------------------------------------------------------------------------
 # Imports
 # ------------------------------------------------------------------------------
-from fastapi import APIRouter, HTTPException, Query, Path, Depends
+import re
+from fastapi import APIRouter, HTTPException, Query, Path, Depends, Request
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
 from typing import List, Optional
+from middleware.rate_limiter import limiter
 from schemas import (
     MQAssessmentDetail,
     MQIndicatorsResponse,
@@ -21,9 +23,14 @@ from schemas import (
 )
 from data_utils import MQHandler
 from filters import CompanyFilters, MQFilter
+from utils import get_latest_data_dir, get_latest_assessment_file
+
 # ------------------------------------------------------------------------------
 # Constants and Data Loading
 # ------------------------------------------------------------------------------
+BASE_DIR = FilePath(__file__).resolve().parent.parent
+BASE_DATA_DIR = BASE_DIR / "data"
+DATA_DIR = get_latest_data_dir(BASE_DATA_DIR)
 
 STAR_MAPPING = {
     "0STAR": 0.0,
@@ -34,6 +41,18 @@ STAR_MAPPING = {
     "5STAR": 5.0,
 }
 
+mq_files = sorted(DATA_DIR.glob("MQ_Assessments_Methodology_*.csv"))
+if not mq_files:
+    raise FileNotFoundError(f"No MQ datasets found in {DATA_DIR}")
+
+mq_df_list = [pd.read_csv(f) for f in mq_files]
+
+for idx, df in enumerate(mq_df_list, start=1):
+    df["methodology_cycle"] = idx
+
+mq_df = pd.concat(mq_df_list, ignore_index=True)
+mq_df.columns = mq_df.columns.str.strip().str.lower()
+
 # ------------------------------------------------------------------------------
 # Router Initialization
 # ------------------------------------------------------------------------------
@@ -43,7 +62,9 @@ mq_router = APIRouter(tags=["MQ Endpoints"])
 # Endpoint: GET /latest - Latest MQ Assessments with Pagination
 # ------------------------------------------------------------------------------
 @mq_router.get("/latest", response_model=PaginatedMQResponse)
-def get_latest_mq_assessments(
+@limiter.limit("100/minute")
+async def get_latest_mq_assessments(
+    request: Request, 
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
     page_size: int = Query(
         10, ge=1, le=100, description="Number of results per page (max 100)"
@@ -107,10 +128,15 @@ def get_latest_mq_assessments(
 @mq_router.get(
     "/methodology/{methodology_id}", response_model=PaginatedMQResponse
 )
+@limiter.limit("100/minute")
 def get_mq_by_methodology(
-    methodology_id: int = Path(..., ge=1, le=100),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=100),
+    request: Request, 
+    methodology_id: int = Path(
+        ..., ge=1, le=len(mq_files), description="Methodology cycle ID"
+    ),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Records per page (max 100)"),
     company_filter: CompanyFilters = Depends(),
     mq_filter: MQFilter = Depends()
 ):
@@ -167,7 +193,9 @@ def get_mq_by_methodology(
 @mq_router.get(
     "/trends/sector/{sector_id}", response_model=PaginatedMQResponse
 )
-def get_mq_trends_sector(
+@limiter.limit("100/minute")
+async def get_mq_trends_sector(
+    request: Request, 
     sector_id: str,
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(

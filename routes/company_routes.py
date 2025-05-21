@@ -8,11 +8,12 @@ and comparing performance between assessment cycles.
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Request, Depends
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
 from typing import Union
+from middleware.rate_limiter import limiter
 from schemas import (
     CompanyBase,
     CompanyDetail,
@@ -34,7 +35,9 @@ router = APIRouter(tags=["Company Endpoints"])
 # Endpoint: GET /companies - List All Companies with Pagination
 # --------------------------------------------------------------------------
 @router.get("/companies", response_model=CompanyListResponse)
-def get_all_companies(
+@limiter.limit("100/minute")
+async def get_all_companies(
+    request: Request,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Results per page"),
     filter: CompanyFilters = Depends(CompanyFilters)
@@ -85,7 +88,8 @@ def get_all_companies(
 # ------------------------------------------------------------------------------
 
 @router.get("/company/{company_id}", response_model=CompanyDetail)
-def get_company_details(company_id: str,
+@limiter.limit("100/minute")
+async def get_company_details(request: Request, company_id: str,
                         filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve the latest MQ & CP scores for a specific company.
@@ -131,7 +135,8 @@ def get_company_details(company_id: str,
 @router.get(
     "/company/{company_id}/history", response_model=CompanyHistoryResponse
 )
-def get_company_history(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+@limiter.limit("100/minute")
+async def get_company_history(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve a company's historical MQ & CP scores.
 
@@ -207,7 +212,8 @@ def get_company_history(company_id: str, filter: CompanyFilters = Depends(Compan
         PerformanceComparisonInsufficientDataResponse,
     ],
 )
-def compare_company_performance(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+@limiter.limit("100/minute")
+async def compare_company_performance(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Compare a company's latest performance against the previous year.
     

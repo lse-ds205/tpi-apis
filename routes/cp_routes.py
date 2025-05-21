@@ -8,12 +8,13 @@ loads and normalizes the data, and exposes endpoints to retrieve and compare CP 
 # Imports
 # -------------------------------------------------------------------------
 from data_utils import CPHandler
-from fastapi import APIRouter, HTTPException, Query, Path, Depends
+from fastapi import APIRouter, HTTPException, Query, Path, Request, Depends
 import pandas as pd
 import os
 from pathlib import Path as FilePath
 from datetime import datetime
 from typing import List, Optional, Dict, Union
+from middleware.rate_limiter import limiter
 from schemas import (
     CPAssessmentDetail,
     CPComparisonResponse,
@@ -35,7 +36,9 @@ cp_router = APIRouter(tags=["CP Endpoints"])
 # Endpoint: GET /latest - Latest CP Assessments with Pagination
 # ------------------------------------------------------------------------------
 @cp_router.get("/latest", response_model=List[CPAssessmentDetail])
-def get_latest_cp_assessments(
+@limiter.limit("2/minute")
+async def get_latest_cp_assessments(
+    request: Request, 
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
     page_size: int = Query(
         10, ge=1, le=100, description="Results per page (max 100)"
@@ -85,7 +88,8 @@ def get_latest_cp_assessments(
 @cp_router.get(
     "/company/{company_id}", response_model=List[CPAssessmentDetail]
 )
-def get_company_cp_history(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+@limiter.limit("100/minute")
+async def get_company_cp_history(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve all CP assessments for a specific company across different assessment cycles.
     """
@@ -127,7 +131,8 @@ def get_company_cp_history(company_id: str, filter: CompanyFilters = Depends(Com
 @cp_router.get(
     "/company/{company_id}/alignment", response_model=Dict[str, str]
 )
-def get_company_cp_alignment(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+@limiter.limit("100/minute")
+async def get_company_cp_alignment(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieves a company's carbon performance alignment status across target years
     """
@@ -163,7 +168,8 @@ def get_company_cp_alignment(company_id: str, filter: CompanyFilters = Depends(C
         CPComparisonResponse, PerformanceComparisonInsufficientDataResponse
     ],
 )
-def compare_company_cp(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+@limiter.limit("100/minute")
+async def compare_company_cp(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Compare the most recent CP assessment to the previous one for a company.
     """

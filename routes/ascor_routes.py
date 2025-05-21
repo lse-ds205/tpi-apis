@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, FastAPI, Request, Depends 
 from schemas import CountryDataResponse
 from services import CountryDataProcessor
+from middleware.rate_limiter import limiter
 from log_config import get_logger
 
-from fastapi import FastAPI, HTTPException
 
 logger = get_logger(__name__)
 
@@ -75,7 +75,8 @@ async def get_countries():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/country-data/{country}/{assessment_year}", response_model=CountryDataResponse)
-async def get_country_data(country: str, assessment_year: int) -> CountryDataResponse:
+@limiter.limit("100/minute")
+async def get_country_data(request: Request, country: str, assessment_year: int) -> CountryDataResponse:
     country = country.strip().lower()
     
     print(f"[ROUTE DEBUG] Received request: {country=}, {assessment_year=}")

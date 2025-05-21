@@ -1,12 +1,21 @@
-# tpi-apis/main.py
+"""
+This module initializes the FastAPI application and registers the route modules for the TPI API.
+
+It integrates endpoints for:
+- Company assessments
+- Management Quality (MQ) assessments
+- Carbon Performance (CP) assessments
+
+It also defines a basic root endpoint for a welcome message.
+"""
 import time
-from fastapi import FastAPI, Request, APIRouter
+from fastapi import FastAPI, APIRouter, Request, HTTPException, Response
+from slowapi.errors import RateLimitExceeded
+from middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response 
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
-
-# Change relative imports to absolute imports
 from routes.ascor_routes import router as ascor_router
 from routes.company_routes import router as company_router
 from routes.cp_routes import cp_router
@@ -26,6 +35,18 @@ app = FastAPI(
     version="1.0",
     description="Provides company, MQ, and CP assessments via REST endpoints.",
 )
+
+# Add limiter to app state
+app.state.limiter = limiter
+
+# Add rate limit exceeded handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Add limiter to app state
+app.state.limiter = limiter
+
+# Add rate limit exceeded handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # --- Logging Middleware ---
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -134,7 +155,8 @@ app.include_router(sector_router, prefix="/v1")
 
 # --- Root Endpoint ---
 @app.get("/")
-def home():
+@limiter.limit("100/minute")
+async def home(request: Request):
     """
     Root endpoint that returns a welcome message.
     """
