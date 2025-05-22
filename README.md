@@ -87,7 +87,7 @@ To install the dependencies for this project, run the code below in the terminal
 It is always a good idea to have a separate environment for each Python project. We recommend using the following commands to set up a virtual environment for this project:
 
   ```bash
-  python -m venv ascor-env
+  python -m venv tpi-env
   ```
 
   You only need to run this command once to create the virtual environment.
@@ -96,10 +96,10 @@ Then, activate the virtual environment:
 
   ```bash
   # If on Mac or Linux (e.g. Nuvolos)
-  source ascor-env/bin/activate
+  source tpi-env/bin/activate
 
   # If on Windows
-  ascor-env\Scripts\activate
+  tpi-env\Scripts\activate
   ```
 
   ⚠️ **IMPORTANT:** You need to (re-)activate the virtual environment every time you work on this project.
