@@ -32,12 +32,13 @@ from filters import CompanyFilters
 router = APIRouter(tags=["Company Endpoints"])
 
 # --------------------------------------------------------------------------
-# Endpoint: GET /companies - List All Companies with Pagination
+# Endpoint: GET /company/all - List All Companies with Pagination
 # --------------------------------------------------------------------------
-@router.get("/companies", response_model=CompanyListResponse)
+@router.get("/all", response_model=CompanyListResponse)
 @limiter.limit("100/minute")
 async def get_all_companies(
     request: Request,
+
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Results per page"),
     filter: CompanyFilters = Depends(CompanyFilters)
@@ -86,11 +87,9 @@ async def get_all_companies(
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_id} - Retrieve Company Details
 # ------------------------------------------------------------------------------
-
-@router.get("/company/{company_id}", response_model=CompanyDetail)
+@router.get("/{company_id}", response_model=CompanyDetail)
 @limiter.limit("100/minute")
-async def get_company_details(request: Request, company_id: str,
-                        filter: CompanyFilters = Depends(CompanyFilters)):
+async def get_company_details(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve the latest MQ & CP scores for a specific company.
     Raises 404 if the company is not found
@@ -133,7 +132,7 @@ async def get_company_details(request: Request, company_id: str,
 # Endpoint: GET /company/{company_id}/history - Retrieve Company History
 # ------------------------------------------------------------------------------
 @router.get(
-    "/company/{company_id}/history", response_model=CompanyHistoryResponse
+    "/{company_id}/history", response_model=CompanyHistoryResponse
 )
 @limiter.limit("100/minute")
 async def get_company_history(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
@@ -203,10 +202,10 @@ async def get_company_history(request: Request, company_id: str, filter: Company
     )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/performance-comparison - Compare Performance
+# Endpoint: GET /company/{company_id}/performance_comparison - Compare Performance
 # ------------------------------------------------------------------------------
 @router.get(
-    "/company/{company_id}/performance-comparison",
+    "/{company_id}/performance_comparison",
     response_model=Union[
         PerformanceComparisonResponse,
         PerformanceComparisonInsufficientDataResponse,
