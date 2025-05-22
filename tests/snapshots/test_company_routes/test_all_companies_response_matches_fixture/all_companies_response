@@ -1,0 +1,77 @@
+{
+  "total": 2060,
+  "page": 1,
+  "per_page": 10,
+  "companies": [
+    {
+      "company_id": "yankuang_energy",
+      "name": "yankuang_energy",
+      "sector": "Coal Mining",
+      "geography": "China",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "3m",
+      "name": "3m",
+      "sector": "Industrials",
+      "geography": "United States of America",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "a2a",
+      "name": "a2a",
+      "sector": "Electricity Utilities",
+      "geography": "Italy",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "abb",
+      "name": "abb",
+      "sector": "Industrials",
+      "geography": "Switzerland",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "acc",
+      "name": "acc",
+      "sector": "Cement",
+      "geography": "India",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "acs_group",
+      "name": "acs_group",
+      "sector": "Industrials",
+      "geography": "Spain",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "acwa_power",
+      "name": "acwa_power",
+      "sector": "Electricity Utilities",
+      "geography": "Saudi Arabia",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "adama",
+      "name": "adama",
+      "sector": "Chemicals",
+      "geography": "China",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "adbri",
+      "name": "adbri",
+      "sector": "Cement",
+      "geography": "Australia",
+      "latest_assessment_year": null
+    },
+    {
+      "company_id": "adnoc_drilling_company",
+      "name": "adnoc_drilling_company",
+      "sector": "Oil & Gas",
+      "geography": "United Arab Emirates",
+      "latest_assessment_year": null
+    }
+  ]
+}

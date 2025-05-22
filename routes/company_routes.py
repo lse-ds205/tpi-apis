@@ -8,11 +8,12 @@ and comparing performance between assessment cycles.
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Request, Depends
 import pandas as pd
 from pathlib import Path as FilePath
 from datetime import datetime
 from typing import Union
+from middleware.rate_limiter import limiter
 from schemas import (
     CompanyBase,
     CompanyDetail,
@@ -28,13 +29,15 @@ from filters import CompanyFilters
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
-router = APIRouter(prefix="/company", tags=["Company Endpoints"])
+router = APIRouter(tags=["Company Endpoints"])
 
 # --------------------------------------------------------------------------
 # Endpoint: GET /companies - List All Companies with Pagination
 # --------------------------------------------------------------------------
 @router.get("/companies", response_model=CompanyListResponse)
-def get_all_companies(
+@limiter.limit("100/minute")
+async def get_all_companies(
+    request: Request,
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Results per page"),
     filter: CompanyFilters = Depends(CompanyFilters)
@@ -59,7 +62,7 @@ def get_all_companies(
     company_df = company_handler.get_df()
     if company_df is None or company_df.empty:
         raise HTTPException(
-            status_code=503, detail="Company dataset not loaded or empty"
+            status_code=503, detail="Company dataset is not loaded. Please ensure the data file exists in the /data folder."
         )
     
     try:
@@ -83,12 +86,13 @@ def get_all_companies(
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_id} - Retrieve Company Details
 # ------------------------------------------------------------------------------
+
 @router.get("/company/{company_id}", response_model=CompanyDetail)
-def get_company_details(company_id: str,
+@limiter.limit("100/minute")
+async def get_company_details(request: Request, company_id: str,
                         filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve the latest MQ & CP scores for a specific company.
-
     Raises 404 if the company is not found
     """
     company_handler = CompanyDataHandler()
@@ -102,8 +106,10 @@ def get_company_details(company_id: str,
     
     normalized_input = normalize_company_id(company_id)
 
-    company = company_handler.get_latest_details(normalized_input)
-    if company.empty:
+    try:
+        company = company_handler.get_latest_details(normalized_input)
+    except (ValueError, IndexError) as e:
+        # Catch the out-of-bounds error or manual ValueError
         raise HTTPException(
             status_code=404, detail=f"Company '{company_id}' not found."
         )
@@ -113,9 +119,7 @@ def get_company_details(company_id: str,
         name=company.get("company name", "N/A"),
         sector=company.get("sector", "N/A"),
         geography=company.get("geography", "N/A"),
-        latest_assessment_year=company.get(
-            "latest assessment year", None
-        ),
+        latest_assessment_year=company.get("latest assessment year", None),
         management_quality_score=company.get("level", None),
         carbon_performance_alignment_2035=str(
             company.get("carbon performance alignment 2035", "N/A")
@@ -131,7 +135,8 @@ def get_company_details(company_id: str,
 @router.get(
     "/company/{company_id}/history", response_model=CompanyHistoryResponse
 )
-def get_company_history(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+@limiter.limit("100/minute")
+async def get_company_history(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve a company's historical MQ & CP scores.
 
@@ -139,28 +144,33 @@ def get_company_history(company_id: str, filter: CompanyFilters = Depends(Compan
     - Filters records by company ID.
     - Returns a list of historical assessment details.
     """
+    normalized_input = normalize_company_id(company_id)
     company_handler = CompanyDataHandler()
+
     try:
         company_handler.apply_company_filter(filter)
+        filtered_df = company_handler.get_df()
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Error filtering company data: {str(e)}"
-        )    
-    # Error handling: Check if the essential column "mq assessment date" exists.
+        )
 
-    normalized_input = normalize_company_id(company_id)
-    history = company_handler.get_company_history(normalized_input)
+    expected_columns = {col.strip().lower(): col for col in filtered_df.columns}
+    if "mq assessment date" not in expected_columns:
+        raise HTTPException(
+            status_code=503,
+            detail="Column 'MQ Assessment Date' not found in dataset. Check CSV structure.",
+        )
 
-    # Error handling: If no records are found, raise a 404 error.
+    history = filtered_df[
+    filtered_df["company name"].apply(normalize_company_id) == normalized_input
+    ]
+
     if history.empty:
         raise HTTPException(
-            status_code=404, detail=f"Company '{company_id}' not found."
-        )
-    if "mq assessment date" not in history.columns:
-        raise HTTPException(
-            status_code=500,
-            detail="Column 'MQ Assessment Date' not found in dataset. Check CSV structure.",
+            status_code=404, 
+            detail=f"No history found for company '{company_id}'."
         )
 
     return CompanyHistoryResponse(
@@ -192,7 +202,6 @@ def get_company_history(company_id: str, filter: CompanyFilters = Depends(Compan
         ],
     )
 
-
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_id}/performance-comparison - Compare Performance
 # ------------------------------------------------------------------------------
@@ -203,7 +212,8 @@ def get_company_history(company_id: str, filter: CompanyFilters = Depends(Compan
         PerformanceComparisonInsufficientDataResponse,
     ],
 )
-def compare_company_performance(company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+@limiter.limit("100/minute")
+async def compare_company_performance(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Compare a company's latest performance against the previous year.
     

@@ -1,9 +1,9 @@
 # tests/test_company_routes.py
 from fastapi.testclient import TestClient
 from main import app
+import pytest
 
 client = TestClient(app)
-
 
 # ------------------------------------------------------------------------------
 # General Endpoint Tests
@@ -19,13 +19,11 @@ def test_get_all_companies():
     assert "per_page" in data
     assert "companies" in data
 
-
 def test_get_company_details_not_found():
     """Test the company details endpoint returns 404 for a non-existent company."""
-    response = client.get("/v1/company/nonexistent_company")
+    response = client.get("/v1/company/company/nonexistent_company")
     assert response.status_code == 404
-
-
+    
 # --------------------------------------------------------------------------
 # Company specific tests: 3M
 # --------------------------------------------------------------------------
@@ -91,3 +89,40 @@ def test_compare_company_performance_3m_insufficient_data():
         == "Only one record exists for '3m', so performance comparison is not possible."
     )
     assert data["available_assessment_years"] == [2024]
+
+
+# --------------------------------------------------------------------------
+# Fixture Tests: 3M
+# --------------------------------------------------------------------------
+
+def test_all_companies_response_matches_fixture(snapshot):
+    response = client.get("/v1/company/companies")
+    assert response.status_code == 200
+
+    result = response.json()
+
+    import json
+    print(json.dumps(result, indent=2))
+
+    snapshot.assert_match(json.dumps(result, indent=2), "all_companies_response")
+
+def test_company_details_response_matches_fixture(client, expected_company_details_response):
+    """Test that company details endpoint matches expected fixture response"""
+    response = client.get("/v1/company/company/3m")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_company_details_response
+
+def test_company_history_response_matches_fixture(client, expected_company_history_response):
+    """Test that company history endpoint matches expected fixture response"""
+    response = client.get("/v1/company/company/3m/history")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_company_history_response
+
+def test_company_performance_comparison_response_matches_fixture(client, expected_company_performance_comparison_response):
+    """Test that company performance comparison endpoint matches expected fixture response"""
+    response = client.get("/v1/company/company/3m/performance-comparison")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_company_performance_comparison_response
