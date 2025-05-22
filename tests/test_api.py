@@ -15,9 +15,8 @@ Current tests:
 Author: @jonjoncardoso
 """
 
-import pycountry
-
 import warnings
+import pycountry
 
 INSTRUCTIONS_URL = "https://moodle.lse.ac.uk/mod/page/view.php?id=1563098#here-comes-a-challenge-1-hour--"
 
@@ -51,7 +50,9 @@ def test_get_valid_country_data(client, df_assessments):
     print(valid_requests)
 
     for country, year in zip(valid_requests["Country"], valid_requests["Year"]):
+        # response = client.get(f"/v1/ascor/country-data/{country}/{year}")
         response = client.get(f"/v1/country-data/{country}/{year}")
+
         msg = (
             f"Failed for {country} and {year}. "
             f"Expected 200 status code for a valid country-year combination."
@@ -154,10 +155,10 @@ def test_get_country_data_structure(client, df_assessments):
     # As a tester, I have to pretend I don't know anything about pydantic models
     for country, year in zip(valid_requests["Country"], valid_requests["Year"]):
         response = client.get(f"/v1/country-data/{country}/{year}")
-        data = response.json()
-
+   
         base_error_msg = f"FAILED TEST:  {country} and {year} | "
 
+        data = response.json() 
         nice_to_have_keys = ["country", "assessment_year"]
         for key in nice_to_have_keys:
             base_msg = (
@@ -220,3 +221,11 @@ def test_get_country_data_structure(client, df_assessments):
                                 assert metric['name'] is not None, base_error_msg + "Each metric should have a 'name' key"
                                 assert metric['value'] is not None, base_error_msg + "Each metric should have a 'value' key"
                                 assert metric['source'] is not None, base_error_msg + "Each metric should have a 'source' key"
+
+# Now lets test if the JSON response matches the expected fixture response for canada, 2023
+def test_ascor_response_matches_fixture(client, expected_ascor_response):
+    """Test that country data endpoint matches expected fixture response"""
+    response = client.get("/v1/country-data/canada/2023")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_ascor_response

@@ -1,6 +1,7 @@
 # tests/test_mq_routes.py
 from fastapi.testclient import TestClient
 from main import app
+import pytest
 
 client = TestClient(app)
 
@@ -42,7 +43,6 @@ def test_get_latest_mq_assessments_pagination():
     assert large_page_response.status_code == 200
     large_page_data = large_page_response.json()
     assert len(large_page_data["results"]) in [0, 1]
-
 
 # ------------------------------------------------------------------------------
 # Methodology Cycle Tests
@@ -110,3 +110,40 @@ def test_get_mq_trends_sector_success():
         assert "name" in first_record
         assert "sector" in first_record
         assert first_record["sector"].lower() == "coal mining"
+
+
+# ------------------------------------------------------------------------------
+# Fixture Tests
+# ------------------------------------------------------------------------------
+def test_latest_mq_assessment_structure(client):
+    """Test that the latest MQ assessments endpoint returns a paginated response."""
+    response = client.get("/v1/mq/latest?page=1&page_size=10")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert isinstance(data, dict)
+    assert "page" in data
+    assert "page_size" in data
+    assert "total_records" in data
+    assert "results" in data
+    assert isinstance(data["results"], list)
+
+    if data["results"]:
+        first_result = data["results"][0]
+        assert "company_id" in first_result
+        assert "name" in first_result
+        assert "management_quality_score" in first_result
+
+def test_mq_methodology_response_matches_fixture(client, expected_latest_mq_methodology_reponse):
+    """Test that MQ methodology endpoint matches expected fixture response"""
+    response = client.get("/v1/mq/methodology/1?page=1&page_size=10")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_latest_mq_methodology_reponse
+
+def test_mq_sector_trends_response_matches_fixture(client, expected_mq_sector_trends_reponse):
+    """Test that MQ sector trends endpoint matches expected fixture response"""
+    response = client.get("/v1/mq/trends/sector/coal%20mining?page=1&page_size=10")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_mq_sector_trends_reponse

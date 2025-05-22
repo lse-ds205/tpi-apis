@@ -1,6 +1,7 @@
 # tests/test_cp_routes.py
 from fastapi.testclient import TestClient
 from main import app
+import pytest
 
 client = TestClient(app)
 
@@ -108,3 +109,35 @@ def test_compare_company_cp_vectren_insufficient_data():
     assert "message" in data
     assert data["message"] == "Insufficient data for comparison"
     assert data["available_assessment_years"] == [2019]
+
+
+# ------------------------------------------------------------------------------
+# Fixture Tests
+# ------------------------------------------------------------------------------
+def test_latest_cp_response_matches_fixture(client, expected_latest_cp_reponse):
+    """Test that latest CP assessment endpoint matches expected fixture response"""
+    response = client.get("/v1/cp/latest?page=1&page_size=10")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_latest_cp_reponse
+
+def test_company_cp_history_response_matches_fixture(client, expected_company_cp_history_reponse):
+    """Test that company CP history endpoint matches expected fixture response"""
+    response = client.get("/v1/cp/company/AES")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_company_cp_history_reponse
+
+def test_cp_alignment_response_matches_fixture(client, expected_cp_alignment_reponse):
+    """Test that CP alignment endpoint matches expected fixture response"""
+    response = client.get("/v1/cp/company/AES/alignment")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_cp_alignment_reponse
+
+def test_cp_comparison_response_matches_fixture(client, expected_cp_comparison_reponse):
+    """Test that CP comparison endpoint matches expected fixture response"""
+    response = client.get("/v1/cp/company/AES/comparison")
+    assert response.status_code == 200
+    
+    assert response.json() == expected_cp_comparison_reponse
