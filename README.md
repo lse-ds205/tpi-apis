@@ -112,6 +112,16 @@ Finally, install the dependencies:
 
   You only need to run this once, or whenever the `requirements.txt` file is updated.
 
+## Set Up Environment Variables
+
+Create a `.env` file in the root directory of the project. This file will store your environment variables. For now, the `.env` should only contain a single line:
+
+```bash
+SECRET_KEY=somerandomstringherefornow
+```
+
+This secret key is used in the few POST endpoints we have on the API. It is a placeholder for now, the whole POST endpoints are experimental, so any string will do.
+
 ## Running the Application
 
 After installing dependencies and activating your virtual environment, navigate to your project's root directory (the place where your `main.py` file is located) and execute the following command in your terminal:
