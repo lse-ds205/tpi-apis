@@ -3,27 +3,26 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# get_db_connection() function= creates connection using SQL
-def get_db_connection():
-    """Creates and returns a new SQLAlchemy session."""
-    load_dotenv()  # Load environment variables from .env file
+# Load environment variables once globally
+load_dotenv()
 
+# Create a reusable function to construct DB URL
+def construct_db_url(db_name=None):
     db_user = os.getenv('DB_USER')
     db_password = os.getenv('DB_PASSWORD')
     db_host = os.getenv('DB_HOST')
     db_port = os.getenv('DB_PORT')
-    db_name = os.getenv('DB_NAME')
+    db_name = db_name or os.getenv('DB_NAME')  # use passed name or fallback
+    return f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 
-    engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+# Create a SQLAlchemy session for a given database
+def get_db_connection(db_name=None):
+    """Creates and returns a new SQLAlchemy session for a given database."""
+    engine = create_engine(construct_db_url(db_name))
     Session = sessionmaker(bind=engine)
     return Session()
 
-# Reuse the engine you already created inside your function
-def get_engine():
-    load_dotenv()
-    db_user = os.getenv('DB_USER')
-    db_password = os.getenv('DB_PASSWORD')
-    db_host = os.getenv('DB_HOST')
-    db_port = os.getenv('DB_PORT')
-    db_name = os.getenv('DB_NAME')
-    return create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+# Get an engine object for a given database
+def get_engine(db_name=None):
+    """Returns a SQLAlchemy engine for a given database."""
+    return create_engine(construct_db_url(db_name))
