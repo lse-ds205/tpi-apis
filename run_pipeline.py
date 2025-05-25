@@ -7,15 +7,33 @@ from models import TpiBase, AscorBase
 from utils.database_creation_utils import get_engine
 from data_validation import DataValidator
 import re
+from typing import Dict, List, Optional
+from datetime import datetime
+import sys
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging with a more detailed format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('pipeline.log')
+    ]
+)
 logger = logging.getLogger(__name__)
 
-# Define data directories
-data_dir = os.path.join(os.path.dirname(__file__), 'data')
-ascor_data_dir = os.path.join(data_dir, 'TPI_ASCOR_data_13012025')
-tpi_data_dir = os.path.join(data_dir, 'TPI_sector_data_All_sectors_08032025')
+# Constants and config
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+ASCOR_DATA_DIR = os.path.join(DATA_DIR, 'TPI_ASCOR_data_13012025')
+TPI_DATA_DIR = os.path.join(DATA_DIR, 'TPI_sector_data_All_sectors_08032025')
+
+# Debug mode - set to True for verbose logging
+DEBUG = False
+
+def debug_log(msg: str) -> None:
+    """Helper function for debug logging."""
+    if DEBUG:
+        logger.debug(msg)
 
 def drop_tables():
     """Drop all tables in both databases."""
@@ -23,17 +41,45 @@ def drop_tables():
         # Drop TPI tables
         logger.info("Dropping TPI database tables...")
         tpi_engine = get_engine('tpi_api')
-        TpiBase.metadata.drop_all(tpi_engine)
-        logger.info("TPI tables dropped successfully.")
+        
+        # Check if tables exist before dropping
+        with tpi_engine.connect() as conn:
+            tables = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+            """)).fetchall()
+            
+            if not tables:
+                logger.info("No TPI tables found to drop.")
+            else:
+                TpiBase.metadata.drop_all(tpi_engine)
+                logger.info(f"Successfully dropped {len(tables)} TPI tables.")
 
         # Drop ASCOR tables
         logger.info("Dropping ASCOR database tables...")
         ascor_engine = get_engine('ascor_api')
-        AscorBase.metadata.drop_all(ascor_engine)
-        logger.info("ASCOR tables dropped successfully.")
+        
+        with ascor_engine.connect() as conn:
+            tables = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+            """)).fetchall()
+            
+            if not tables:
+                logger.info("No ASCOR tables found to drop.")
+            else:
+                AscorBase.metadata.drop_all(ascor_engine)
+                logger.info(f"Successfully dropped {len(tables)} ASCOR tables.")
 
     except Exception as e:
         logger.error(f"Failed to drop tables: {str(e)}")
+        # Add some context to the error
+        if "connection" in str(e).lower():
+            logger.error("Database connection failed. Please check your database settings.")
+        elif "permission" in str(e).lower():
+            logger.error("Permission denied. Please check your database user permissions.")
         raise
 
 def create_tables():
@@ -42,22 +88,57 @@ def create_tables():
         # Ensure public schema exists and is set as search path for TPI
         tpi_engine = get_engine('tpi_api')
         with tpi_engine.connect() as conn:
+            # Create schema if it doesn't exist
             conn.execute(text("CREATE SCHEMA IF NOT EXISTS public;"))
+            
+            # Set search path
             conn.execute(text("SET search_path TO public;"))
+            
+            # Check if tables already exist
+            existing_tables = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+            """)).fetchall()
+            
+            if existing_tables:
+                logger.warning(f"Found {len(existing_tables)} existing tables in TPI database.")
+                if not DEBUG:
+                    raise ValueError("Tables already exist. Use drop_tables() first or set DEBUG=True to override.")
+            
             conn.commit()
         logger.info("TPI: public schema ensured and search path set.")
 
         # Ensure public schema exists and is set as search path for ASCOR
         ascor_engine = get_engine('ascor_api')
         with ascor_engine.connect() as conn:
+            # Create schema if it doesn't exist
             conn.execute(text("CREATE SCHEMA IF NOT EXISTS public;"))
+            
+            # Set search path
             conn.execute(text("SET search_path TO public;"))
+            
+            # Check if tables already exist
+            existing_tables = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+            """)).fetchall()
+            
+            if existing_tables:
+                logger.warning(f"Found {len(existing_tables)} existing tables in ASCOR database.")
+                if not DEBUG:
+                    raise ValueError("Tables already exist. Use drop_tables() first or set DEBUG=True to override.")
+            
             conn.commit()
         logger.info("ASCOR: public schema ensured and search path set.")
 
         # Create TPI tables explicitly
         with tpi_engine.connect() as conn:
-            conn.execute(text("""
+            # Split the table creation into smaller chunks for better error handling
+            tables = [
+                # Company table
+                """
                 CREATE TABLE IF NOT EXISTS company (
                     company_name VARCHAR NOT NULL,
                     version VARCHAR NOT NULL,
@@ -70,6 +151,9 @@ def create_tables():
                     sector_name VARCHAR,
                     PRIMARY KEY (company_name, version)
                 );
+                """,
+                # Company answer table
+                """
                 CREATE TABLE IF NOT EXISTS company_answer (
                     question_code VARCHAR NOT NULL,
                     company_name VARCHAR NOT NULL,
@@ -79,6 +163,9 @@ def create_tables():
                     PRIMARY KEY (question_code, company_name, version),
                     FOREIGN KEY (company_name, version) REFERENCES company(company_name, version)
                 );
+                """,
+                # MQ assessment table
+                """
                 CREATE TABLE IF NOT EXISTS mq_assessment (
                     assessment_date DATE NOT NULL,
                     company_name VARCHAR NOT NULL,
@@ -90,6 +177,9 @@ def create_tables():
                     PRIMARY KEY (assessment_date, company_name, version, tpi_cycle),
                     FOREIGN KEY (company_name, version) REFERENCES company(company_name, version)
                 );
+                """,
+                # CP assessment table
+                """
                 CREATE TABLE IF NOT EXISTS cp_assessment (
                     assessment_date DATE NOT NULL,
                     company_name VARCHAR NOT NULL,
@@ -103,6 +193,9 @@ def create_tables():
                     PRIMARY KEY (assessment_date, company_name, version, is_regional),
                     FOREIGN KEY (company_name, version) REFERENCES company(company_name, version)
                 );
+                """,
+                # CP projection table
+                """
                 CREATE TABLE IF NOT EXISTS cp_projection (
                     cp_projection_year INTEGER NOT NULL,
                     cp_projection_value INTEGER,
@@ -111,8 +204,12 @@ def create_tables():
                     version VARCHAR NOT NULL,
                     is_regional VARCHAR NOT NULL,
                     PRIMARY KEY (cp_projection_year, assessment_date, company_name, version, is_regional),
-                    FOREIGN KEY (assessment_date, company_name, version, is_regional) REFERENCES cp_assessment(assessment_date, company_name, version, is_regional)
+                    FOREIGN KEY (assessment_date, company_name, version, is_regional) 
+                        REFERENCES cp_assessment(assessment_date, company_name, version, is_regional)
                 );
+                """,
+                # CP alignment table
+                """
                 CREATE TABLE IF NOT EXISTS cp_alignment (
                     cp_alignment_year INTEGER NOT NULL,
                     cp_alignment_value VARCHAR,
@@ -121,8 +218,12 @@ def create_tables():
                     version VARCHAR NOT NULL,
                     is_regional VARCHAR NOT NULL,
                     PRIMARY KEY (cp_alignment_year, assessment_date, company_name, version, is_regional),
-                    FOREIGN KEY (assessment_date, company_name, version, is_regional) REFERENCES cp_assessment(assessment_date, company_name, version, is_regional)
+                    FOREIGN KEY (assessment_date, company_name, version, is_regional) 
+                        REFERENCES cp_assessment(assessment_date, company_name, version, is_regional)
                 );
+                """,
+                # Sector benchmark table
+                """
                 CREATE TABLE IF NOT EXISTS sector_benchmark (
                     benchmark_id VARCHAR NOT NULL,
                     sector_name VARCHAR NOT NULL,
@@ -132,6 +233,9 @@ def create_tables():
                     unit VARCHAR,
                     PRIMARY KEY (benchmark_id, sector_name, scenario_name)
                 );
+                """,
+                # Benchmark projection table
+                """
                 CREATE TABLE IF NOT EXISTS benchmark_projection (
                     benchmark_projection_year INTEGER NOT NULL,
                     benchmark_projection_attribute FLOAT,
@@ -139,15 +243,30 @@ def create_tables():
                     sector_name VARCHAR NOT NULL,
                     scenario_name VARCHAR NOT NULL,
                     PRIMARY KEY (benchmark_projection_year, benchmark_id, sector_name, scenario_name),
-                    FOREIGN KEY (benchmark_id, sector_name, scenario_name) REFERENCES sector_benchmark(benchmark_id, sector_name, scenario_name)
+                    FOREIGN KEY (benchmark_id, sector_name, scenario_name) 
+                        REFERENCES sector_benchmark(benchmark_id, sector_name, scenario_name)
                 );
-            """))
+                """
+            ]
+            
+            # Create tables one by one for better error handling
+            for i, table_sql in enumerate(tables, 1):
+                try:
+                    conn.execute(text(table_sql))
+                    debug_log(f"Created TPI table {i}/{len(tables)}")
+                except Exception as e:
+                    logger.error(f"Failed to create TPI table {i}: {str(e)}")
+                    raise
+            
             conn.commit()
         logger.info("TPI tables created successfully.")
 
         # Create ASCOR tables explicitly
         with ascor_engine.connect() as conn:
-            conn.execute(text("""
+            # Split the table creation into smaller chunks for better error handling
+            tables = [
+                # Country table
+                """
                 CREATE TABLE IF NOT EXISTS country (
                     country_name VARCHAR NOT NULL,
                     iso VARCHAR,
@@ -157,6 +276,9 @@ def create_tables():
                     un_party_type VARCHAR,
                     PRIMARY KEY (country_name)
                 );
+                """,
+                # Assessment elements table
+                """
                 CREATE TABLE IF NOT EXISTS assessment_elements (
                     code VARCHAR NOT NULL,
                     text VARCHAR NOT NULL,
@@ -164,6 +286,9 @@ def create_tables():
                     type VARCHAR NOT NULL,
                     PRIMARY KEY (code)
                 );
+                """,
+                # Assessment results table
+                """
                 CREATE TABLE IF NOT EXISTS assessment_results (
                     assessment_id INTEGER NOT NULL,
                     code VARCHAR NOT NULL,
@@ -177,6 +302,9 @@ def create_tables():
                     FOREIGN KEY (code) REFERENCES assessment_elements(code),
                     FOREIGN KEY (country_name) REFERENCES country(country_name)
                 );
+                """,
+                # Assessment trends table
+                """
                 CREATE TABLE IF NOT EXISTS assessment_trends (
                     trend_id INTEGER NOT NULL,
                     country_name VARCHAR NOT NULL,
@@ -189,6 +317,9 @@ def create_tables():
                     PRIMARY KEY (trend_id, country_name),
                     FOREIGN KEY (country_name) REFERENCES country(country_name)
                 );
+                """,
+                # Trend values table
+                """
                 CREATE TABLE IF NOT EXISTS trend_values (
                     trend_id INTEGER NOT NULL,
                     country_name VARCHAR NOT NULL,
@@ -197,6 +328,9 @@ def create_tables():
                     PRIMARY KEY (trend_id, country_name, year),
                     FOREIGN KEY (trend_id, country_name) REFERENCES assessment_trends(trend_id, country_name)
                 );
+                """,
+                # Value per year table
+                """
                 CREATE TABLE IF NOT EXISTS value_per_year (
                     year INTEGER NOT NULL,
                     value FLOAT NOT NULL,
@@ -204,6 +338,9 @@ def create_tables():
                     country_name VARCHAR NOT NULL,
                     FOREIGN KEY (trend_id, country_name) REFERENCES assessment_trends(trend_id, country_name)
                 );
+                """,
+                # Benchmarks table
+                """
                 CREATE TABLE IF NOT EXISTS benchmarks (
                     benchmark_id INTEGER NOT NULL,
                     publication_date DATE,
@@ -215,6 +352,9 @@ def create_tables():
                     PRIMARY KEY (benchmark_id),
                     FOREIGN KEY (country_name) REFERENCES country(country_name)
                 );
+                """,
+                # Benchmark values table
+                """
                 CREATE TABLE IF NOT EXISTS benchmark_values (
                     year INTEGER NOT NULL,
                     benchmark_id INTEGER NOT NULL,
@@ -222,12 +362,30 @@ def create_tables():
                     PRIMARY KEY (year, benchmark_id),
                     FOREIGN KEY (benchmark_id) REFERENCES benchmarks(benchmark_id)
                 );
-            """))
+                """
+            ]
+            
+            # Create tables one by one for better error handling
+            for i, table_sql in enumerate(tables, 1):
+                try:
+                    conn.execute(text(table_sql))
+                    debug_log(f"Created ASCOR table {i}/{len(tables)}")
+                except Exception as e:
+                    logger.error(f"Failed to create ASCOR table {i}: {str(e)}")
+                    raise
+            
             conn.commit()
         logger.info("ASCOR tables created successfully.")
 
     except Exception as e:
         logger.error(f"Failed to create tables: {str(e)}")
+        # Add some context to the error
+        if "connection" in str(e).lower():
+            logger.error("Database connection failed. Please check your database settings.")
+        elif "permission" in str(e).lower():
+            logger.error("Permission denied. Please check your database user permissions.")
+        elif "already exists" in str(e).lower():
+            logger.error("Some tables already exist. Use drop_tables() first or set DEBUG=True to override.")
         raise
 
 def populate_tpi():
@@ -244,8 +402,8 @@ def populate_tpi():
 
         # Company
         # Define paths to company files
-        file_5 = os.path.join(tpi_data_dir, 'Company_Latest_Assessments_5.0.csv')
-        file_4 = os.path.join(tpi_data_dir, 'Company_Latest_Assessments.csv')
+        file_5 = os.path.join(TPI_DATA_DIR, 'Company_Latest_Assessments_5.0.csv')
+        file_4 = os.path.join(TPI_DATA_DIR, 'Company_Latest_Assessments.csv')
 
         # Load both files
         df_5 = pd.read_csv(file_5)
@@ -287,7 +445,7 @@ def populate_tpi():
             methodology_version = mq_file.split('_')[3]
             version = f"{methodology_version}.0"
             
-            df_mq = pd.read_csv(os.path.join(tpi_data_dir, mq_file))
+            df_mq = pd.read_csv(os.path.join(TPI_DATA_DIR, mq_file))
             df_mq.columns = df_mq.columns.str.strip().str.lower().str.replace(' ', '_')
             
             # Get unique companies from this file
@@ -329,7 +487,7 @@ def populate_tpi():
             methodology_version = mq_file.split('_')[3]  # Gets the number after 'Methodology_'
             version = f"{methodology_version}.0"  # Convert to version format (e.g., "1.0")
             
-            df_mq = pd.read_csv(os.path.join(tpi_data_dir, mq_file))
+            df_mq = pd.read_csv(os.path.join(TPI_DATA_DIR, mq_file))
             df_mq.columns = df_mq.columns.str.strip().str.lower().str.replace(' ', '_')
             
             # Extract questions and their codes
@@ -372,7 +530,7 @@ def populate_tpi():
             tpi_cycle = int(methodology_version)  # Convert to integer for tpi_cycle
             version = f"{methodology_version}.0"
             
-            df_mq = pd.read_csv(os.path.join(tpi_data_dir, mq_file))
+            df_mq = pd.read_csv(os.path.join(TPI_DATA_DIR, mq_file))
             df_mq.columns = df_mq.columns.str.strip().str.lower().str.replace(' ', '_')
             
             # Process the data
@@ -411,7 +569,7 @@ def populate_tpi():
         tpi_data['mq_assessment'] = mq_df
 
         # CP Assessment
-        cp_dir = tpi_data_dir
+        cp_dir = TPI_DATA_DIR
         
         # Dynamically find CP files
         cp_files = {}
@@ -489,7 +647,7 @@ def populate_tpi():
             tpi_data['cp_projection'] = pd.concat(projection_records)
 
         # Sector Benchmark
-        df_sector = pd.read_csv(os.path.join(tpi_data_dir, 'Sector_Benchmarks_08032025.csv'))
+        df_sector = pd.read_csv(os.path.join(TPI_DATA_DIR, 'Sector_Benchmarks_08032025.csv'))
         df_sector.columns = df_sector.columns.str.strip().str.lower().str.replace(' ', '_')
         sector_benchmark_df = df_sector[['benchmark_id', 'sector_name', 'scenario_name', 'region', 'release_date', 'unit']].copy()
         sector_benchmark_df['release_date'] = pd.to_datetime(sector_benchmark_df['release_date'], dayfirst=True)
@@ -544,7 +702,7 @@ def populate_ascor():
         ascor_data = {}
 
         # Country
-        df_country = pd.read_excel(os.path.join(ascor_data_dir, 'ASCOR_countries.xlsx'))
+        df_country = pd.read_excel(os.path.join(ASCOR_DATA_DIR, 'ASCOR_countries.xlsx'))
         df_country.columns = df_country.columns.str.strip()
         country_df = df_country[[
             'Name',
@@ -568,7 +726,7 @@ def populate_ascor():
         valid_countries = set(country_df['country_name'].str.strip())
 
         # Benchmarks
-        df_bench = pd.read_excel(os.path.join(ascor_data_dir, 'ASCOR_benchmarks.xlsx'))
+        df_bench = pd.read_excel(os.path.join(ASCOR_DATA_DIR, 'ASCOR_benchmarks.xlsx'))
         df_bench.columns = df_bench.columns.str.strip().str.lower().str.replace(' ', '_')
         benchmarks_df = df_bench[[
             'id', 'publication_date', 'emissions_metric', 'emissions_boundary',
@@ -601,7 +759,7 @@ def populate_ascor():
         ascor_data['benchmark_values'] = benchmark_values_df
 
         # Assessment Elements
-        df_elements = pd.read_excel(os.path.join(ascor_data_dir, 'ASCOR_indicators.xlsx'))
+        df_elements = pd.read_excel(os.path.join(ASCOR_DATA_DIR, 'ASCOR_indicators.xlsx'))
         df_elements.columns = df_elements.columns.str.strip().str.lower().str.replace(' ', '_')
         assessment_elements_df = df_elements[[
             'code', 'text', 'units_or_response_type', 'type'
@@ -611,7 +769,7 @@ def populate_ascor():
         ascor_data['assessment_elements'] = assessment_elements_df
 
         # Assessment Results
-        df_results = pd.read_excel(os.path.join(ascor_data_dir, 'ASCOR_assessments_results.xlsx'))
+        df_results = pd.read_excel(os.path.join(ASCOR_DATA_DIR, 'ASCOR_assessments_results.xlsx'))
         df_results.columns = df_results.columns.str.strip()
         
         # Columns that represent coded responses (non-pillar only)
@@ -664,7 +822,7 @@ def populate_ascor():
         ascor_data['assessment_results'] = assessment_results_df
 
         # Assessment Trends
-        df_trends = pd.read_excel(os.path.join(ascor_data_dir, 'ASCOR_assessments_results_trends_pathways.xlsx'))
+        df_trends = pd.read_excel(os.path.join(ASCOR_DATA_DIR, 'ASCOR_assessments_results_trends_pathways.xlsx'))
         df_trends.columns = df_trends.columns.str.strip().str.lower().str.replace(' ', '_')
         
         # Select and rename relevant columns
@@ -766,25 +924,87 @@ def populate_ascor():
         raise
 
 def run_pipeline():
-    """Run the complete data pipeline."""
+    """Run the complete data pipeline.
+    
+    This function orchestrates the entire data pipeline process:
+    1. Drops existing tables (if any)
+    2. Creates new tables with proper schemas
+    3. Populates TPI database with company and assessment data
+    4. Populates ASCOR database with country and assessment data
+    
+    The pipeline includes data validation at each step and provides
+    detailed logging of the process.
+    """
+    start_time = datetime.now()
+    logger.info(f"Starting pipeline at {start_time}")
+    
     try:
         # Drop all tables
+        logger.info("Step 1/4: Dropping existing tables...")
         drop_tables()
         
         # Create all tables
+        logger.info("Step 2/4: Creating new tables...")
         create_tables()
         
         # Populate TPI database
+        logger.info("Step 3/4: Populating TPI database...")
         populate_tpi()
         
         # Populate ASCOR database
+        logger.info("Step 4/4: Populating ASCOR database...")
         populate_ascor()
         
-        logger.info("Pipeline completed successfully!")
+        # Calculate and log execution time
+        end_time = datetime.now()
+        duration = end_time - start_time
+        logger.info(f"Pipeline completed successfully in {duration}")
+        
+        # Log some basic stats
+        if DEBUG:
+            _log_pipeline_stats()
         
     except Exception as e:
         logger.error(f"Pipeline failed: {str(e)}")
+        # Add some context to the error
+        if "connection" in str(e).lower():
+            logger.error("Database connection failed. Please check your database settings.")
+        elif "permission" in str(e).lower():
+            logger.error("Permission denied. Please check your database user permissions.")
+        elif "validation" in str(e).lower():
+            logger.error("Data validation failed. Please check the data files and validation rules.")
         raise
 
+def _log_pipeline_stats():
+    """Log some basic statistics about the populated databases."""
+    try:
+        # TPI stats
+        tpi_engine = get_engine('tpi_api')
+        with tpi_engine.connect() as conn:
+            company_count = conn.execute(text("SELECT COUNT(*) FROM company")).scalar()
+            assessment_count = conn.execute(text("SELECT COUNT(*) FROM mq_assessment")).scalar()
+            logger.debug(f"TPI Stats:")
+            logger.debug(f"- Companies: {company_count}")
+            logger.debug(f"- Assessments: {assessment_count}")
+        
+        # ASCOR stats
+        ascor_engine = get_engine('ascor_api')
+        with ascor_engine.connect() as conn:
+            country_count = conn.execute(text("SELECT COUNT(*) FROM country")).scalar()
+            result_count = conn.execute(text("SELECT COUNT(*) FROM assessment_results")).scalar()
+            logger.debug(f"ASCOR Stats:")
+            logger.debug(f"- Countries: {country_count}")
+            logger.debug(f"- Assessment Results: {result_count}")
+            
+    except Exception as e:
+        logger.warning(f"Failed to log pipeline stats: {str(e)}")
+
 if __name__ == '__main__':
-    run_pipeline() 
+    try:
+        run_pipeline()
+    except KeyboardInterrupt:
+        logger.info("Pipeline interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Pipeline failed with error: {str(e)}")
+        sys.exit(1) 
