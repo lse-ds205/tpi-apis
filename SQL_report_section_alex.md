@@ -46,25 +46,88 @@ Fourth, in consideration of future data, the **schema avoids rigid design choice
 
 ### Future-Proofing Considerations 
 
-### Relationships 
-
-
-
+XXXXX
 
 
 ### Entities and Attributes 
 
-#### benchmarks
+#### Benchmarks
+
+This entity stores data from the **ASCOR_benchmarks.xlsx** file. This file uses the id column in the excel file as the PK as this is unique for every country and country could not be used as there was multiple benchmarks for each country. All attributes are nullable to ensure that missing data does not prevent data being added. The logic for the initial benchmark entity is straightforward, as the attributes directly link to the names of the columns in the files and each country can have multiple benchmarks, uniquely defined by a combination of benchmark_id and country_name.
+
+**Data types:**
+```
+benchmark_id         INT NOT NULL (PK)  
+publication_date     DATE 
+emissions_metric     VARCHAR 
+emissions_boundary   VARCHAR 
+units                VARCHAR
+benchmark_type       VARCHAR 
+country_name         VARCHAR NOT NULL (FK to country.country_name)  
+```
+
+**Example benchmark entity:**
+```
+benchmark_id         96  
+country_name         Angola  
+publication_date     2024-11-01  
+emissions_metric     Absolute  
+emissions_boundary   Production - excluding LULUCF  
+units                MtCO₂e  
+benchmark_type       National 1.5C benchmark  
+```
 
 ##### benchmark_values
 
-To accurately model this one-to-many relationship — where each benchmark can have one value per year — you need a composite primary key on (benchmark_id, year):
+This entity holds the year/value pairs for each country benchmark. Instead of using a wide format, where the benchmarks table would include separate columns for each year (e.g., 2023, 2024, ..., 2030), a separate normalized table (benchmark_values) is used. This is advantageous because: 
+- It supports flexibility as future years can be added without altering the table schema.
+- It also avoids sparse data as  years with no values aren't stored as empty columns.
+- It maintains relational integrity and reduces redundancy by linking to the benchmarks table.
 
+Moreover, to accurately model this one-to-many relationship, where each benchmark can have one value per year, the benchmark_values table uses a composite primary key on (benchmark_id, year).
 
+The year attribute is derived from the column name in the original Excel file and must not be null, as it's logically impossible for a benchmark value to lack a corresponding year. Moreover, the value must also not be null — null values are excluded during data transformation to avoid storing meaningless or incomplete records.
+**Data Types:**
+```
+benchmark_id         INT NOT NULL (PK part, FK to benchmarks.benchmark_id)  
+year                 INT NOT NULL (PK part)  
+value                FLOAT NOT NULL  
+```
+
+**Example Entry:**
+```
+benchmark_id         96
+year                 2025
+value                20.09  
+```
 #### country 
+
+The country entities are used to store data in the **ASCOR_countries.xlsx** file. Here, each country has one entry, therefore country was used as the PK. An alternative approach would have been to create a composite primary key between the country name and the id (first column), however, after further inspection of the data I realised these ids were not consistent across file. Therefore, introducing id as a composite primary key would have been inefficient for joining tables together, given the ids across files for countries do not match up. 
+
+Once again, all attributes can be null, apart from the PK, to ensure missing data does not result in country not being added to the dataset.
+
+**Data Types:**
+```
+country_name         VARCHAR NOT NULL (PK)  
+iso                  VARCHAR  
+region               VARCHAR
+bank_lending_group   VARCHAR 
+IMF_category         VARCHAR 
+UN_party_type        VARCHAR 
+```
+**Example county entity:**
+```
+country_name         Angola  
+iso                  AGO  
+region               Sub-Saharan Africa  
+bank_lending_group   Lower-middle-income  
+IMF_category         Emerging market economies  
+UN_party_type        Non-Annex I and Non-Annex II  
+```
 
 #### assessment_results 
 
+This entity stores 
 #### assessment_elements
 
 
