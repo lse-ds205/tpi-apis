@@ -186,13 +186,93 @@ response_type        Yes/No
 type                 indicator  
 ```
 
+### Assessment Trends 
+
+The Excel file **ASCOR_assessments_results_trends_pathways.xlsx** contains a mix of structurally different data types:  trend metadata, single-value metrics, and yearly time series projections. These are all stored into a single flat file. Following the best practices in relational database design (especially normalization and separation of concerns), the data was split into three distinct but related entities described below.
+
 #### assessment_trends 
+
+This entity stores data from the **ASCOR_assessments_results_trends_pathways.xlsx** file. This table stores general metadata about each emissions trend and each record corresponds to one emissions trend assessment (row in the file). A composite primary key on (trend_id, country_name) is used because the id column alone is reused across countries and their are multiple rows for each country. 
+
+**Data Type:**
+```
+trend_id             INT NOT NULL (PK part)  
+country_name         VARCHAR NOT NULL (PK part, FK to country.country_name)  
+emissions_metric     VARCHAR  
+emissions_boundary   VARCHAR  
+units                VARCHAR  
+assessment_date      DATE  
+publication_date     DATE  
+last_historical_year INT  
+```
+**Example Entry:**
+```
+trend_id             291  
+country_name         Australia  
+emissions_metric     Intensity per GDP-PPP  
+emissions_boundary   Production - excluding LULUCF  
+units                tCO₂e/Million US$  
+assessment_date      2023-10-31  
+publication_date     2023-12-01  
+last_historical_year 2022  
+```
 
 ##### trend_values 
 
+This entity stores specific metrics and performance change summaries of the assessment trends.
+
+To organize this data:
+
+- Metric values such as metric_ep1.a.i are cleaned (e.g., converting "No data" to NULL).
+- Change values (e.g., metric_ep1.a.ii_1-year) originally included percent signs or the string "Not applicable" and are cleaned into a consistent format (as strings or nulls).
+
+The same composite key (trend_id, country_name) is used, and a foreign key constraint links it to assessment_trends.
+
+**Data Types:**
+```
+trend_id                 INT NOT NULL (PK part, FK to assessment_trends.trend_id)  
+country_name             VARCHAR NOT NULL (PK part, FK to assessment_trends.country_name)  
+metric_ep1_a_i           FLOAT  
+source_metric_ep1_a_i    VARCHAR  
+year_metric_ep1_a_i      INT  
+metric_ep1_a_ii_1_year   VARCHAR  
+metric_ep1_a_ii_3_year   VARCHAR  
+metric_ep1_a_ii_5_year   VARCHAR  
+```
+
+**Example Entry:**
+```
+trend_id                 291  
+country_name             Australia  
+metric_ep1_a_i           328.04  
+source_metric_ep1_a_i    NULL  
+year_metric_ep1_a_i      NULL  
+metric_ep1_a_ii_1_year   -11.20  
+metric_ep1_a_ii_3_year   -8.20  
+metric_ep1_a_ii_5_year   -7.00  
+```
+
+
 ##### values_per_year
 
+This entity stores the projected emissions values for each year for each country and trend. In the raw Excel data, these values were stored as separate columns for each year, in a wide format, but to improve flexibility and reduce redundancy, these columns are normalized into a long format. This normalization allows easy updates as future years are added and cleaner handling of missing data as missing data not stored.
 
+The foreign key (trend_id, country_name) references the trend_values table to maintain relational consistency.
 
+**Data Types:**
+```
+year                    INT NOT NULL  
+value                   FLOAT NOT NULL  
+trend_id                INT NOT NULL (FK to trend_values.trend_id)  
+country_name            VARCHAR NOT NULL (FK to trend_values.country_name)  
+```
+
+**Example Entry:**
+```
+year        2005  
+value       805.91  
+trend_id    291  
+country_name Australia  
+```
 
 
