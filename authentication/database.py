@@ -7,7 +7,7 @@ This file contains a dictionary that simulate the user database. Real data to be
 from schemas import UserInDB
 
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Union
 
 import os
 from dotenv import load_dotenv
@@ -36,7 +36,7 @@ users_db = {
 }
 
 
-def get_user(username: str) -> UserInDB | None:
+def get_user(username: str) -> Union[UserInDB,None]:
     user_dict = users_db.get(username)
     if user_dict:
         return UserInDB(**user_dict)

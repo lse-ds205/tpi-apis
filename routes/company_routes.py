@@ -22,9 +22,9 @@ from schemas import (
     PerformanceComparisonResponse,
     PerformanceComparisonInsufficientDataResponse,
 )
-from utils import normalize_company_id
-from data_utils import CompanyDataHandler
-from filters import CompanyFilters
+from utils.utils import normalize_company_id
+from utils.data_utils import CompanyDataHandler
+from utils.filters import CompanyFilters
 
 # -------------------------------------------------------------------------
 # Router Initialization

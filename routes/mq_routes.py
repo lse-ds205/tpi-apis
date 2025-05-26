@@ -21,9 +21,9 @@ from schemas import (
     MQIndicatorsResponse,
     PaginatedMQResponse,
 )
-from data_utils import MQHandler
-from filters import CompanyFilters, MQFilter
-from utils import get_latest_data_dir, get_latest_assessment_file
+from utils.data_utils import MQHandler
+from utils.filters import CompanyFilters, MQFilter
+from utils.utils import get_latest_data_dir, get_latest_assessment_file
 
 # ------------------------------------------------------------------------------
 # Constants and Data Loading

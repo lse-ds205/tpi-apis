@@ -3,7 +3,7 @@ from utils.database_creation_utils import get_engine
 import logging
 import pandas as pd
 import os
-from data_validation import DataValidator
+from utils.data_validation import DataValidator
 import re
 from datetime import datetime
 from abc import ABC, abstractmethod

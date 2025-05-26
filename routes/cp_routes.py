@@ -7,7 +7,7 @@ loads and normalizes the data, and exposes endpoints to retrieve and compare CP 
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
-from data_utils import CPHandler
+from utils.data_utils import CPHandler
 from fastapi import APIRouter, HTTPException, Query, Path, Request, Depends
 import pandas as pd
 import os
@@ -20,7 +20,7 @@ from schemas import (
     CPComparisonResponse,
     PerformanceComparisonInsufficientDataResponse,
 )
-from filters import CompanyFilters
+from utils.filters import CompanyFilters
 
 # -------------------------------------------------------------------------
 # Data Loading
