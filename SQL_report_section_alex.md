@@ -127,9 +127,64 @@ UN_party_type        Non-Annex I and Non-Annex II
 
 #### assessment_results 
 
-This entity stores 
+This entity stores data from the **ASCOR_assessments_results.xlsx** file. Each row in this file represents one response to one element (e.g EP.1.a or r EP.2.d) by one country, and is uniquely identified by a composite primary key of (assessment_id, code). Here the code refers the the response element and further information on each code can be found by joining this entity with assessment_elements based on the code. The assessment_id is a unique identifier for each full country assessment. However, because one assessment includes multiple element responses (each tagged by a code), a composite key is necessary. 
+
+How **Source** and **Year** are extracted:
+- In the original Excel file, each column contains year and response in the following structure *year indicator EP.1.a* and *source indicator EP.1.a*
+- The year is extracted from the respective year XXX column (e.g., year indicator EP.1.a) only if present and not null.
+- The source is taken from the matching source XXX column (e.g., source indicator EP.1.a) if available.
+
+This structure allows the model to support:
+
+- Multiple assessments per country (over time).
+- Multiple responses per assessment.
+- Linkage to both the indicator and country context via foreign keys.
+- The year and source fields are optional but included when available, to give further metadata about the timing and provenance of the response.
+
+Once again, null values are permitted in non-key attributes to allow for incomplete submissions or ongoing data collection.
+
+**Data Types:**
+```
+assessment_id        INT NOT NULL (PK part)  
+code                 VARCHAR NOT NULL (PK part, FK to assessment_elements.code)  
+country_name         VARCHAR NOT NULL (FK to country.country_name)  
+response             VARCHAR  
+assessment_date      DATE  
+publication_date     DATE  
+source               VARCHAR  
+year                 INT  
+```
+
+**Entry Example:**
+```
+assessment_id        235  
+code                 EP.1.a  
+country_name         Angola  
+response             Yes  
+assessment_date      2024-10-15  
+publication_date     2024-12-01  
+source               https://1p5ndc-pathways.climateanalytics.org/
+year                 2023  
+```
 #### assessment_elements
 
+This entity stores metadata from the **ASCOR_indicators.xlsx file**, defining each individual indicator, area, or metric used in ASCOR assessments. Each entry corresponds to a unique assessment element and is identified by a code, such as EP.1.a, which acts as the primary key. This table serves as a reference for interpreting codes in the assessment_results entity and enables consistent definitions for each element used across assessments. This also means future codes can be easily added in the future. 
+
+**Data Types:**
+```
+code                 VARCHAR NOT NULL (PK)  
+text                 VARCHAR 
+response_type        VARCHAR 
+type                 VARCHAR 
+```
+
+**Example assessment_elements entity:**
+```
+code                 EP.1.a  
+text                 Has the country improved its emissions profile over the past 5 years?
+response_type        Yes/No  
+type                 indicator  
+```
 
 #### assessment_trends 
 
