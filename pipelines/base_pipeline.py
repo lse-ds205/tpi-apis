@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from utils.database_creation_utils import get_engine
+from utils.database_manager import DatabaseManagerFactory
 import logging
 import pandas as pd
 import os
@@ -21,7 +21,7 @@ class BasePipeline(ABC):
         """
         self.db_name = db_name
         self.data_dir = data_dir
-        self.engine = get_engine(db_name)
+        self.db_manager = DatabaseManagerFactory.get_manager(db_name)
         self.validator = DataValidator()
         self.data = {}
         self.logger = logger
@@ -30,26 +30,7 @@ class BasePipeline(ABC):
         """Drop all tables in the database."""
         try:
             self.logger.info(f"Dropping {self.db_name} database tables...")
-            
-            # Check if tables exist before dropping
-            with self.engine.connect() as conn:
-                tables = conn.execute(text("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'public'
-                """)).fetchall()
-                
-                if not tables:
-                    self.logger.info(f"No {self.db_name} tables found to drop.")
-                    return
-                
-                # Drop tables using CASCADE to handle dependencies
-                for table in tables:
-                    conn.execute(text(f'DROP TABLE IF EXISTS "{table[0]}" CASCADE'))
-                conn.commit()
-                
-                self.logger.info(f"Successfully dropped {len(tables)} {self.db_name} tables.")
-                
+            self.db_manager.drop_all_tables()
         except Exception as e:
             self.logger.error(f"Failed to drop {self.db_name} tables: {str(e)}")
             # Add some context to the error
@@ -62,31 +43,8 @@ class BasePipeline(ABC):
     def create_tables(self):
         """Create all tables in the database."""
         try:
-            # Ensure public schema exists and is set as search path
-            with self.engine.connect() as conn:
-                # Create schema if it doesn't exist
-                conn.execute(text("CREATE SCHEMA IF NOT EXISTS public;"))
-                
-                # Set search path
-                conn.execute(text("SET search_path TO public;"))
-                conn.commit()
-            self.logger.info(f"{self.db_name}: public schema ensured and search path set.")
-
-            # Get table creation SQL
-            tables = self._get_table_creation_sql()
-
-            # Create tables one by one for better error handling
-            with self.engine.connect() as conn:
-                for i, table_sql in enumerate(tables, 1):
-                    try:
-                        conn.execute(text(table_sql))
-                        self.logger.debug(f"Created {self.db_name} table {i}/{len(tables)}")
-                    except Exception as e:
-                        self.logger.error(f"Failed to create {self.db_name} table {i}: {str(e)}")
-                        raise
-                conn.commit()
-            self.logger.info(f"{self.db_name} tables created successfully.")
-
+            self.logger.info(f"Creating {self.db_name} tables...")
+            self.db_manager.create_tables()
         except Exception as e:
             self.logger.error(f"Failed to create {self.db_name} tables: {str(e)}")
             # Add some context to the error
@@ -116,23 +74,14 @@ class BasePipeline(ABC):
                 for warning in validation_results['warnings']:
                     self.logger.warning(f"- {warning}")
             
-            # Insert data into tables
-            self._insert_data()
+            # Insert data into tables using database manager
+            self.db_manager.bulk_insert(self.data)
             
             self.logger.info(f'{self.db_name} database population completed successfully.')
 
         except Exception as e:
             self.logger.error(f"Failed to populate {self.db_name} database: {str(e)}")
             raise
-
-    @abstractmethod
-    def _get_table_creation_sql(self) -> list:
-        """Get SQL statements for creating tables.
-        
-        Returns:
-            list: List of SQL statements for creating tables
-        """
-        pass
 
     @abstractmethod
     def _process_data(self):
@@ -148,24 +97,5 @@ class BasePipeline(ABC):
         """
         pass
 
-    def _insert_data(self):
-        """Insert processed data into tables."""
-        try:
-            # Insert data into tables
-            for table_name, df in self.data.items():
-                if table_name not in self._get_primary_tables():  # Skip primary tables as they're already inserted
-                    df.to_sql(table_name, self.engine, if_exists='append', index=False)
-                    self.logger.info(f'{self.db_name}: {table_name} table populated.')
-        except Exception as e:
-            self.logger.error(f"Failed to insert data into {self.db_name} tables: {str(e)}")
-            raise
 
-    @abstractmethod
-    def _get_primary_tables(self) -> list:
-        """Get list of primary tables that should be inserted first.
-        
-        Returns:
-            list: List of primary table names
-        """
-        pass
     

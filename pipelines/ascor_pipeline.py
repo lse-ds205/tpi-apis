@@ -17,108 +17,7 @@ class ASCORPipeline(BasePipeline):
         super().__init__('ascor_api', data_dir, logger)
         self.ascor_data_dir = os.path.join(data_dir, 'TPI_ASCOR_data_13012025')
 
-    def _get_table_creation_sql(self) -> list:
-        """Get SQL statements for creating ASCOR tables."""
-        return [
-            # Country table
-            """
-            CREATE TABLE IF NOT EXISTS country (
-                country_name VARCHAR NOT NULL,
-                iso VARCHAR,
-                region VARCHAR,
-                bank_lending_group VARCHAR,
-                imf_category VARCHAR,
-                un_party_type VARCHAR,
-                PRIMARY KEY (country_name)
-            );
-            """,
-            # Assessment elements table
-            """
-            CREATE TABLE IF NOT EXISTS assessment_elements (
-                code VARCHAR NOT NULL,
-                text VARCHAR NOT NULL,
-                response_type VARCHAR NOT NULL,
-                type VARCHAR NOT NULL,
-                PRIMARY KEY (code)
-            );
-            """,
-            # Assessment results table
-            """
-            CREATE TABLE IF NOT EXISTS assessment_results (
-                assessment_id INTEGER NOT NULL,
-                code VARCHAR NOT NULL,
-                response VARCHAR,
-                assessment_date DATE NOT NULL,
-                publication_date DATE,
-                source VARCHAR,
-                year INTEGER,
-                country_name VARCHAR NOT NULL,
-                PRIMARY KEY (assessment_id, code),
-                FOREIGN KEY (code) REFERENCES assessment_elements(code),
-                FOREIGN KEY (country_name) REFERENCES country(country_name)
-            );
-            """,
-            # Assessment trends table
-            """
-            CREATE TABLE IF NOT EXISTS assessment_trends (
-                trend_id INTEGER NOT NULL,
-                country_name VARCHAR NOT NULL,
-                emissions_metric VARCHAR,
-                emissions_boundary VARCHAR,
-                units VARCHAR,
-                assessment_date DATE,
-                publication_date DATE,
-                last_historical_year INTEGER,
-                PRIMARY KEY (trend_id, country_name),
-                FOREIGN KEY (country_name) REFERENCES country(country_name)
-            );
-            """,
-            # Trend values table
-            """
-            CREATE TABLE IF NOT EXISTS trend_values (
-                trend_id INTEGER NOT NULL,
-                country_name VARCHAR NOT NULL,
-                year INTEGER NOT NULL,
-                value FLOAT NOT NULL,
-                PRIMARY KEY (trend_id, country_name, year),
-                FOREIGN KEY (trend_id, country_name) REFERENCES assessment_trends(trend_id, country_name)
-            );
-            """,
-            # Value per year table
-            """
-            CREATE TABLE IF NOT EXISTS value_per_year (
-                year INTEGER NOT NULL,
-                value FLOAT NOT NULL,
-                trend_id INTEGER NOT NULL,
-                country_name VARCHAR NOT NULL,
-                FOREIGN KEY (trend_id, country_name) REFERENCES assessment_trends(trend_id, country_name)
-            );
-            """,
-            # Benchmarks table
-            """
-            CREATE TABLE IF NOT EXISTS benchmarks (
-                benchmark_id INTEGER NOT NULL,
-                publication_date DATE,
-                emissions_metric VARCHAR,
-                emissions_boundary VARCHAR,
-                units VARCHAR,
-                benchmark_type VARCHAR,
-                country_name VARCHAR,
-                PRIMARY KEY (benchmark_id),
-                FOREIGN KEY (country_name) REFERENCES country(country_name)
-            );
-            """,
-            # Benchmark values table
-            """
-            CREATE TABLE IF NOT EXISTS benchmark_values (
-                year INTEGER NOT NULL,
-                benchmark_id INTEGER NOT NULL,
-                value FLOAT NOT NULL,
-                PRIMARY KEY (year, benchmark_id),
-                FOREIGN KEY (benchmark_id) REFERENCES benchmarks(benchmark_id)
-            );
-            """
-        ]
+
 
     def _process_data(self):
         """Process ASCOR data from files into dataframes."""
@@ -139,9 +38,7 @@ class ASCORPipeline(BasePipeline):
         ]
         self.data['country'] = country_df
 
-        # Insert country data first since it's referenced by other tables
-        country_df.to_sql('country', self.engine, if_exists='append', index=False)
-        self.logger.info('ASCOR: country table populated.')
+        # Store country data - it will be inserted via bulk_insert in populate_tables
 
         # Get list of valid country names for foreign key validation
         valid_countries = set(country_df['country_name'].str.strip())
@@ -322,6 +219,4 @@ class ASCORPipeline(BasePipeline):
         """Validate ASCOR data."""
         return self.validator.validate_ascor_data(self.data)
 
-    def _get_primary_tables(self) -> list:
-        """Get list of primary tables that should be inserted first."""
-        return ['country'] 
+ 

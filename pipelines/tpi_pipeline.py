@@ -18,120 +18,7 @@ class TPIPipeline(BasePipeline):
         super().__init__('tpi_api', data_dir, logger)
         self.tpi_data_dir = os.path.join(data_dir, 'TPI_sector_data_All_sectors_08032025')
 
-    def _get_table_creation_sql(self) -> list:
-        """Get SQL statements for creating TPI tables."""
-        return [
-            # Company table
-            """
-            CREATE TABLE IF NOT EXISTS company (
-                company_name VARCHAR NOT NULL,
-                version VARCHAR NOT NULL,
-                geography VARCHAR,
-                isin VARCHAR,
-                ca100_focus VARCHAR,
-                size_classification VARCHAR,
-                geography_code VARCHAR,
-                sedol VARCHAR,
-                sector_name VARCHAR,
-                PRIMARY KEY (company_name, version)
-            );
-            """,
-            # Company answer table
-            """
-            CREATE TABLE IF NOT EXISTS company_answer (
-                question_code VARCHAR NOT NULL,
-                company_name VARCHAR NOT NULL,
-                version VARCHAR NOT NULL,
-                question_text VARCHAR,
-                response VARCHAR,
-                PRIMARY KEY (question_code, company_name, version),
-                FOREIGN KEY (company_name, version) REFERENCES company(company_name, version)
-            );
-            """,
-            # MQ assessment table
-            """
-            CREATE TABLE IF NOT EXISTS mq_assessment (
-                assessment_date DATE NOT NULL,
-                company_name VARCHAR NOT NULL,
-                version VARCHAR NOT NULL,
-                tpi_cycle INTEGER NOT NULL,
-                publication_date DATE,
-                level VARCHAR,
-                performance_change VARCHAR,
-                PRIMARY KEY (assessment_date, company_name, version, tpi_cycle),
-                FOREIGN KEY (company_name, version) REFERENCES company(company_name, version)
-            );
-            """,
-            # CP assessment table
-            """
-            CREATE TABLE IF NOT EXISTS cp_assessment (
-                assessment_date DATE NOT NULL,
-                company_name VARCHAR NOT NULL,
-                version VARCHAR NOT NULL,
-                is_regional VARCHAR NOT NULL,
-                publication_date DATE,
-                assumptions VARCHAR,
-                cp_unit VARCHAR,
-                projection_cutoff DATE,
-                benchmark_id VARCHAR,
-                PRIMARY KEY (assessment_date, company_name, version, is_regional),
-                FOREIGN KEY (company_name, version) REFERENCES company(company_name, version)
-            );
-            """,
-            # CP projection table
-            """
-            CREATE TABLE IF NOT EXISTS cp_projection (
-                cp_projection_year INTEGER NOT NULL,
-                cp_projection_value INTEGER,
-                assessment_date DATE NOT NULL,
-                company_name VARCHAR NOT NULL,
-                version VARCHAR NOT NULL,
-                is_regional VARCHAR NOT NULL,
-                PRIMARY KEY (cp_projection_year, assessment_date, company_name, version, is_regional),
-                FOREIGN KEY (assessment_date, company_name, version, is_regional) 
-                    REFERENCES cp_assessment(assessment_date, company_name, version, is_regional)
-            );
-            """,
-            # CP alignment table
-            """
-            CREATE TABLE IF NOT EXISTS cp_alignment (
-                cp_alignment_year INTEGER NOT NULL,
-                cp_alignment_value VARCHAR,
-                assessment_date DATE NOT NULL,
-                company_name VARCHAR NOT NULL,
-                version VARCHAR NOT NULL,
-                is_regional VARCHAR NOT NULL,
-                PRIMARY KEY (cp_alignment_year, assessment_date, company_name, version, is_regional),
-                FOREIGN KEY (assessment_date, company_name, version, is_regional) 
-                    REFERENCES cp_assessment(assessment_date, company_name, version, is_regional)
-            );
-            """,
-            # Sector benchmark table
-            """
-            CREATE TABLE IF NOT EXISTS sector_benchmark (
-                benchmark_id VARCHAR NOT NULL,
-                sector_name VARCHAR NOT NULL,
-                scenario_name VARCHAR NOT NULL,
-                region VARCHAR,
-                release_date DATE,
-                unit VARCHAR,
-                PRIMARY KEY (benchmark_id, sector_name, scenario_name)
-            );
-            """,
-            # Benchmark projection table
-            """
-            CREATE TABLE IF NOT EXISTS benchmark_projection (
-                benchmark_projection_year INTEGER NOT NULL,
-                benchmark_projection_attribute FLOAT,
-                benchmark_id VARCHAR NOT NULL,
-                sector_name VARCHAR NOT NULL,
-                scenario_name VARCHAR NOT NULL,
-                PRIMARY KEY (benchmark_projection_year, benchmark_id, sector_name, scenario_name),
-                FOREIGN KEY (benchmark_id, sector_name, scenario_name) 
-                    REFERENCES sector_benchmark(benchmark_id, sector_name, scenario_name)
-            );
-            """
-        ]
+
 
     def _process_data(self):
         """Process TPI data from files into dataframes."""
@@ -208,9 +95,7 @@ class TPIPipeline(BasePipeline):
         all_companies = all_companies.drop_duplicates(subset=['company_name', 'version'], keep='first')
         self.data['company'] = all_companies
 
-        # Insert company data first since it's referenced by other tables
-        all_companies.to_sql('company', self.engine, if_exists='append', index=False)
-        self.logger.info('TPI: company table populated.')
+        # Store company data - it will be inserted via bulk_insert in populate_tables
 
         # Create a set of valid company-version combinations for foreign key validation
         valid_companies = set(zip(all_companies['company_name'].str.strip(), all_companies['version']))
@@ -402,6 +287,4 @@ class TPIPipeline(BasePipeline):
         """Validate TPI data."""
         return self.validator.validate_tpi_data(self.data)
 
-    def _get_primary_tables(self) -> list:
-        """Get list of primary tables that should be inserted first."""
-        return ['company'] 
+ 
