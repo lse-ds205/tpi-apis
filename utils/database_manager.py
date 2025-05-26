@@ -299,7 +299,43 @@ class DatabaseManager:
         if self.engine:
             self.engine.dispose()
             logger.info(f"Closed database connection for {self.db_name}")
-
+    
+    def execute_sql_template(self, file_path: Union[str, Path], params: Optional[Dict] = None, 
+                           where_clause: str = "") -> pd.DataFrame:
+        """
+        Execute a SQL template file with parameter substitution.
+        
+        Args:
+            file_path (Union[str, Path]): Path to the SQL template file
+            params (Optional[Dict]): Query parameters
+            where_clause (str): WHERE clause to substitute in the template
+            
+        Returns:
+            pd.DataFrame: Query results
+        """
+        try:
+            # Convert to Path object if string
+            if isinstance(file_path, str):
+                file_path = Path(file_path)
+            
+            # Read the SQL template
+            with open(file_path, 'r') as file:
+                sql_template = file.read()
+            
+            # Replace WHERE clause placeholder
+            if "-- WHERE_CLAUSE_PLACEHOLDER" in sql_template:
+                where_clause_full = f"WHERE 1=1 {where_clause}" if where_clause else "WHERE 1=1"
+                sql_query = sql_template.replace("-- WHERE_CLAUSE_PLACEHOLDER", where_clause_full)
+            else:
+                # Handle other placeholder formats
+                sql_query = sql_template.replace("{{where_clause}}", where_clause)
+            
+            # Execute the query
+            return self.execute_query(sql_query, params or {})
+            
+        except Exception as e:
+            logger.error(f"Error executing SQL template {file_path}: {e}")
+            raise
 
 class DatabaseManagerFactory:
     """Factory class for creating database managers."""

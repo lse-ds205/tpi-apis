@@ -5,7 +5,7 @@ This module provides Pydantic models for filtering data across different endpoin
 These models are designed to be used with FastAPI's dependency injection system.
 """
 from fastapi import Query
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
@@ -82,3 +82,66 @@ class MQFilter(BaseModel):
     mq_levels: Optional[List[int]] = Query(None, description="Filter by MQ Level")
     level: Optional[List[int]] = Query(None, description="Filter by Overall Management Level")
     assessment_year: Optional[int] = Query(None, description="Filter by assessment year")
+
+
+def build_company_filter_conditions(filters: CompanyFilters) -> tuple[str, Dict[str, Any]]:
+    """
+    Build WHERE conditions and parameters for company filtering.
+    
+    Args:
+        filters (CompanyFilters): Company filter parameters
+        
+    Returns:
+        tuple[str, Dict[str, Any]]: WHERE clause string and parameters dictionary
+    """
+    conditions = []
+    params = {}
+    
+    if filters.geography:
+        conditions.append("c.geography = :geography")
+        params["geography"] = filters.geography
+        
+    if filters.geography_code:
+        conditions.append("c.geography_code = :geography_code")
+        params["geography_code"] = filters.geography_code
+        
+    if filters.sector:
+        conditions.append("c.sector_name = :sector")
+        params["sector"] = filters.sector
+        
+    if filters.ca100_focus_company is not None:
+        if filters.ca100_focus_company:
+            conditions.append("c.ca100_focus = 'Yes'")
+        else:
+            conditions.append("c.ca100_focus != 'Yes'")
+            
+    if filters.large_medium_classification:
+        conditions.append("c.size_classification = :size_classification")
+        params["size_classification"] = filters.large_medium_classification
+        
+    if filters.isins:
+        if isinstance(filters.isins, str):
+            conditions.append("c.isin ILIKE :isin")
+            params["isin"] = f"%{filters.isins}%"
+        else:
+            isin_conditions = []
+            for i, isin in enumerate(filters.isins):
+                isin_conditions.append(f"c.isin ILIKE :isin_{i}")
+                params[f"isin_{i}"] = f"%{isin}%"
+            if isin_conditions:
+                conditions.append(f"({' OR '.join(isin_conditions)})")
+                
+    if filters.sedol:
+        if isinstance(filters.sedol, str):
+            conditions.append("c.sedol ILIKE :sedol")
+            params["sedol"] = f"%{filters.sedol}%"
+        else:
+            sedol_conditions = []
+            for i, sedol in enumerate(filters.sedol):
+                sedol_conditions.append(f"c.sedol ILIKE :sedol_{i}")
+                params[f"sedol_{i}"] = f"%{sedol}%"
+            if sedol_conditions:
+                conditions.append(f"({' OR '.join(sedol_conditions)})")
+    
+    where_clause = " AND " + " AND ".join(conditions) if conditions else ""
+    return where_clause, params
