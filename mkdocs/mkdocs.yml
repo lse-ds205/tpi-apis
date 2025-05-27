@@ -1,0 +1,44 @@
+site_name: "TPI API"
+
+markdown_extensions:
+  - footnotes
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+  language: en
+  
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline 
+        name: Switch to dark mode
+      primary: blue
+      accent: white 
+    - scheme: slate 
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode    
+      primary: blue
+      accent: white
+
+nav:
+    - Home:
+        - FOR DEVELOPING Index: index.md
+        - Overview: Overview_Home.md
+        - Tutorial: Tutorial.md
+    - API Documentation: 
+        - Documentation: Overview_Documentation.md
+        - ASCOR Endpoints: Ascor_EP.md
+        - Company Endpoints: Company_EP.md
+        - CP Endpoints: CP_EP.md
+        - MQ Endpoints: MQ_EP.md
