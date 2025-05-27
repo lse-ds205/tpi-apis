@@ -8,7 +8,6 @@ SELECT
     mq.tpi_cycle as methodology_cycle
 FROM company c
 JOIN mq_assessment mq ON c.company_name = mq.company_name
-WHERE LOWER(c.company_name) = LOWER(:company_id)
-    AND EXTRACT(YEAR FROM mq.assessment_date) = :assessment_year
+-- WHERE_CLAUSE_PLACEHOLDER
 ORDER BY mq.assessment_date DESC
-LIMIT 1; 
+LIMIT :limit OFFSET :offset; 

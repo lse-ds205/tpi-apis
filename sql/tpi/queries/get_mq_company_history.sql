@@ -8,5 +8,5 @@ SELECT
     mq.tpi_cycle as methodology_cycle
 FROM company c
 JOIN mq_assessment mq ON c.company_name = mq.company_name
-WHERE c.company_name = :company_id
+WHERE LOWER(c.company_name) = LOWER(:company_id)
 ORDER BY mq.assessment_date DESC; 

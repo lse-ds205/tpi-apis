@@ -107,7 +107,7 @@ async def get_country_data(request: Request, country: str, assessment_year: int)
                     'name': element_text or code,
                     'assessment': response or 'No data',
                     'metrics': [],
-                    'source': IndicatorSource(source_name=source) if source else None
+                    'source': IndicatorSource(source_name=source)
                 }
             
             elif element_type == 'metric':
@@ -130,14 +130,14 @@ async def get_country_data(request: Request, country: str, assessment_year: int)
                             'name': indicator_code,
                             'assessment': 'No data',
                             'metrics': [],
-                            'source': None
+                            'source': IndicatorSource(source_name=None)
                         }
                     
                     # Add metric
                     metric = Metric(
                         name=element_text or code,
                         value=response or '',
-                        source=MetricSource(source_name=source) if source else None
+                        source=MetricSource(source_name=source)
                     )
                     pillars_data[pillar_name][area_code]['indicators'][indicator_code]['metrics'].append(metric)
         

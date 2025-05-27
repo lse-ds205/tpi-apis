@@ -188,7 +188,7 @@ async def get_company_history(request: Request, company_id: str, filter: Company
         for _, row in result.iterrows():
             history.append(CompanyDetail(
                 company_id=normalized_input,
-                name=row["company_name"],
+                name=normalized_input,
                 sector=row.get("sector", "N/A"),
                 geography=row.get("geography", "N/A"),
                 latest_assessment_year=int(pd.to_datetime(row["assessment_date"]).year) if pd.notna(row.get("assessment_date")) else None,
