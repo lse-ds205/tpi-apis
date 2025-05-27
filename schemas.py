@@ -62,9 +62,7 @@ class CompanyBase(BaseModel):
     Contains key identifiers and basic information.
     """
 
-    company_id: str = Field(
-        ..., description="Unique identifier for the company"
-    )
+    company_id: str = Field(..., description="company id")
     name: str = Field(..., description="Company name")
     sector: Optional[str] = Field(None, description="Sector of operation")
     geography: Optional[str] = Field(None, description="Geographical region")
@@ -158,6 +156,9 @@ class MQAssessmentDetail(BaseModel):
     geography: Optional[str] = Field(None, description="Geographical region")
     latest_assessment_year: Optional[int] = Field(
         None, description="Year of latest MQ assessment"
+    )
+    latest_publication_year: Optional[int] = Field(
+        None, description="Year of latest MQ publication"
     )
     management_quality_score: Optional[float] = Field(
         None, description="Management Quality Score"

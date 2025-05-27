@@ -99,6 +99,9 @@ def get_latest_mq_assessments(
             latest_assessment_year=pd.to_datetime(
                 row["assessment date"], format="%d/%m/%Y"
             ).year,
+            latest_publication_year=pd.to_datetime(
+                row["publication date"], format="%d/%m/%Y"
+            ).year,
             management_quality_score=STAR_MAPPING.get(
                 row.get("level", "N/A"), None
             ),
@@ -148,6 +151,9 @@ def get_mq_by_methodology(
             geography=row.get("geography", "N/A"),
             latest_assessment_year=pd.to_datetime(
                 row["assessment date"], format="%d/%m/%Y"
+            ).year,
+            latest_publication_year=pd.to_datetime(
+                row["publication date"], format="%d/%m/%Y"
             ).year,
             management_quality_score=STAR_MAPPING.get(
                 row.get("level", "N/A"), None
@@ -206,6 +212,9 @@ def get_mq_trends_sector(
             geography=row.get("geography", "N/A"),
             latest_assessment_year=pd.to_datetime(
                 row["assessment date"], format="%d/%m/%Y"
+            ).year,
+            latest_publication_year=pd.to_datetime(
+                row["publication date"], format="%d/%m/%Y"
             ).year,
             management_quality_score=STAR_MAPPING.get(
                 row.get("level", "N/A"), None

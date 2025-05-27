@@ -307,16 +307,27 @@ def get_company_cp_assessment_details(
             for _, row in sector_bench.iterrows():
                 scenario = row.get('scenario name', 'Unknown')
                 region = row.get('region', 'Unknown')
+                release_date = row.get('release date', 'Unknown')
                 years = {k: row[k] for k in row.index if k.isdigit() or (k.startswith('20') and k.isnumeric())}
                 benchmarks.append({
                     "scenario": scenario,
                     "region": region,
+                    "release date": release_date,
                     "years": years
                 })
+    # Get the most recent assessment date for the matched company
+    date_series = match['assessment date'].dropna()
+    if not date_series.empty:
+        latest_date = pd.to_datetime(date_series, errors='coerce').max()
+        assessment_date = latest_date.strftime("%Y-%m-%d") if pd.notnull(latest_date) else None
+    else:
+        assessment_date = None
+
     return {
         "company": company_row['company name'],
         "sector": sector,
         "geography": geography,
+        "latest_cp_assessment_date": assessment_date,
         "cp_alignment": cp_alignment,
         "regional_alignment": regional_alignment,
         "benchmarks": benchmarks
