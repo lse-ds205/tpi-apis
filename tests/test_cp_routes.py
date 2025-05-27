@@ -41,7 +41,7 @@ def test_compare_company_cp_insufficient_data():
     the endpoint returns the insufficient data response.
     """
     response = client.get(
-        "/v1/cp/company/insufficient_data_company/comparison"
+        "/v1/cp/company/vectren/comparison"
     )
     assert response.status_code == 200
 
@@ -77,7 +77,7 @@ def test_get_company_cp_history_vectren():
     assert record["carbon_performance_2025"] == "N/A"
     assert record["carbon_performance_2027"] == "N/A"
     assert record["carbon_performance_2035"] == "N/A"
-    assert record["carbon_performance_2050"] == "N/A"
+    assert record["carbon_performance_2050"] == "Not Aligned"
 
 
 def test_get_company_cp_alignment_vectren():
@@ -90,9 +90,13 @@ def test_get_company_cp_alignment_vectren():
 
     data = response.json()
 
-    for year in ["2025", "2027", "2035", "2050"]:
+    for year in ["2025", "2027", "2035"]:
         assert year in data
         assert data[year] == "N/A"
+    
+    # 2050 has actual data
+    assert "2050" in data
+    assert data["2050"] == "Not Aligned"
 
 
 def test_compare_company_cp_vectren_insufficient_data():

@@ -69,10 +69,10 @@ async def get_latest_cp_assessments(
                 sector=row["sector"],
                 geography=row["geography"],
                 latest_assessment_year=row["latest_assessment_year"],
-                carbon_performance_2025=row["carbon_performance_2025"],
-                carbon_performance_2027=row["carbon_performance_2027"],
-                carbon_performance_2035=row["carbon_performance_2035"],
-                carbon_performance_2050=row["carbon_performance_2050"]
+                carbon_performance_2025=row["carbon_performance_2025"] if row["carbon_performance_2025"] is not None else "N/A",
+                carbon_performance_2027=row["carbon_performance_2027"] if row["carbon_performance_2027"] is not None else "N/A",
+                carbon_performance_2035=row["carbon_performance_2035"] if row["carbon_performance_2035"] is not None else "N/A",
+                carbon_performance_2050=row["carbon_performance_2050"] if row["carbon_performance_2050"] is not None else "N/A"
             )
             assessments.append(assessment)
         
@@ -114,10 +114,10 @@ async def get_company_cp_history(request: Request, company_id: str):
                 sector=row["sector"],
                 geography=row["geography"],
                 latest_assessment_year=row["latest_assessment_year"],
-                carbon_performance_2025=row["carbon_performance_2025"],
-                carbon_performance_2027=row["carbon_performance_2027"],
-                carbon_performance_2035=row["carbon_performance_2035"],
-                carbon_performance_2050=row["carbon_performance_2050"]
+                carbon_performance_2025=row["carbon_performance_2025"] if row["carbon_performance_2025"] is not None else "N/A",
+                carbon_performance_2027=row["carbon_performance_2027"] if row["carbon_performance_2027"] is not None else "N/A",
+                carbon_performance_2035=row["carbon_performance_2035"] if row["carbon_performance_2035"] is not None else "N/A",
+                carbon_performance_2050=row["carbon_performance_2050"] if row["carbon_performance_2050"] is not None else "N/A"
             )
             history.append(assessment)
         
@@ -157,10 +157,10 @@ async def get_company_cp_alignment(request: Request, company_id: str):
         latest_data = result.iloc[0]
         
         response = {
-            "2025": latest_data.get("carbon_performance_2025") or "N/A",
-            "2027": latest_data.get("carbon_performance_2027") or "N/A",
-            "2035": latest_data.get("carbon_performance_2035") or "N/A",
-            "2050": latest_data.get("carbon_performance_2050") or "N/A"
+            "2025": latest_data.get("carbon_performance_2025") if latest_data.get("carbon_performance_2025") is not None else "N/A",
+            "2027": latest_data.get("carbon_performance_2027") if latest_data.get("carbon_performance_2027") is not None else "N/A",
+            "2035": latest_data.get("carbon_performance_2035") if latest_data.get("carbon_performance_2035") is not None else "N/A",
+            "2050": latest_data.get("carbon_performance_2050") if latest_data.get("carbon_performance_2050") is not None else "N/A"
         }
         
         logger.info(f"Successfully retrieved CP alignment for company {company_id}")
