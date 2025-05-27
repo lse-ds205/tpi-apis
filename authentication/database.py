@@ -36,7 +36,7 @@ users_db = {
 }
 
 
-def get_user(username: str) -> Union[UserInDB,None]:
+def get_user(username: str) -> Union[UserInDB, None]:
     user_dict = users_db.get(username)
     if user_dict:
         return UserInDB(**user_dict)
