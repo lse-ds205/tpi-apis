@@ -223,10 +223,12 @@ def get_company_carbon_intensity(
     # sector mean
     sector = row.get("sector", "").strip().lower()
     if sector:
-        peers = cp_df[cp_df["sector"].str.lower() == sector]
+        # Get latest assessment for each company in the sector
+        sector_peers = cp_df[cp_df["sector"].str.lower() == sector]
+        latest_assessments = sector_peers.sort_values("assessment date").groupby("company name").tail(1)
         sm = []
         for yr, col in sorted(year_map.items()):
-            vals = pd.to_numeric(peers[col], errors="coerce").dropna()
+            vals = pd.to_numeric(latest_assessments[col], errors="coerce").dropna()
             if not vals.empty:
                 sm.append((yr, float(vals.mean())))
         if sm:
@@ -308,13 +310,19 @@ class CarbonPerformanceVisualizer:
                 ))
         # sector mean
         if data.get("sector_mean_years"):
-            fig.add_trace(go.Scatter(
-                x=data["sector_mean_years"],
-                y=data["sector_mean_values"],
-                mode="lines",
-                name="Sector Mean",
-                line=dict(color="red", width=2)
-            ))
+            # Filter years up to 2022
+            years = data["sector_mean_years"]
+            values = data["sector_mean_values"]
+            filtered_data = [(y, v) for y, v in zip(years, values) if y <= 2022]
+            if filtered_data:
+                y2, v2 = zip(*filtered_data)
+                fig.add_trace(go.Scatter(
+                    x=list(y2),
+                    y=list(v2),
+                    mode="lines",
+                    name="Sector Mean",
+                    line=dict(color="red", width=2)
+                ))
         # reported history: solid up to 2024, dashed thereafter
         if data.get("years"):
             yrs = data["years"]
@@ -345,11 +353,10 @@ class CarbonPerformanceVisualizer:
                 x_s, y_s = zip(*solid_pts)
                 fig.add_trace(go.Scatter(
                     x=list(x_s), y=list(y_s),
-                    mode="lines+markers",
+                    mode="lines",
                     name="Reported",
-                    line=dict(color="black", width=2),
-                    marker=dict(color="black"),
-                    showlegend=len(dash_pts) == 0  # Only show in legend if no dashed part
+                    line=dict(color="#36454F", width=2),  # Charcoal color
+                    showlegend=len(dash_pts) == 0  
                 ))
             
             # Add the projected data (dashed line)
@@ -357,20 +364,32 @@ class CarbonPerformanceVisualizer:
                 x_d, y_d = zip(*dash_pts)
                 fig.add_trace(go.Scatter(
                     x=list(x_d), y=list(y_d),
-                    mode="lines+markers",
+                    mode="lines",
                     name="Reported (projected)",
-                    line=dict(color="black", width=2, dash="dash"),
-                    marker=dict(color="black")
+                    line=dict(color="#36454F", width=2, dash="dash")  # Charcoal color
                 ))
+
+            # Add green dot at 2030 if we have data for that year
+            for i, year in enumerate(yrs):
+                if year == 2030:
+                    fig.add_trace(go.Scatter(
+                        x=[year],
+                        y=[vals[i]],
+                        mode="markers",
+                        name="2030 Target",
+                        marker=dict(color="green", size=8),
+                        showlegend=False
+                    ))
+                    break
+
         # target series (dotted)
         if data.get("target_years") and data.get("target_values"):
             fig.add_trace(go.Scatter(
                 x=data["target_years"],
                 y=data["target_values"],
-                mode="lines+markers",
+                mode="lines",
                 name="Target",
-                line=dict(dash="dot", color="green"),
-                marker=dict(symbol="circle", size=6, color="green"),
+                line=dict(dash="dot", color="green")
             ))
 
         fig.update_layout(
@@ -380,7 +399,19 @@ class CarbonPerformanceVisualizer:
             width=width,
             height=height,
             hovermode="x unified",
-            legend=dict(bgcolor="rgba(255,255,255,0.8)", bordercolor="black", borderwidth=1)
+            legend=dict(bgcolor="rgba(255,255,255,0.8)", bordercolor="black", borderwidth=1),
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            xaxis=dict(
+                showgrid=False,  # Remove vertical grid lines
+                gridcolor="lightgray",
+                gridwidth=1
+            ),
+            yaxis=dict(
+                showgrid=True,  # Keep horizontal grid lines
+                gridcolor="lightgray",
+                gridwidth=1
+            )
         )
 
         if as_image:
