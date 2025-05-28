@@ -1,0 +1,1048 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../Company_EP/">
+      
+      
+        <link rel="next" href="../MQ_EP/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>CP Endpoints - TPI API</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="white">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cp-endpoints" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="TPI API" class="md-header__button md-logo" aria-label="TPI API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            TPI API
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CP Endpoints
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="white"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="white"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  Home
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../Overview_Documentation/" class="md-tabs__link">
+          
+  
+  
+  API Documentation
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="TPI API" class="md-nav__button md-logo" aria-label="TPI API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    TPI API
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Home
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FOR DEVELOPING Index
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Overview_Home/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tutorial
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    API Documentation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            API Documentation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Overview_Documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Ascor_EP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ASCOR Endpoints
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Company_EP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Company Endpoints
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    CP Endpoints
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    CP Endpoints
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-list-companies" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. List Companies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-retrieve-company-cp-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Retrieve Company CP History
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-retrieve-company-cp-alignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Retrieve Company CP Alignment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-compare-company-cp-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Compare Company CP Performance
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Compare Company CP Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design Notes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MQ_EP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    MQ Endpoints
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-playground/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Playground
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="cp-endpoints">CP Endpoints</h1>
+<p>The Carbon Performance (CP) endpoints expose company-level alignment against decadal emissions targets (2025, 2027, 2035, 2050). Use these routes to:</p>
+<ol>
+<li>Retrieve the latest CP scores for every company in a paginated list</li>
+<li>Fetch the full time-series of CP assessments for a single company</li>
+<li>Get a simple year-to-alignment map for a company’s most recent assessment</li>
+<li>Compare the two most recent CP assessments for a company</li>
+</ol>
+<p>All responses conform to <a href="https://docs.pydantic.dev/latest/">Pydantic</a> models for strict validation and predictable JSON shapes<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>.</p>
+<hr />
+<h2 id="1-list-companies">1. List Companies</h2>
+<p><strong>HTTP Method:</strong> GET</p>
+<p><strong>Path:</strong> /v1/cp/latest</p>
+<p><strong>Purpose:</strong> Return the most recent CP assessment for each company, with alignment status for key target years.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>page</code></td>
+<td>query</td>
+<td>integer</td>
+<td>No</td>
+<td>Page number (1-based; default: 1)</td>
+</tr>
+<tr>
+<td><code>page_size</code></td>
+<td>query</td>
+<td>integer</td>
+<td>No</td>
+<td>Results per page (1–100; default: 10)</td>
+</tr>
+<tr>
+<td><em>Company filters</em> (see below)</td>
+<td>query</td>
+<td>various</td>
+<td>No</td>
+<td>Optional filters (geography, sector, CA100, ISIN, SEDOL, etc.) to narrow list</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Company filters:</strong><br />
+<code>geography</code>, <code>geography_code</code>, <code>sector</code>, <code>ca100_focus_company</code>, <code>large_medium_classification</code>, <code>isins</code> (string or array), <code>sedol</code> (string or array)</p>
+</blockquote>
+<p><strong>Response Format:</strong> An array of <code>CPAssessmentDetail</code> objects, each with:</p>
+<ul>
+<li><code>company_id</code> (string)  </li>
+<li><code>name</code> (string)  </li>
+<li><code>sector</code> (string or null)  </li>
+<li><code>geography</code> (string or null)  </li>
+<li><code>latest_assessment_year</code> (integer)  </li>
+<li><code>carbon_performance_2025</code> (string)  </li>
+<li><code>carbon_performance_2027</code> (string)  </li>
+<li><code>carbon_performance_2035</code> (string)  </li>
+<li><code>carbon_performance_2050</code> (string)  </li>
+</ul>
+<pre><code class="language-json">[
+  {
+    &quot;company_id&quot;: &quot;acme_corp&quot;,
+    &quot;name&quot;: &quot;Acme Corporation&quot;,
+    &quot;sector&quot;: &quot;Energy&quot;,
+    &quot;geography&quot;: &quot;United Kingdom&quot;,
+    &quot;latest_assessment_year&quot;: 2024,
+    &quot;carbon_performance_2025&quot;: &quot;Aligned&quot;,
+    &quot;carbon_performance_2027&quot;: &quot;Partially Aligned&quot;,
+    &quot;carbon_performance_2035&quot;: &quot;Aligned&quot;,
+    &quot;carbon_performance_2050&quot;: &quot;Not Aligned&quot;
+  },
+  ...
+]
+</code></pre>
+<p><strong>Error Responses:</strong>  </p>
+<ul>
+<li>
+<p><strong>500 Internal Server Error</strong>  </p>
+<p><code>json
+{ "detail": "&lt;error message&gt;" }</code></p>
+</li>
+</ul>
+<hr />
+<h2 id="2-retrieve-company-cp-history">2. Retrieve Company CP History</h2>
+<p><strong>HTTP Method:</strong> <code>GET</code>  </p>
+<p><strong>Path:</strong> <code>/v1/cp/company/{company_id}</code></p>
+<p><strong>Purpose:</strong> Return every CP assessment ever recorded for the given company, across all cycles.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>company_id</code></td>
+<td>path</td>
+<td>string</td>
+<td>Yes</td>
+<td>Normalized company identifier (e.g. <code>acme_corp</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>You may also apply the same Company filters as in the “List” endpoint to further narrow results.</p>
+<p><strong>Response Format:</strong> An array of <code>CPAssessmentDetail</code> objects (same fields as above), ordered by assessment date.</p>
+<pre><code class="language-json">[
+  {
+    &quot;company_id&quot;: &quot;acme_corp&quot;,
+    &quot;name&quot;: &quot;Acme Corporation&quot;,
+    &quot;sector&quot;: &quot;Energy&quot;,
+    &quot;geography&quot;: &quot;United Kingdom&quot;,
+    &quot;latest_assessment_year&quot;: 2023,
+    &quot;carbon_performance_2025&quot;: &quot;Partially Aligned&quot;,
+    &quot;carbon_performance_2027&quot;: &quot;Not Aligned&quot;,
+    &quot;carbon_performance_2035&quot;: &quot;Partially Aligned&quot;,
+    &quot;carbon_performance_2050&quot;: &quot;Not Aligned&quot;
+  },
+  {
+    &quot;company_id&quot;: &quot;acme_corp&quot;,
+    &quot;name&quot;: &quot;Acme Corporation&quot;,
+    &quot;sector&quot;: &quot;Energy&quot;,
+    &quot;geography&quot;: &quot;United Kingdom&quot;,
+    &quot;latest_assessment_year&quot;: 2024,
+    &quot;carbon_performance_2025&quot;: &quot;Aligned&quot;,
+    &quot;carbon_performance_2027&quot;: &quot;Partially Aligned&quot;,
+    &quot;carbon_performance_2035&quot;: &quot;Aligned&quot;,
+    &quot;carbon_performance_2050&quot;: &quot;Not Aligned&quot;
+  }
+]
+</code></pre>
+<p><strong>Error Responses:</strong></p>
+<ul>
+<li>
+<p><strong>404 Not Found</strong>: no data for given country/year.</p>
+<p><code>json
+{ "detail": "No data found for country=Belgium in year=2024" }</code></p>
+</li>
+<li>
+<p><strong>500 Internal Server Error</strong>: unexpected processing error.</p>
+<p><code>json
+{ "detail": "Unexpected server error." }</code></p>
+</li>
+</ul>
+<hr />
+<h2 id="3-retrieve-company-cp-alignment">3. Retrieve Company CP Alignment</h2>
+<p><strong>HTTP Method:</strong> <code>GET</code>  </p>
+<p><strong>Path:</strong> <code>/v1/cp/company/{company_id}/alignment</code></p>
+<p><strong>Purpose:</strong> Fetch the company's latest alignment status for each target year as a simple key–value map.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>company_id</code></td>
+<td>path</td>
+<td>string</td>
+<td>Yes</td>
+<td>Normalized company identifier (e.g. <code>acme_corp</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>You may also apply the same Company filters as in the “List” endpoint to further narrow results.</p>
+<p><strong>Response Format:</strong> A JSON object with keys for each target year:</p>
+<pre><code class="language-json">{
+  &quot;2025&quot;: &quot;Aligned&quot;,
+  &quot;2027&quot;: &quot;Partially Aligned&quot;,
+  &quot;2035&quot;: &quot;Aligned&quot;,
+  &quot;2050&quot;: &quot;Not Aligned&quot;
+}
+</code></pre>
+<p><strong>Error Responses:</strong></p>
+<ul>
+<li>
+<p><strong>404 Not Found</strong>: no data for given country/year.</p>
+<p><code>json
+{ "detail": "No data found for country=Belgium in year=2024" }</code></p>
+</li>
+<li>
+<p><strong>500 Internal Server Error</strong>: unexpected processing error.</p>
+<p><code>json
+{ "detail": "Unexpected server error." }</code></p>
+<hr />
+</li>
+</ul>
+<h2 id="4-compare-company-cp-performance">4. Compare Company CP Performance</h2>
+<p><strong>HTTP Method:</strong> <code>GET</code>  </p>
+<p><strong>Path:</strong> <code>/v1/cp/company/{company_id}/comparison</code></p>
+<p><strong>Purpose:</strong> Compare the two most recent CP assessments for a company and show changes in alignment.</p>
+<p><strong>Parameters:</strong> Same as <a href="#2-retrieve-company-cp-history">Retrieve Company CP History</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>In</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>company_id</code></td>
+<td>path</td>
+<td>string</td>
+<td>Yes</td>
+<td>Normalized company identifier (e.g. <code>acme_corp</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>You may also apply the same Company filters as in the “List” endpoint to further narrow results.</p>
+<p><strong>Response Format:</strong> Returns one of two models:</p>
+<ul>
+<li>
+<p><strong>CPComparisonResponse</strong> when ≥2 records exist:</p>
+<p><code>json
+{
+  "company_id": "acme_corp",
+  "current_year": 2024,
+  "previous_year": 2023,
+  "latest_cp_2025": "Aligned",
+  "previous_cp_2025": "Partially Aligned",
+  "latest_cp_2035": "Aligned",
+  "previous_cp_2035": "Partially Aligned"
+}</code></p>
+</li>
+<li>
+<p><strong>PerformanceComparisonInsufficientDataResponse</strong> when &lt;2 records:</p>
+<p><code>json
+{
+  "company_id": "acme_corp",
+  "message": "Only one record exists for 'acme_corp', so performance comparison is not available",
+  "available_assessment_years": [2024]
+}</code></p>
+</li>
+</ul>
+<p><strong>Error Responses:</strong></p>
+<ul>
+<li>
+<p><strong>404 Not Found</strong>: company not found.</p>
+<p><code>json
+{ "detail": "Company 'unknown_id' not found." }</code></p>
+</li>
+<li>
+<p><strong>500 Internal Server Error</strong>: unexpected processing error.</p>
+<p><code>json
+{ "detail": "&lt;error message&gt;" }</code></p>
+<hr />
+</li>
+</ul>
+<h3 id="design-notes">Design Notes</h3>
+<ul>
+<li>The latest endpoint is rate-limited more strictly (2 calls/minute) because it scans the full dataset for each company.</li>
+<li>All company filters (<code>geography</code>, <code>sector</code>, <code>isins</code>, etc.) apply to history and list endpoints.</li>
+<li>Paths use normalized company IDs (lowercase, underscores) to ensure URL safety.</li>
+<li>Responses rely on the <code>CPHandler</code> logic to combine multiple CSV cycles and always validate against Pydantic schemas.</li>
+</ul>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>Pydantic is a Python library for data validation and settings management using Python type annotations. It ensures that all input and output data conform to the defined schema, reducing runtime errors and improving code clarity.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
