@@ -1,4 +1,6 @@
 site_name: "TPI API"
+docs_dir: mk_docs
+site_dir: site
 
 markdown_extensions:
   - footnotes

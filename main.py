@@ -8,9 +8,15 @@ It integrates endpoints for:
 
 It also defines a basic root endpoint for a welcome message.
 """
+import os
 import time
+from pathlib import Path
 from fastapi import FastAPI, APIRouter, Request, HTTPException, Response
 from slowapi.errors import RateLimitExceeded
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 from middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response 
@@ -34,17 +40,22 @@ logger = get_logger(__name__) # Get logger for main module
 
 # -------------------------------------------------------------------------
 # App Initialization
+
+# Using default docs_url and redoc_url (Swagger UI at /docs, ReDoc at /redoc)
 app = FastAPI(
     title="Transition Pathway Initiative API",
     version="1.0",
     description="Provides company, MQ, and CP assessments via REST endpoints.",
 )
 
-# Add limiter to app state
-app.state.limiter = limiter
-
-# Add rate limit exceeded handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+origins = os.getenv("CORS_ORIGINS", "").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o for o in origins if o],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 # Add limiter to app state
 app.state.limiter = limiter
@@ -91,6 +102,20 @@ app.include_router(mq_router, prefix="/v1/mq")
 # Add company routes for testing the fetch_company_data function
 sample_company_router = APIRouter(prefix="/companies", tags=["Sample Company Endpoints"])
 app.include_router(sample_company_router, prefix="/v1")
+
+# -------------------------------------------------------------------------
+site_dir = Path(__file__).parent / "site"
+if site_dir.exists():
+    app.mount(
+        "/docs",
+        StaticFiles(directory=site_dir, html=True),
+        name="mkdocs-docs",
+    )
+else:
+    logger.warning(f"Docs directory not found at {site_dir!r}; run `mkdocs build` first.")
+
+
+# -------------------------------------------------------------------------
 
 @company_router.get("/")
 async def get_companies():
