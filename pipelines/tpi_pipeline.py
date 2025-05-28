@@ -12,6 +12,7 @@ from utils.file_discovery import (
     find_methodology_files, 
     categorize_files
 )
+from typing import Dict
 
 class TPIPipeline(BasePipeline):
     """Pipeline for TPI database operations."""
@@ -362,5 +363,38 @@ class TPIPipeline(BasePipeline):
     def _validate_data(self) -> dict:
         """Validate TPI data."""
         return self.validator.validate_tpi_data(self.data)
+
+    def _get_source_files(self) -> Dict[str, str]:
+        """Get a mapping of table names to their source files.
+        
+        Returns:
+            Dict[str, str]: Dictionary mapping table names to source file paths
+        """
+        source_files = {}
+        
+        # Company and Company Answer data
+        company_files = self._find_company_assessment_files()
+        for version, file in company_files.items():
+            source_files['company'] = str(file)
+            source_files['company_answer'] = str(file)
+        
+        # MQ Assessment data
+        mq_files = self._find_mq_assessment_files()
+        for file in mq_files:
+            source_files['mq_assessment'] = str(file)
+        
+        # CP Assessment data
+        cp_files = self._find_cp_assessment_files()
+        for file_type, file in cp_files.items():
+            source_files['cp_assessment'] = str(file)
+            source_files['cp_alignment'] = str(file)
+            source_files['cp_projection'] = str(file)
+        
+        # Sector Benchmark data
+        benchmark_file = self._find_sector_benchmark_file()
+        source_files['sector_benchmark'] = str(benchmark_file)
+        source_files['benchmark_projection'] = str(benchmark_file)
+        
+        return source_files
 
  

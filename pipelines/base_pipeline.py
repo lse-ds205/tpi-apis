@@ -26,11 +26,42 @@ class BasePipeline(ABC):
         self.data = {}
         self.logger = logger
 
-    def drop_tables(self):
-        """Drop all tables in the database."""
+    def log_pipeline_execution(self, process: str = None, status: str = 'COMPLETED', notes: str = None,
+                             table_name: str = None, source_file: str = None, rows_inserted: int = None):
+        """Log pipeline execution to the database.
+        
+        Args:
+            process (str, optional): Name of the process being executed. If None, uses default pipeline name.
+            status (str): Execution status (default: 'COMPLETED')
+            notes (str, optional): Optional notes about the execution
+            table_name (str, optional): Name of the table being modified
+            source_file (str, optional): Path to the source file
+            rows_inserted (int, optional): Number of rows inserted
+        """
         try:
-            self.logger.info(f"Dropping {self.db_name} database tables...")
-            self.db_manager.drop_all_tables()
+            # Use provided process name or create a default one
+            if process is None:
+                process = f"TPI Pipeline - {self.db_name}"
+            
+            self.logger.info(f"Attempting to log pipeline execution with status: {status}")
+            execution_id = self.db_manager.log_execution(
+                process=process,
+                status=status,
+                notes=notes,
+                table_name=table_name,
+                source_file=source_file,
+                rows_inserted=rows_inserted
+            )
+            self.logger.info(f"Successfully logged pipeline execution with ID: {execution_id}")
+        except Exception as e:
+            self.logger.error(f"Failed to log pipeline execution: {str(e)}")
+            raise
+
+    def drop_tables(self):
+        """Drop all tables in the database except audit_log."""
+        try:
+            self.logger.info(f"Dropping {self.db_name} database tables (excluding audit_log)...")
+            self.db_manager.drop_all_tables(exclude_tables=['audit_log'])
         except Exception as e:
             self.logger.error(f"Failed to drop {self.db_name} tables: {str(e)}")
             # Add some context to the error
@@ -45,6 +76,11 @@ class BasePipeline(ABC):
         try:
             self.logger.info(f"Creating {self.db_name} tables...")
             self.db_manager.create_tables()
+            # Log pipeline start after tables are created
+            self.log_pipeline_execution(
+                process=f"PIPELINE_START - {self.db_name}",
+                status='STARTED'
+            )
         except Exception as e:
             self.logger.error(f"Failed to create {self.db_name} tables: {str(e)}")
             # Add some context to the error
@@ -67,6 +103,11 @@ class BasePipeline(ABC):
                 self.logger.error("Data validation failed with the following errors:")
                 for error in validation_results['errors']:
                     self.logger.error(f"- {error}")
+                self.log_pipeline_execution(
+                    process=f"PIPELINE_FINISH - {self.db_name}",
+                    status='VALIDATION_FAILED',
+                    notes=f"Validation errors: {', '.join(validation_results['errors'])}"
+                )
                 raise ValueError("Data validation failed. Please check the errors above.")
             
             if validation_results['warnings']:
@@ -74,13 +115,29 @@ class BasePipeline(ABC):
                 for warning in validation_results['warnings']:
                     self.logger.warning(f"- {warning}")
             
+            # Get source files from the pipeline
+            source_files = self._get_source_files()
+            
             # Insert data into tables using database manager
-            self.db_manager.bulk_insert(self.data)
+            self.db_manager.bulk_insert(self.data, source_files=source_files)
+            
+            # Log pipeline finish after successful data insertion
+            self.log_pipeline_execution(
+                process=f"PIPELINE_FINISH - {self.db_name}",
+                status='COMPLETED_WITH_WARNINGS' if validation_results['warnings'] else 'COMPLETED',
+                notes=f"Validation warnings: {', '.join(validation_results['warnings'])}" if validation_results['warnings'] else None
+            )
             
             self.logger.info(f'{self.db_name} database population completed successfully.')
-
+            
         except Exception as e:
-            self.logger.error(f"Failed to populate {self.db_name} database: {str(e)}")
+            self.logger.error(f"Failed to populate {self.db_name} tables: {str(e)}")
+            # Log pipeline failure
+            self.log_pipeline_execution(
+                process=f"PIPELINE_FINISH - {self.db_name}",
+                status='FAILED',
+                notes=str(e)
+            )
             raise
 
     @abstractmethod

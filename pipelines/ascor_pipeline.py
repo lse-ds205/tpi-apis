@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 from utils.file_discovery import find_latest_directory, find_files_by_pattern
+from typing import Dict
 
 class ASCORPipeline(BasePipeline):
     """Pipeline for ASCOR database operations."""
@@ -245,5 +246,25 @@ class ASCORPipeline(BasePipeline):
     def _validate_data(self) -> dict:
         """Validate ASCOR data."""
         return self.validator.validate_ascor_data(self.data)
+
+    def _get_source_files(self) -> Dict[str, str]:
+        """Get a mapping of table names to their source files.
+        
+        Returns:
+            Dict[str, str]: Dictionary mapping table names to source file paths
+        """
+        source_files = {}
+        files = self._find_ascor_files()
+        
+        # Map files to their corresponding tables
+        source_files['country'] = str(files['countries'])
+        source_files['benchmarks'] = str(files['benchmarks'])
+        source_files['benchmark_values'] = str(files['benchmarks'])
+        source_files['assessment_elements'] = str(files['indicators'])
+        source_files['assessment_results'] = str(files['assessment_results'])
+        source_files['assessment_trends'] = str(files['assessment_trends'])
+        source_files['value_per_year'] = str(files['assessment_trends'])
+        
+        return source_files
 
  

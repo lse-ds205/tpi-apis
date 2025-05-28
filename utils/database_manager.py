@@ -128,8 +128,13 @@ class DatabaseManager:
             logger.error(f"Error executing SQL file {file_path}: {e}")
             raise
     
-    def drop_all_tables(self) -> None:
-        """Drop all tables in the database."""
+    def drop_all_tables(self, exclude_tables: List[str] = None) -> None:
+        """
+        Drop all tables in the database.
+        
+        Args:
+            exclude_tables (List[str], optional): List of table names to exclude from dropping
+        """
         try:
             logger.info(f"Dropping all tables in {self.db_name}...")
             
@@ -146,6 +151,11 @@ class DatabaseManager:
                 if not tables:
                     logger.info(f"No tables found in {self.db_name}")
                     return
+                
+                # Filter out excluded tables
+                if exclude_tables:
+                    tables = [table for table in tables if table not in exclude_tables]
+                    logger.info(f"Excluding tables from drop: {', '.join(exclude_tables)}")
                 
                 # Drop tables with CASCADE to handle dependencies
                 for table in tables:
@@ -167,8 +177,8 @@ class DatabaseManager:
             
             logger.info(f"Creating tables for {self.db_name}...")
             
-            # Execute SQL files in alphabetical order
-            sql_files = sorted(init_dir.glob("*.sql"))
+            # Execute SQL files in alphabetical order, excluding audit system update
+            sql_files = sorted([f for f in init_dir.glob("*.sql") if f.name != "00_audit_system_update.sql"])
             if not sql_files:
                 raise FileNotFoundError(f"No SQL files found in {init_dir}")
             
@@ -183,36 +193,64 @@ class DatabaseManager:
             raise
     
     def insert_dataframe(self, df: pd.DataFrame, table_name: str, 
+                        source_file: str = None,
                         if_exists: str = 'append', index: bool = False) -> None:
         """
-        Insert a DataFrame into a database table.
+        Insert a DataFrame into a database table and log the insertion.
         
         Args:
             df (pd.DataFrame): DataFrame to insert
             table_name (str): Target table name
+            source_file (str, optional): Path to the source file
             if_exists (str): How to behave if table exists ('fail', 'replace', 'append')
             index (bool): Whether to write DataFrame index as a column
         """
         try:
             df.to_sql(table_name, self.engine, if_exists=if_exists, index=index)
-            logger.info(f"Successfully inserted {len(df)} rows into {table_name}")
+            rows_inserted = len(df)
+            logger.info(f"Successfully inserted {rows_inserted} rows into {table_name}")
+            
+            # Log the insertion in audit_log
+            self.log_execution(
+                process=f"Data Insertion - {table_name}",
+                status='COMPLETED',
+                table_name=table_name,
+                source_file=str(source_file) if source_file else None,  # Ensure source_file is stored as string
+                rows_inserted=rows_inserted
+            )
             
         except SQLAlchemyError as e:
             logger.error(f"Error inserting data into {table_name}: {e}")
             raise
     
-    def bulk_insert(self, data_dict: Dict[str, pd.DataFrame]) -> None:
+    def bulk_insert(self, data_dict: Dict[str, pd.DataFrame], 
+                   source_files: Dict[str, str] = None) -> None:
         """
-        Insert multiple DataFrames into their respective tables.
+        Insert multiple DataFrames into their respective tables and log the insertions.
         
         Args:
             data_dict (Dict[str, pd.DataFrame]): Dictionary mapping table names to DataFrames
+            source_files (Dict[str, str], optional): Dictionary mapping table names to source file paths
         """
         try:
             with self.engine.begin() as conn:
                 for table_name, df in data_dict.items():
+                    # Get the source file for this table
+                    source_file = source_files.get(table_name) if source_files else None
+                    
+                    # Insert the data
                     df.to_sql(table_name, conn, if_exists='append', index=False)
-                    logger.info(f"Inserted {len(df)} rows into {table_name}")
+                    rows_inserted = len(df)
+                    logger.info(f"Inserted {rows_inserted} rows into {table_name}")
+                    
+                    # Log the insertion in audit_log
+                    self.log_execution(
+                        process=f"Bulk Insert - {table_name}",
+                        status='COMPLETED',
+                        table_name=table_name,
+                        source_file=source_file,
+                        rows_inserted=rows_inserted
+                    )
             
             logger.info(f"Successfully completed bulk insert for {len(data_dict)} tables")
             
@@ -335,6 +373,57 @@ class DatabaseManager:
             
         except Exception as e:
             logger.error(f"Error executing SQL template {file_path}: {e}")
+            raise
+    
+    def log_execution(self, process: str, status: str = 'COMPLETED', notes: str = None,
+                     table_name: str = None, source_file: str = None, rows_inserted: int = None) -> int:
+        """
+        Log an execution to the audit_log table.
+        
+        Args:
+            process (str): Name of the process being executed
+            status (str): Execution status (default: 'COMPLETED')
+            notes (str, optional): Additional notes about the execution
+            table_name (str, optional): Name of the table being modified
+            source_file (str, optional): Path to the source file
+            rows_inserted (int, optional): Number of rows inserted
+            
+        Returns:
+            int: The execution_id of the created log entry
+        """
+        try:
+            # Convert None to empty string for notes
+            notes = notes if notes is not None else ''
+            
+            # Ensure source_file is stored as string
+            source_file = str(source_file) if source_file else None
+            
+            query = """
+                INSERT INTO audit_log 
+                (process, execution_status, execution_notes, table_name, source_file, rows_inserted)
+                VALUES (:process, :status, :notes, :table_name, :source_file, :rows_inserted)
+                RETURNING execution_id
+            """
+            
+            with self.engine.connect() as conn:
+                with conn.begin():
+                    result = conn.execute(
+                        text(query),
+                        {
+                            "process": process,
+                            "status": status,
+                            "notes": notes,
+                            "table_name": table_name,
+                            "source_file": source_file,
+                            "rows_inserted": rows_inserted
+                        }
+                    )
+                    execution_id = result.scalar()
+                    logger.info(f"Successfully logged execution with ID: {execution_id}")
+                    return execution_id
+                    
+        except SQLAlchemyError as e:
+            logger.error(f"Failed to log execution: {e}")
             raise
 
 class DatabaseManagerFactory:
