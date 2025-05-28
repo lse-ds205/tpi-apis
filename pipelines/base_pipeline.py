@@ -75,7 +75,7 @@ class BasePipeline(ABC):
         """Create all tables in the database."""
         try:
             self.logger.info(f"Creating {self.db_name} tables...")
-            self.db_manager.create_tables()
+            self.db_manager.create_all_tables()
             # Log pipeline start after tables are created
             self.log_pipeline_execution(
                 process=f"PIPELINE_START - {self.db_name}",
@@ -143,7 +143,9 @@ class BasePipeline(ABC):
             source_files = self._get_source_files()
             
             # Insert data into tables using database manager
-            self.db_manager.bulk_insert(self.data, source_files=source_files)
+            for table_name, df in self.data.items():
+                source_file = source_files.get(table_name) if source_files else None
+                self.db_manager.insert_dataframe(df, table_name, source_file=source_file)
             
             # Log pipeline finish after successful data insertion
             self.log_pipeline_execution(

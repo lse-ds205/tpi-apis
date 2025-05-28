@@ -12,7 +12,7 @@ This module provides a centralized database management system that handles:
 import os
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Type
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
@@ -20,6 +20,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 from contextlib import contextmanager
 from dotenv import load_dotenv
+from models.sqlalchemymodels import AscorBase, TpiBase
 
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent / '.env'
@@ -54,6 +55,9 @@ class DatabaseManager:
         self.SessionLocal = sessionmaker(bind=self.engine)
         self.sql_dir = Path(__file__).parent.parent / "sql" / db_name.replace("_api", "")
         
+        # Set the appropriate base for model operations
+        self.Base = TpiBase if db_name == 'tpi_api' else AscorBase
+        
     def _create_engine(self):
         """Create and return a SQLAlchemy engine."""
         # Use default values if environment variables are not set
@@ -62,7 +66,8 @@ class DatabaseManager:
         db_host = os.getenv('DB_HOST')
         db_port = os.getenv('DB_PORT')
         
-    
+        if not all([db_user, db_host, db_port]):
+            raise ValueError("Missing required database configuration. Please check your .env file.")
         
         db_url = f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{self.db_name}'
         return create_engine(db_url)
@@ -85,6 +90,101 @@ class DatabaseManager:
         finally:
             session.close()
     
+    def create_all_tables(self) -> None:
+        """Create all tables defined in the SQLAlchemy models."""
+        try:
+            self.Base.metadata.create_all(self.engine)
+            logger.info(f"Successfully created all tables for {self.db_name}")
+        except SQLAlchemyError as e:
+            logger.error(f"Error creating tables: {e}")
+            raise
+    
+    def drop_all_tables(self, exclude_tables: List[str] = None) -> None:
+        """
+        Drop all tables in the database.
+        
+        Args:
+            exclude_tables (List[str], optional): List of table names to exclude from dropping
+        """
+        try:
+            logger.info(f"Dropping all tables in {self.db_name}...")
+            
+            # Get all table names from the metadata
+            tables = self.Base.metadata.tables.keys()
+            
+            # Filter out excluded tables
+            if exclude_tables:
+                tables = [table for table in tables if table not in exclude_tables]
+                logger.info(f"Excluding tables from drop: {', '.join(exclude_tables)}")
+            
+            # Drop tables with CASCADE to handle dependencies
+            with self.engine.connect() as conn:
+                for table in tables:
+                    conn.execute(text(f'DROP TABLE IF EXISTS "{table}" CASCADE'))
+                conn.commit()
+            
+            logger.info(f"Successfully dropped {len(tables)} tables from {self.db_name}")
+            
+        except SQLAlchemyError as e:
+            logger.error(f"Error dropping tables: {e}")
+            raise
+    
+    def insert_model(self, model_instance: Any) -> None:
+        """
+        Insert a single model instance into the database.
+        
+        Args:
+            model_instance: SQLAlchemy model instance to insert
+        """
+        try:
+            with self.get_session() as session:
+                session.add(model_instance)
+                session.commit()
+                logger.info(f"Successfully inserted {model_instance.__class__.__name__} instance")
+        except SQLAlchemyError as e:
+            logger.error(f"Error inserting model instance: {e}")
+            raise
+    
+    def bulk_insert_models(self, model_instances: List[Any]) -> None:
+        """
+        Insert multiple model instances into the database.
+        
+        Args:
+            model_instances: List of SQLAlchemy model instances to insert
+        """
+        if not model_instances:
+            return
+            
+        try:
+            with self.get_session() as session:
+                session.bulk_save_objects(model_instances)
+                session.commit()
+                logger.info(f"Successfully inserted {len(model_instances)} {model_instances[0].__class__.__name__} instances")
+        except SQLAlchemyError as e:
+            logger.error(f"Error bulk inserting model instances: {e}")
+            raise
+    
+    def query_model(self, model_class: Type, **filters) -> List[Any]:
+        """
+        Query the database using SQLAlchemy model.
+        
+        Args:
+            model_class: SQLAlchemy model class to query
+            **filters: Filter conditions to apply
+            
+        Returns:
+            List[Any]: List of model instances matching the query
+        """
+        try:
+            with self.get_session() as session:
+                query = session.query(model_class)
+                for key, value in filters.items():
+                    query = query.filter(getattr(model_class, key) == value)
+                return query.all()
+        except SQLAlchemyError as e:
+            logger.error(f"Error querying model: {e}")
+            raise
+    
     def execute_query(self, query: str, params: Optional[Dict] = None) -> pd.DataFrame:
         """
         Execute a SQL query and return results as a DataFrame.
@@ -102,94 +202,6 @@ class DatabaseManager:
                 return pd.DataFrame(result.fetchall(), columns=result.keys())
         except SQLAlchemyError as e:
             logger.error(f"Error executing query: {e}")
-            raise
-    
-    def execute_sql_file(self, file_path: Path) -> None:
-        """
-        Execute SQL commands from a file.
-        
-        Args:
-            file_path (Path): Path to the SQL file
-        """
-        try:
-            with open(file_path, 'r') as file:
-                sql_content = file.read()
-            
-            with self.engine.connect() as conn:
-                # Split by semicolon and execute each statement
-                statements = [stmt.strip() for stmt in sql_content.split(';') if stmt.strip()]
-                for statement in statements:
-                    conn.execute(text(statement))
-                conn.commit()
-                
-            logger.info(f"Successfully executed SQL file: {file_path}")
-            
-        except Exception as e:
-            logger.error(f"Error executing SQL file {file_path}: {e}")
-            raise
-    
-    def drop_all_tables(self, exclude_tables: List[str] = None) -> None:
-        """
-        Drop all tables in the database.
-        
-        Args:
-            exclude_tables (List[str], optional): List of table names to exclude from dropping
-        """
-        try:
-            logger.info(f"Dropping all tables in {self.db_name}...")
-            
-            with self.engine.connect() as conn:
-                # Get all table names
-                tables_query = """
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'public'
-                """
-                result = conn.execute(text(tables_query))
-                tables = [row[0] for row in result.fetchall()]
-                
-                if not tables:
-                    logger.info(f"No tables found in {self.db_name}")
-                    return
-                
-                # Filter out excluded tables
-                if exclude_tables:
-                    tables = [table for table in tables if table not in exclude_tables]
-                    logger.info(f"Excluding tables from drop: {', '.join(exclude_tables)}")
-                
-                # Drop tables with CASCADE to handle dependencies
-                for table in tables:
-                    conn.execute(text(f'DROP TABLE IF EXISTS "{table}" CASCADE'))
-                
-                conn.commit()
-                logger.info(f"Successfully dropped {len(tables)} tables from {self.db_name}")
-                
-        except SQLAlchemyError as e:
-            logger.error(f"Error dropping tables: {e}")
-            raise
-    
-    def create_tables(self) -> None:
-        """Create all tables by executing SQL files in the init directory."""
-        try:
-            init_dir = self.sql_dir / "init"
-            if not init_dir.exists():
-                raise FileNotFoundError(f"Init directory not found: {init_dir}")
-            
-            logger.info(f"Creating tables for {self.db_name}...")
-            
-            # Execute SQL files in alphabetical order, excluding audit system update
-            sql_files = sorted([f for f in init_dir.glob("*.sql") if f.name != "00_audit_system_update.sql"])
-            if not sql_files:
-                raise FileNotFoundError(f"No SQL files found in {init_dir}")
-            
-            for sql_file in sql_files:
-                logger.info(f"Executing {sql_file.name}...")
-                self.execute_sql_file(sql_file)
-            
-            logger.info(f"Successfully created all tables for {self.db_name}")
-            
-        except Exception as e:
-            logger.error(f"Error creating tables: {e}")
             raise
     
     def insert_dataframe(self, df: pd.DataFrame, table_name: str, 
@@ -215,7 +227,7 @@ class DatabaseManager:
                 process=f"Data Insertion - {table_name}",
                 status='COMPLETED',
                 table_name=table_name,
-                source_file=str(source_file) if source_file else None,  # Ensure source_file is stored as string
+                source_file=str(source_file) if source_file else None,
                 rows_inserted=rows_inserted
             )
             
@@ -223,65 +235,29 @@ class DatabaseManager:
             logger.error(f"Error inserting data into {table_name}: {e}")
             raise
     
-    def bulk_insert(self, data_dict: Dict[str, pd.DataFrame], 
-                   source_files: Dict[str, str] = None) -> None:
+    def execute_sql_file(self, file_path: Path) -> None:
         """
-        Insert multiple DataFrames into their respective tables and log the insertions.
+        Execute SQL commands from a file.
         
         Args:
-            data_dict (Dict[str, pd.DataFrame]): Dictionary mapping table names to DataFrames
-            source_files (Dict[str, str], optional): Dictionary mapping table names to source file paths
+            file_path (Path): Path to the SQL file
         """
         try:
-            with self.engine.begin() as conn:
-                for table_name, df in data_dict.items():
-                    # Get the source file for this table
-                    source_file = source_files.get(table_name) if source_files else None
-                    
-                    # Insert the data
-                    df.to_sql(table_name, conn, if_exists='append', index=False)
-                    rows_inserted = len(df)
-                    logger.info(f"Inserted {rows_inserted} rows into {table_name}")
-                    
-                    # Log the insertion in audit_log
-                    self.log_execution(
-                        process=f"Bulk Insert - {table_name}",
-                        status='COMPLETED',
-                        table_name=table_name,
-                        source_file=source_file,
-                        rows_inserted=rows_inserted
-                    )
+            with open(file_path, 'r') as file:
+                sql_content = file.read()
             
-            logger.info(f"Successfully completed bulk insert for {len(data_dict)} tables")
+            with self.engine.connect() as conn:
+                # Split by semicolon and execute each statement
+                statements = [stmt.strip() for stmt in sql_content.split(';') if stmt.strip()]
+                for statement in statements:
+                    conn.execute(text(statement))
+                conn.commit()
+                
+            logger.info(f"Successfully executed SQL file: {file_path}")
             
-        except SQLAlchemyError as e:
-            logger.error(f"Error during bulk insert: {e}")
+        except Exception as e:
+            logger.error(f"Error executing SQL file {file_path}: {e}")
             raise
-    
-    def table_exists(self, table_name: str) -> bool:
-        """
-        Check if a table exists in the database.
-        
-        Args:
-            table_name (str): Name of the table to check
-            
-        Returns:
-            bool: True if table exists, False otherwise
-        """
-        try:
-            query = """
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = :table_name
-                )
-            """
-            result = self.execute_query(query, {"table_name": table_name})
-            return result.iloc[0, 0] if not result.empty else False
-            
-        except SQLAlchemyError as e:
-            logger.error(f"Error checking if table exists: {e}")
-            return False
     
     def get_table_info(self, table_name: str) -> pd.DataFrame:
         """
