@@ -33,7 +33,6 @@ theme:
 
 nav:
     - Home:
-        - FOR DEVELOPING Index: index.md
         - Overview: Overview_Home.md
         - Getting Started: Getting_Started.md
     - API Documentation: 
