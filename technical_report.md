@@ -1,29 +1,24 @@
-### Current changes needs (ORDER BY PRIORITY)
-1. change from company_name to ISINs as unique identifier
-2. new endpoints with filter for region and sector
-3. add CP endpoint with assessment data and sectoral benchmark
-4. add endpoint to serve banking data
-5. serve graph
-6. link datasets to allow for calling ASCOR indicators in a Country with companies from that country. 
-7. other functionality like chatbot as discussed before
+# 📌***Techinical Report***
 
-### Pull request that is useful
-- `#43` improved error handling
-- `#42` added more filter to CP and MP, may resolve task 3 above
-- `#40` adding data handler to CP and MQ
+## 1. Project goals
 
+This API is a FastAPI-based application designed to retrieve, process, and compare data from the Transition Pathway Initiative Centre (TPI). It provides a fully functional API for delivering data from key assessment frameworks developed by the TPI Centre, including ASCOR, Carbon Performance, and Management Quality. 
+Our team’s specific objective is to collaborate with clients from the Luxembourg Stock Exchange to enhance existing endpoints and develop new ones tailored to their needs, including endpoints for serving both data and visual content.
 
-### Pull request that might act as barrier
-- `#37` the data dictionary and usage guiadance needs to be updated after our change
-- `#36` rate limiting might slow things down
+--- 
 
+## 2. Design decisions (and rationale, including rejected ideas)
+
+---
+## 3. Methodology
+
+---
+## 4. Client interaction
 
 ### **Reflection from First Meeting**
 
 **Meeting Time:** 12th May, 15:15–15:45 BST  
-**Meeting Goal:** Understand customer needs and outline the required steps to meet them
-
----
+**Meeting Goal:** Identifies client needs and defines the necessary steps to address them.
 
 ### **Key Questions Answered**
 
@@ -59,8 +54,6 @@
 
 - One of the **key goals** is to **include both graphs and underlying data** directly in the API.
 
----
-
 ### **List of Priorities After the Meeting**
 
 1. Solve any remaining bugs that affect the rest of the work
@@ -77,7 +70,18 @@
    - Fetching companies headquartered in that country
 7. Add other functionality as discussed and as time/interests allow, subject to **Jon's confirmation** (e.g. chatbot).
 
----
+### **Reflection from Second Meeting**
 
-**Next Meeting Date Arranged:**  
-**19th May, 14:30 – 15:30 BST**
+**Meeting Time:** 19th May, 14:30 – 15:30 BST
+**Meeting Goal:** Assesses current version and identifies specific areas for improvement.
+
+---
+## 5. System architecture
+---
+## 6. Evaluation results
+---
+## 7. Analysis
+---
+## 8. Limitations
+---
+## 9. Conclusions
