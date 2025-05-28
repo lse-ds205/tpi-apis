@@ -22,7 +22,7 @@ class BasePipeline(ABC):
         self.db_name = db_name
         self.data_dir = data_dir
         self.db_manager = DatabaseManagerFactory.get_manager(db_name)
-        self.validator = DataValidator()
+        self.validator = DataValidator(db_name)
         self.data = {}
         self.logger = logger
 
@@ -97,6 +97,19 @@ class BasePipeline(ABC):
             
             # Process and validate data
             self._process_data()
+            
+            # Log validation start
+            execution_id = self.log_pipeline_execution(
+                process=f"VALIDATION_START - {self.db_name}",
+                status='STARTED',
+                notes="Starting data validation process"
+            )
+            
+            # Set pipeline run ID for validation logging
+            self.validator.set_pipeline_run_id(execution_id)
+            
+            # Run validation
+            self.logger.info("Running data validation...")
             validation_results = self._validate_data()
             
             if validation_results['errors']:
@@ -104,7 +117,7 @@ class BasePipeline(ABC):
                 for error in validation_results['errors']:
                     self.logger.error(f"- {error}")
                 self.log_pipeline_execution(
-                    process=f"PIPELINE_FINISH - {self.db_name}",
+                    process=f"VALIDATION_FINISH - {self.db_name}",
                     status='VALIDATION_FAILED',
                     notes=f"Validation errors: {', '.join(validation_results['errors'])}"
                 )
@@ -114,6 +127,17 @@ class BasePipeline(ABC):
                 self.logger.warning("Data validation completed with warnings:")
                 for warning in validation_results['warnings']:
                     self.logger.warning(f"- {warning}")
+                self.log_pipeline_execution(
+                    process=f"VALIDATION_FINISH - {self.db_name}",
+                    status='VALIDATION_WARNINGS',
+                    notes=f"Validation warnings: {', '.join(validation_results['warnings'])}"
+                )
+            else:
+                self.log_pipeline_execution(
+                    process=f"VALIDATION_FINISH - {self.db_name}",
+                    status='VALIDATION_PASSED',
+                    notes="All validation checks passed successfully"
+                )
             
             # Get source files from the pipeline
             source_files = self._get_source_files()
