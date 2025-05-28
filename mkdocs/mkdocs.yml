@@ -35,9 +35,8 @@ theme:
 
 nav:
     - Home:
-        - FOR DEVELOPING Index: index.md
         - Overview: Overview_Home.md
-        - Tutorial: Tutorial.md
+        - Getting Started: Getting_Started.md
     - API Documentation: 
         - Documentation: Overview_Documentation.md
         - ASCOR Endpoints: Ascor_EP.md
