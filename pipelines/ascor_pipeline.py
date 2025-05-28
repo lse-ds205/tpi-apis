@@ -1,8 +1,9 @@
 from .base_pipeline import BasePipeline
 import pandas as pd
-import os
 from datetime import datetime
 import logging
+from pathlib import Path
+from utils.file_discovery import find_latest_directory, find_files_by_pattern
 
 class ASCORPipeline(BasePipeline):
     """Pipeline for ASCOR database operations."""
@@ -15,14 +16,40 @@ class ASCORPipeline(BasePipeline):
             logger (logging.Logger): Logger instance to use
         """
         super().__init__('ascor_api', data_dir, logger)
-        self.ascor_data_dir = os.path.join(data_dir, 'TPI_ASCOR_data_13012025')
+        self.ascor_data_dir = self._find_latest_ascor_data_dir()
 
+    def _find_latest_ascor_data_dir(self) -> str:
+        """Find the latest ASCOR data directory based on date patterns."""
+        data_path = Path(self.data_dir)
+        selected_dir = find_latest_directory(data_path, 'ascor', self.logger)
+        return str(selected_dir)
 
+    def _find_ascor_files(self) -> dict:
+        """Find ASCOR files dynamically."""
+        data_path = Path(self.ascor_data_dir)
+        
+        # Define file patterns to look for
+        file_patterns = {
+            'countries': 'ASCOR_countries.*',
+            'benchmarks': 'ASCOR_benchmarks.*',
+            'indicators': 'ASCOR_indicators.*',
+            'assessment_results': 'ASCOR_assessments_results.*',
+            'assessment_trends': 'ASCOR_assessments_results_trends_pathways.*'
+        }
+        
+        # Filter out the assessment_trends pattern from assessment_results
+        # We need to be more specific to avoid conflicts
+        file_patterns['assessment_results'] = 'ASCOR_assessments_results.xlsx'
+        
+        return find_files_by_pattern(data_path, file_patterns, self.logger)
 
     def _process_data(self):
         """Process ASCOR data from files into dataframes."""
+        # Get all files dynamically
+        files = self._find_ascor_files()
+        
         # Country
-        df_country = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_countries.xlsx'))
+        df_country = pd.read_excel(files['countries'])
         df_country.columns = df_country.columns.str.strip()
         country_df = df_country[[
             'Name',
@@ -44,7 +71,7 @@ class ASCORPipeline(BasePipeline):
         valid_countries = set(country_df['country_name'].str.strip())
 
         # Benchmarks
-        df_bench = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_benchmarks.xlsx'))
+        df_bench = pd.read_excel(files['benchmarks'])
         df_bench.columns = df_bench.columns.str.strip().str.lower().str.replace(' ', '_')
         benchmarks_df = df_bench[[
             'id', 'publication_date', 'emissions_metric', 'emissions_boundary',
@@ -77,7 +104,7 @@ class ASCORPipeline(BasePipeline):
         self.data['benchmark_values'] = benchmark_values_df
 
         # Assessment Elements
-        df_elements = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_indicators.xlsx'))
+        df_elements = pd.read_excel(files['indicators'])
         df_elements.columns = df_elements.columns.str.strip().str.lower().str.replace(' ', '_')
         assessment_elements_df = df_elements[[
             'code', 'text', 'units_or_response_type', 'type'
@@ -87,7 +114,7 @@ class ASCORPipeline(BasePipeline):
         self.data['assessment_elements'] = assessment_elements_df
 
         # Assessment Results
-        df_results = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_assessments_results.xlsx'))
+        df_results = pd.read_excel(files['assessment_results'])
         df_results.columns = df_results.columns.str.strip()
         
         # Columns that represent coded responses (non-pillar only)
@@ -140,7 +167,7 @@ class ASCORPipeline(BasePipeline):
         self.data['assessment_results'] = assessment_results_df
 
         # Assessment Trends
-        df_trends = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_assessments_results_trends_pathways.xlsx'))
+        df_trends = pd.read_excel(files['assessment_trends'])
         df_trends.columns = df_trends.columns.str.strip().str.lower().str.replace(' ', '_')
         
         # Select and rename relevant columns

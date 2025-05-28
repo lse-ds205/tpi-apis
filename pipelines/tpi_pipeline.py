@@ -2,8 +2,16 @@ from .base_pipeline import BasePipeline
 import pandas as pd
 import os
 import re
+import glob
 from datetime import datetime
 import logging
+from pathlib import Path
+from utils.file_discovery import (
+    find_latest_directory, 
+    find_files_by_pattern, 
+    find_methodology_files, 
+    categorize_files
+)
 
 class TPIPipeline(BasePipeline):
     """Pipeline for TPI database operations."""
@@ -16,20 +24,99 @@ class TPIPipeline(BasePipeline):
             logger (logging.Logger): Logger instance to use
         """
         super().__init__('tpi_api', data_dir, logger)
-        self.tpi_data_dir = os.path.join(data_dir, 'TPI_sector_data_All_sectors_08032025')
+        self.tpi_data_dir = self._find_latest_tpi_data_dir()
 
+    def _find_latest_tpi_data_dir(self) -> str:
+        """Find the latest TPI data directory based on date patterns."""
+        data_path = Path(self.data_dir)
+        selected_dir = find_latest_directory(data_path, 'sector_data', self.logger)
+        return str(selected_dir)
 
+    def _find_company_assessment_files(self) -> dict:
+        """Find company assessment files dynamically."""
+        data_path = Path(self.tpi_data_dir)
+        
+        # Look for Company_Latest_Assessments files
+        assessment_files = list(data_path.glob('Company_Latest_Assessments*.csv'))
+        
+        if not assessment_files:
+            raise FileNotFoundError("No Company Latest Assessments files found")
+        
+        # Categorize by version
+        categories = {
+            '5.0': ['5.0', '_5'],
+            '4.0': ['4.0', 'Company_Latest_Assessments.csv']
+        }
+        
+        files = categorize_files(assessment_files, categories, self.logger)
+        
+        # Handle the case where the base file is version 4.0
+        if '4.0' not in files:
+            for file in assessment_files:
+                if file.name == 'Company_Latest_Assessments.csv':
+                    files['4.0'] = file
+                    break
+        
+        if not files:
+            raise FileNotFoundError("No Company Latest Assessments files found")
+        
+        self.logger.info(f"Found company assessment files: {list(files.keys())}")
+        return files
+
+    def _find_mq_assessment_files(self) -> list:
+        """Find MQ assessment files dynamically."""
+        data_path = Path(self.tpi_data_dir)
+        return find_methodology_files(data_path, "MQ_Assessments*.csv", self.logger)
+
+    def _find_cp_assessment_files(self) -> dict:
+        """Find CP assessment files dynamically."""
+        data_path = Path(self.tpi_data_dir)
+        
+        # Look for CP_Assessments files
+        cp_files = list(data_path.glob('CP_Assessments*.csv'))
+        
+        if not cp_files:
+            raise FileNotFoundError("No CP Assessment files found")
+        
+        # Categorize by type
+        categories = {
+            'regional': ['regional'],
+            'standard': ['CP_Assessments']  # Will match any CP_Assessments file
+        }
+        
+        files = categorize_files(cp_files, categories, self.logger)
+        
+        # Ensure we have at least one file categorized as standard if no regional
+        if 'standard' not in files and cp_files:
+            # Find the file that's not regional
+            for file in cp_files:
+                if 'regional' not in file.name.lower():
+                    files['standard'] = file
+                    break
+        
+        if not files:
+            raise FileNotFoundError("No CP Assessment files found")
+        
+        self.logger.info(f"Found CP assessment files: {list(files.keys())}")
+        return files
+
+    def _find_sector_benchmark_file(self) -> Path:
+        """Find sector benchmark file dynamically."""
+        data_path = Path(self.tpi_data_dir)
+        
+        patterns = {'sector_benchmarks': 'Sector_Benchmarks*.csv'}
+        files = find_files_by_pattern(data_path, patterns, self.logger)
+        
+        return files['sector_benchmarks']
 
     def _process_data(self):
         """Process TPI data from files into dataframes."""
         # Company
         # Define paths to company files
-        file_5 = os.path.join(self.tpi_data_dir, 'Company_Latest_Assessments_5.0.csv')
-        file_4 = os.path.join(self.tpi_data_dir, 'Company_Latest_Assessments.csv')
+        files = self._find_company_assessment_files()
 
-        # Load both files
-        df_5 = pd.read_csv(file_5)
-        df_4 = pd.read_csv(file_4)
+        # Load all files
+        dfs = {version: pd.read_csv(file) for version, file in files.items()}
 
         # Map metadata columns
         meta_cols_common = {
@@ -43,31 +130,22 @@ class TPIPipeline(BasePipeline):
             'Sector': 'sector_name'
         }
 
-        # Process version 5.0 data
-        df_5_meta = df_5[list(meta_cols_common.keys())].copy()
-        df_5_meta.columns = list(meta_cols_common.values())
-        df_5_meta['version'] = '5.0'
-
-        # Process version 4.0 data
-        df_4_meta = df_4[list(meta_cols_common.keys())].copy()
-        df_4_meta.columns = list(meta_cols_common.values())
-        df_4_meta['version'] = '4.0'
+        # Process all company data
+        all_companies = []
+        for version, df in dfs.items():
+            df_meta = df[list(meta_cols_common.keys())].copy()
+            df_meta.columns = list(meta_cols_common.values())
+            df_meta['version'] = version
+            all_companies.append(df_meta)
 
         # Get all companies from MQ Assessment files
-        mq_files = [
-            'MQ_Assessments_Methodology_1_08032025.csv',
-            'MQ_Assessments_Methodology_2_08032025.csv',
-            'MQ_Assessments_Methodology_3_08032025.csv',
-            'MQ_Assessments_Methodology_4_08032025.csv',
-            'MQ_Assessments_Methodology_5_08032025.csv'
-        ]
-
+        mq_files = self._find_mq_assessment_files()
         mq_companies = []
         for mq_file in mq_files:
-            methodology_version = mq_file.split('_')[3]
+            methodology_version = mq_file.name.split('_')[3]
             version = f"{methodology_version}.0"
             
-            df_mq = pd.read_csv(os.path.join(self.tpi_data_dir, mq_file))
+            df_mq = pd.read_csv(mq_file)
             df_mq.columns = df_mq.columns.str.strip().str.lower().str.replace(' ', '_')
             
             # Get unique companies from this file
@@ -87,9 +165,10 @@ class TPIPipeline(BasePipeline):
 
         # Convert MQ companies to DataFrame
         df_mq_meta = pd.DataFrame(mq_companies)
+        all_companies.append(df_mq_meta)
 
         # Combine all company data
-        all_companies = pd.concat([df_5_meta, df_4_meta, df_mq_meta], ignore_index=True)
+        all_companies = pd.concat(all_companies, ignore_index=True)
         
         # Drop duplicates keeping the first occurrence (which will be from the latest assessments files)
         all_companies = all_companies.drop_duplicates(subset=['company_name', 'version'], keep='first')
@@ -102,12 +181,13 @@ class TPIPipeline(BasePipeline):
 
         # Company Answers - using MQ Assessments files
         company_answers = []
+        mq_files = self._find_mq_assessment_files()
         for mq_file in mq_files:
             # Extract methodology version from filename
-            methodology_version = mq_file.split('_')[3]  # Gets the number after 'Methodology_'
+            methodology_version = mq_file.name.split('_')[3]  # Gets the number after 'Methodology_'
             version = f"{methodology_version}.0"  # Convert to version format (e.g., "1.0")
             
-            df_mq = pd.read_csv(os.path.join(self.tpi_data_dir, mq_file))
+            df_mq = pd.read_csv(mq_file)
             df_mq.columns = df_mq.columns.str.strip().str.lower().str.replace(' ', '_')
             
             # Extract questions and their codes
@@ -144,13 +224,14 @@ class TPIPipeline(BasePipeline):
 
         # MQ Assessment
         mq_records = []
+        mq_files = self._find_mq_assessment_files()
         for mq_file in mq_files:
             # Extract methodology version from filename
-            methodology_version = mq_file.split('_')[3]  # Gets the number after 'Methodology_'
+            methodology_version = mq_file.name.split('_')[3]  # Gets the number after 'Methodology_'
             tpi_cycle = int(methodology_version)  # Convert to integer for tpi_cycle
             version = f"{methodology_version}.0"
             
-            df_mq = pd.read_csv(os.path.join(self.tpi_data_dir, mq_file))
+            df_mq = pd.read_csv(mq_file)
             df_mq.columns = df_mq.columns.str.strip().str.lower().str.replace(' ', '_')
             
             # Process the data
@@ -189,22 +270,16 @@ class TPIPipeline(BasePipeline):
         self.data['mq_assessment'] = mq_df
 
         # CP Assessment
-        cp_dir = self.tpi_data_dir
-        
-        # Dynamically find CP files
-        cp_files = {}
-        for fname in os.listdir(cp_dir):
-            if fname.startswith("CP_Assessments_Regional"):
-                cp_files["1"] = os.path.join(cp_dir, fname)
-            elif fname.startswith("CP_Assessments"):
-                cp_files["0"] = os.path.join(cp_dir, fname)
+        cp_files = self._find_cp_assessment_files()
         
         # Process and insert data
         assessment_records = []
         alignment_records = []
         projection_records = []
         
-        for is_regional, path in cp_files.items():
+        for file_type, path in cp_files.items():
+            is_regional = "1" if file_type == "regional" else "0"
+            
             df = pd.read_csv(path)
             df.columns = df.columns.str.strip()
             df["company_name"] = df["Company Name"].str.strip()
@@ -267,7 +342,8 @@ class TPIPipeline(BasePipeline):
             self.data['cp_projection'] = pd.concat(projection_records)
 
         # Sector Benchmark
-        df_sector = pd.read_csv(os.path.join(self.tpi_data_dir, 'Sector_Benchmarks_08032025.csv'))
+        benchmark_file = self._find_sector_benchmark_file()
+        df_sector = pd.read_csv(benchmark_file)
         df_sector.columns = df_sector.columns.str.strip().str.lower().str.replace(' ', '_')
         sector_benchmark_df = df_sector[['benchmark_id', 'sector_name', 'scenario_name', 'region', 'release_date', 'unit']].copy()
         sector_benchmark_df['release_date'] = pd.to_datetime(sector_benchmark_df['release_date'], dayfirst=True)

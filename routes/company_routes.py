@@ -245,7 +245,10 @@ async def compare_company_performance(request: Request, company_id: str, filter:
                 status_code=404, detail=f"Company '{company_id}' not found."
             )
         
-        if len(result) < 2:
+        # Check if we have data from at least 2 different years
+        unique_years = result['assessment_year'].nunique()
+        
+        if len(result) < 2 or unique_years < 2:
             # Get available years for insufficient data response using SQL template
             years_result = db_manager.execute_sql_template(
                 SQL_DIR / "get_company_assessment_years.sql",

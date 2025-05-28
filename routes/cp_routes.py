@@ -7,6 +7,7 @@ It uses the database manager and SQL templates for efficient data retrieval.
 # Imports
 # -------------------------------------------------------------------------
 from pathlib import Path
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from typing import List, Optional, Dict, Union
 from middleware.rate_limiter import limiter
@@ -105,7 +106,7 @@ async def get_company_cp_history(request: Request, company_id: str):
                 detail=f"Company '{company_id}' not found."
             )
         
-        # Convert to response models
+        # Convert to response models and sort by date
         history = []
         for _, row in result.iterrows():
             assessment = CPAssessmentDetail(
@@ -120,6 +121,9 @@ async def get_company_cp_history(request: Request, company_id: str):
                 carbon_performance_2050=row["carbon_performance_2050"] if row["carbon_performance_2050"] is not None else "N/A"
             )
             history.append(assessment)
+        
+        # Sort by assessment year in descending order
+        history.sort(key=lambda x: x.latest_assessment_year, reverse=True)
         
         logger.info(f"Successfully retrieved CP history for company {company_id}")
         return history
