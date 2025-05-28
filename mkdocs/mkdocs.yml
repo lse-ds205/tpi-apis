@@ -36,7 +36,6 @@ nav:
         - FOR DEVELOPING Index: index.md
         - Overview: Overview_Home.md
         - Getting Started: Getting_Started.md
-        - Tutorial: Tutorial.md
     - API Documentation: 
         - Documentation: Overview_Documentation.md
         - ASCOR Endpoints: Ascor_EP.md
