@@ -321,22 +321,22 @@ class CarbonPerformanceVisualizer:
                     name="Sector Mean",
                     line=dict(color="red", width=2)
                 ))
-        # reported history: solid up to 2024, dashed thereafter
+        # reported history: solid up to 2022, dashed thereafter
         if data.get("years"):
             yrs = data["years"]
             vals = data["values"]
             
-            # Find the transition point (data at 2024 or closest year)
-            transition_year = 2024
+            # Find the transition point (data at 2022 or closest year)
+            transition_year = 2022
             transition_idx = None
             
-            # First find if there's an exact 2024 point
+            # First find if there's an exact 2022 point
             for i, year in enumerate(yrs):
                 if year == transition_year:
                     transition_idx = i
                     break
             
-            # If no exact match, find closest year before 2024 as transition
+            # If no exact match, find closest year before 2022 as transition
             if transition_idx is None:
                 before_transition = [i for i, y in enumerate(yrs) if y < transition_year]
                 if before_transition:

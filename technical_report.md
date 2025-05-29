@@ -13,16 +13,6 @@ The API was designed with modularity and extensibility in mind, using FastAPI to
 
 We prioritized RESTful principles, ensuring that endpoints are predictable and resource-oriented. For example, `/v1/company/{company_id}` returns all relevant data for a single company, while `/v1/companies` supports pagination and filtering for bulk queries.
 
-**Rejected Ideas:**  
-- We considered a monolithic endpoint that would return all data types for an entity in a single call, but this was rejected due to performance concerns and the need for flexibility in client queries.
-- Early on, we debated using GraphQL for more flexible queries, but decided against it to keep the API accessible to a wider range of users and to minimize learning curve for the client.
-
-### Data Handling
-We chose to load data from CSV files at startup for simplicity and transparency, rather than using a database. This made it easier to update data and debug issues, but does mean that scalability is limited by available memory.
-
-### Error Handling
-A key design decision was to provide clear, descriptive error messages when data is missing or incomplete, following client feedback. This includes returning `"data not available"` or a relevant explanation, rather than generic errors.
-
 ---
 ## 3. Methodology
 
@@ -96,8 +86,12 @@ Testing was performed using both automated tests and manual queries, with a focu
 
 ### **Reflection from Second Meeting**
 
-**Meeting Time:** 19th May, 14:30 – 15:30 BST
+**Meeting Time:** 19th May, 14:30 – 16:00 BST
 **Meeting Goal:** Assesses current version and identifies specific areas for improvement.
+
+During this call with the client, we received feedback that the AI functionality (MCP) and graphs or other visualization tools would not really be helpful for their specific use case. This highlighted that there are multiple types of clients and use cases: the client we spoke to was primarily interested in comparing new data to old data, rather than advanced analytics or visualizations. However, we also recognized that other clients might benefit more from visualization and MCP tools. 
+
+Looking ahead, I would like to implement authentication so that clients can customize their workspace with the TPI API and save their preferred workflows. This would allow the API to better serve a range of user needs and use cases.
 
 ---
 ## 5. System architecture
@@ -181,10 +175,11 @@ A key technical highlight was our work on sector mean calculations. As shown in 
 Working with the client was a particularly rewarding aspect of the project. The TPI team was highly technical and engaged, providing detailed feedback and helping us refine our endpoints and data handling. Their positive response to our work was motivating, and the collaborative nature of our meetings made the development process both productive and enjoyable.
 
 ### Future Work
+If we were to continue to be able to work on the project, this is what we would do:
 - **Authentication and Customization:** Implementing authentication would allow clients to customize their workspace, save workflows, and manage access to sensitive data.
 - **Automated Data Ingestion:** Building a pipeline for automated data updates would improve data freshness and reduce manual intervention.
 - **Scalability:** Migrating from CSV-based storage to a database would enable the API to handle larger datasets and more concurrent users.
 - **Enhanced Visualization:** Expanding the API's ability to generate and serve dynamic charts would benefit clients interested in visual analytics.
 - **User-Specific Features:** As we learned, different clients have different needs—some value advanced analytics and visualization, while others prioritize simple data comparison. Future development should continue to balance these requirements, possibly by offering user profiles or configurable endpoints.
 
-Overall, this project was a valuable learning experience in both technical development and client collaboration. The feedback and support from the TPI team were instrumental in shaping the final product, and I am excited to see how the API can continue to evolve to meet the needs of a diverse user base.
+Overall, this project was a valuable learning experience in both technical development and client collaboration. The feedback and support from the TPI team were instrumental in shaping the final product, and I am excited to see how the API can continue to evolve to meet the needs of a diverse user base. We went above and beyond the core assignment requirements, and we learned a lot from doing so. Big thanks to Sylvan and Jahn for setting up so much of our learning experience.
