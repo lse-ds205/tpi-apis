@@ -57,7 +57,7 @@ except FileNotFoundError as e:
     logger.info("Created mock data with sample values for all three pillars (EP, CP, CF)")
 
 # Load CP assessment file for ISIN-country mapping
-CP_ISIN_FILE = "data/TPI sector data - All sectors - 08032025/CP_Assessments_08032025.csv"
+CP_ISIN_FILE = "data/TPI_sector_data_All_sectors_08032025/CP_Assessments_08032025.csv"
 cp_df = pd.read_csv(CP_ISIN_FILE)
 cp_df.columns = cp_df.columns.str.strip().str.lower()
 

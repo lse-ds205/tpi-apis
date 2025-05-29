@@ -347,124 +347,54 @@ async def get_company_carbon_intensity_data(
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/visualization - Carbon Performance Visualization
+# Endpoint: GET /company/{company_identifier}/carbon-performance-graph" - Graph endpoint
 # ------------------------------------------------------------------------------
-@cp_router.get("/company/{company_identifier}/visualization")
-@limiter.limit("100/minute")
-async def get_company_cp_visualization(
-    request: Request,
+@cp_router.get(
+    "/company/{company_identifier}/carbon-performance-graph",
+    responses={200: {"content": {"image/png": {}}, "description": "PNG graph"}}
+)
+def get_company_carbon_performance_graph(
     company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
-    format: str = Query("json", description="Output format: 'json' or 'png'"),
-    filter: CompanyFilters = Depends(CompanyFilters)
+    include_sector_benchmarks: bool = Query(True, description="Include benchmarks"),
+    as_image: bool = Query(True, description="Return PNG if true"),
+    image_format: str = Query("png", description="png|jpeg"),
+    width: int = Query(1000, ge=400, le=2000),
+    height: int = Query(600, ge=300, le=1200),
+    title: Optional[str] = Query(None, description="Custom title")
 ):
     """
-    Generate a carbon performance visualization for a company.
+    Generate a carbon performance graph for a company.
     The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
-    try:
-        # Try ISIN matching first
-        mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
-        company_data = cp_df[mask]
-        
-        if company_data.empty:
-            # Fallback to company name/id
-            normalized_input = company_identifier.strip().lower()
-            company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
-        
-        if company_data.empty:
-            raise HTTPException(404, f"Company '{company_identifier}' not found.")
-        
-        # Get the latest record for sector information
-        latest_record = company_data.sort_values("assessment date").iloc[-1]
-        sector = latest_record.get("sector", "")
-        
-        # Get carbon intensity data
-        carbon_intensity_data = get_company_carbon_intensity(
-            company_identifier, 
-            sector, 
-            cp_df, 
-            sector_bench_df
-        )
-        
-        # Create visualization
-        visualizer = CarbonPerformanceVisualizer()
-        
-        if format.lower() == "png":
-            # Generate PNG image
-            img_bytes = visualizer.create_carbon_performance_chart(
-                carbon_intensity_data, 
-                company_identifier,
-                output_format="png"
-            )
-            return Response(
-                content=img_bytes,
-                media_type="image/png",
-                headers={"Content-Disposition": f"attachment; filename={company_identifier}_carbon_performance.png"}
-            )
-        else:
-            # Return JSON data for the chart
-            chart_data = visualizer.create_carbon_performance_chart(
-                carbon_intensity_data, 
-                company_identifier,
-                output_format="json"
-            )
-            return JSONResponse(content=chart_data)
-            
-    except Exception as e:
-        raise HTTPException(500, f"Error generating visualization: {str(e)}")
-
-
-# ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/export - Export CP Data
-# ------------------------------------------------------------------------------
-@cp_router.get("/company/{company_identifier}/export")
-@limiter.limit("100/minute")
-async def export_company_cp_data(
-    request: Request,
-    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
-    format: str = Query("csv", description="Export format (csv or excel)"),
-    filter: CompanyFilters = Depends(CompanyFilters)
-):
-    """
-    Export company CP data in CSV or Excel format.
-    The company_identifier can be a company name/id or an ISIN (case-insensitive).
-    """
-    try:
-        # Try ISIN matching first
-        mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
-        company_data = cp_df[mask]
-        
-        if company_data.empty:
-            # Fallback to company name/id
-            normalized_input = company_identifier.strip().lower()
-            company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
-        
-        if company_data.empty:
-            raise HTTPException(404, f"Company '{company_identifier}' not found.")
-        
-        # Create export data
-        if format.lower() == "excel":
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                company_data.to_excel(writer, sheet_name='CP Data', index=False)
-            output.seek(0)
-            
-            return StreamingResponse(
-                io.BytesIO(output.read()),
-                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                headers={"Content-Disposition": f"attachment; filename={company_identifier}_cp_data.xlsx"}
-            )
-        else:
-            # Default to CSV
-            output = io.StringIO()
-            company_data.to_csv(output, index=False)
-            output.seek(0)
-            
-            return StreamingResponse(
-                io.StringIO(output.getvalue()),
-                media_type="text/csv",
-                headers={"Content-Disposition": f"attachment; filename={company_identifier}_cp_data.csv"}
-            )
-            
-    except Exception as e:
-        raise HTTPException(500, f"Error exporting CP data: {str(e)}")
+    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+    sub = cp_df[mask]
+    if sub.empty:
+        normalized_input = company_identifier.strip().lower()
+        sub = cp_df[cp_df["company name"].str.lower() == normalized_input]
+        if sub.empty:
+            raise HTTPException(404, f"Company '{company_identifier}' not found")
+        company_id_for_graph = company_identifier
+    else:
+        company_id_for_graph = sub.iloc[-1]["company name"]
+    data = get_company_carbon_intensity(company_id_for_graph, include_sector_benchmarks, cp_df, sector_bench_df)
+    row = sub.sort_values("assessment_cycle").iloc[-1]
+    target_years, target_values = [], []
+    for col in row.index:
+        m = re.search(r"carbon performance.*?(\d{4})$", col)
+        if m:
+            yr = int(m.group(1))
+            val = pd.to_numeric(row[col], errors="coerce")
+            if pd.notnull(val):
+                target_years.append(yr)
+                target_values.append(float(val))
+    if target_years:
+        yrs, vals = zip(*sorted(zip(target_years, target_values)))
+        data["target_years"] = list(yrs)
+        data["target_values"] = list(vals)
+    chart_title = title or f"Carbon Performance for {company_id_for_graph}"
+    fig_or_resp = CarbonPerformanceVisualizer.generate_carbon_intensity_graph(
+        data, chart_title, width, height, as_image, image_format
+    )
+    if as_image:
+        return fig_or_resp
+    return JSONResponse(content=fig_or_resp)

@@ -23,7 +23,7 @@ from schemas import (
     PerformanceComparisonResponse,
     PerformanceComparisonInsufficientDataResponse,
 )
-from utils import normalize_company_id
+from utils import normalize_company_id, get_latest_data_dir, get_latest_assessment_file
 from data_utils import CompanyDataHandler
 from filters import CompanyFilters
 import io
