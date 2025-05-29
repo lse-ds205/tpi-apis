@@ -202,33 +202,66 @@ async def get_mq_by_methodology(
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /sector-trends - MQ Trends by Sector
+# Endpoint: GET /trends/sector/{sector_id} - MQ Trends by Sector
 # ------------------------------------------------------------------------------
-@mq_router.get("/sector-trends", response_model=List[dict])
+@mq_router.get(
+    "/trends/sector/{sector_id}", response_model=PaginatedMQResponse
+)
 @limiter.limit("100/minute")
-async def get_mq_sector_trends(
-    request: Request,
+async def get_mq_trends_sector(
+    request: Request, 
+    sector_id: str,
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(
+        10, ge=1, le=100, description="Records per page (max 100)"
+    ),
     company_filter: CompanyFilters = Depends(CompanyFilters),
     mq_filter: MQFilter = Depends(MQFilter)
 ):
     """
-    Analyze MQ trends by sector across different methodology cycles.
+    Fetches MQ trends for all companies in a given sector with pagination.
     """
     mq_handler = MQHandler()
-    
     try:
         mq_handler.apply_company_filter(company_filter)
         mq_handler.apply_mq_filter(mq_filter)
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=500,
             detail=f"Error filtering company data: {str(e)}"
         )
-    
-    trends_data = mq_handler.get_sector_trends()
-    
-    return trends_data
+    sector_data = mq_handler.get_sector_data(sector_id)
+    # Error handling: If no records are found for the given sector, raise an HTTP 404 error.
+    if sector_data.empty:
+        raise HTTPException(
+            status_code=404, detail=f"Sector '{sector_id}' not found."
+        )
+    paginated_data = mq_handler.paginate(sector_data, page, page_size)
+    total_records = len(sector_data)
 
+    results = [
+        MQAssessmentDetail(
+            company_id=row["company name"],
+            name=row["company name"],
+            sector=sector_id,
+            geography=row.get("geography", "N/A"),
+            latest_assessment_year=pd.to_datetime(
+                row["assessment date"], format="%d/%m/%Y"
+            ).year,
+            management_quality_score=STAR_MAPPING.get(
+                row.get("level", "N/A"), None
+            ),
+        )
+        for _, row in paginated_data.iterrows()
+    ]
+
+    return PaginatedMQResponse(
+        total_records=total_records,
+        page=page,
+        page_size=page_size,
+        results=results,
+    )
 
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_identifier}/indicators - Company MQ Indicators
@@ -246,40 +279,54 @@ async def get_company_mq_indicators(
     The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
     mq_handler = MQHandler()
-    
     try:
         mq_handler.apply_company_filter(company_filter)
         mq_handler.apply_mq_filter(mq_filter)
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error filtering company data: {str(e)}"
-        )
-    
-    # Try ISIN matching first
-    mask = mq_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
-    company_data = mq_df[mask]
-    
+        raise HTTPException(500, f"Error filtering company data: {e}")
+
+    # Grab the handler's filtered DataFrame
+    df = mq_handler.get_df()
+
+    if "isins" in df.columns:
+        isin_col = "isins"
+    elif "isin" in df.columns:
+        isin_col = "isin"
+    else:
+        raise HTTPException(500, "No ISIN(s) column found in MQ data.")
+
+    # Try ISIN lookup
+    mask = (
+        df[isin_col]
+          .str.lower()
+          .str.split(";")
+          .apply(lambda isins: company_identifier.lower() in [i.strip() for i in isins])
+    )
+    company_data = df[mask]
+
+    # Fallback to company name
     if company_data.empty:
-        # Fallback to company name/id
-        normalized_input = company_identifier.strip().lower()
-        company_data = mq_df[mq_df["company name"].str.strip().str.lower() == normalized_input]
-    
+        normalized = company_identifier.strip().lower()
+        company_data = df[df["company name"].str.strip().str.lower() == normalized]
+
     if company_data.empty:
         raise HTTPException(404, f"Company '{company_identifier}' not found.")
-    
-    # Get the latest record
-    latest_record = company_data.sort_values("assessment date").iloc[-1]
-    
-    # Extract indicator columns (assuming they follow a pattern)
-    indicators = {}
-    for col in latest_record.index:
-        if "indicator" in col.lower() or "question" in col.lower():
-            indicators[col] = latest_record[col]
-    
+
+    # Pick the latest record
+    latest = company_data.sort_values("assessment date").iloc[-1]
+
+    # Pull out anything that looks like an indicator/question
+    indicators = {
+        col: latest[col]
+        for col in latest.index
+        if "indicator" in col.lower() or "question" in col.lower()
+    }
+
+    assessment_dt = pd.to_datetime(latest["assessment date"], format="%d/%m/%Y")
     return MQIndicatorsResponse(
         company_id=company_identifier,
-        company_name=latest_record["company name"],
-        assessment_date=latest_record["assessment date"],
-        indicators=indicators
-    )
+         company_name=latest["company name"],
+         assessment_date=latest["assessment date"],        
+         assessment_year=assessment_dt.year,                 
+         methodology_cycle=latest["methodology_cycle"],   
+           indicators=indicators)
