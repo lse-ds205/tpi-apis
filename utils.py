@@ -355,7 +355,7 @@ class CarbonPerformanceVisualizer:
                     x=list(x_s), y=list(y_s),
                     mode="lines",
                     name="Reported",
-                    line=dict(color="#36454F", width=2),  # Charcoal color
+                    line=dict(color="black", width=2),
                     showlegend=len(dash_pts) == 0  
                 ))
             
@@ -366,7 +366,7 @@ class CarbonPerformanceVisualizer:
                     x=list(x_d), y=list(y_d),
                     mode="lines",
                     name="Reported (projected)",
-                    line=dict(color="#36454F", width=2, dash="dash")  # Charcoal color
+                    line=dict(color="black", width=2, dash="dash")
                 ))
 
             # Add green dot at 2030 if we have data for that year
@@ -387,9 +387,10 @@ class CarbonPerformanceVisualizer:
             fig.add_trace(go.Scatter(
                 x=data["target_years"],
                 y=data["target_values"],
-                mode="lines",
+                mode="lines+markers",
                 name="Target",
-                line=dict(dash="dot", color="green")
+                line=dict(dash="dot", color="green"),
+                marker=dict(symbol="circle", size=6, color="green"),
             ))
 
         fig.update_layout(
@@ -399,19 +400,7 @@ class CarbonPerformanceVisualizer:
             width=width,
             height=height,
             hovermode="x unified",
-            legend=dict(bgcolor="rgba(255,255,255,0.8)", bordercolor="black", borderwidth=1),
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            xaxis=dict(
-                showgrid=False,  # Remove vertical grid lines
-                gridcolor="lightgray",
-                gridwidth=1
-            ),
-            yaxis=dict(
-                showgrid=True,  # Keep horizontal grid lines
-                gridcolor="lightgray",
-                gridwidth=1
-            )
+            legend=dict(bgcolor="rgba(255,255,255,0.8)", bordercolor="black", borderwidth=1)
         )
 
         if as_image:
