@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from data_utils import BaseDataHandler
+from utils.data_utils import BaseDataHandler
 
 class TestDataHandlerSanitization(unittest.TestCase):
     def setUp(self):

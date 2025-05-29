@@ -3,7 +3,7 @@ import re
 import pytest
 from datetime import datetime
 from pathlib import Path
-from utils import (
+from utils.utils import (
     get_latest_data_dir,
     get_latest_assessment_file,
     get_latest_cp_file,

@@ -1,250 +1,359 @@
 """
-
 This module provides FastAPI endpoints for retrieving Management Quality (MQ) assessments.
-It loads MQ datasets from CSV files, processes the data (including adding a methodology cycle identifier),
-and exposes endpoints for fetching the latest assessments, assessments by methodology cycle, and trends by sector.
-
+It uses the database manager and SQL templates for efficient data retrieval.
 """
 
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 # Imports
-# ------------------------------------------------------------------------------
-import re
-from fastapi import APIRouter, HTTPException, Query, Path, Depends, Request
-import pandas as pd
-from pathlib import Path as FilePath
-from datetime import datetime
-from typing import List, Optional
+# -------------------------------------------------------------------------
+from pathlib import Path
+from fastapi import APIRouter, HTTPException, Query, Request, Depends, Path as PathParam
+from typing import List, Dict, Optional
 from middleware.rate_limiter import limiter
 from schemas import (
     MQAssessmentDetail,
+    MQDetail,
+    MQListResponse,
     MQIndicatorsResponse,
     PaginatedMQResponse,
+    MQTrendsResponse
 )
-from data_utils import MQHandler
-from filters import CompanyFilters, MQFilter
-from utils import get_latest_data_dir, get_latest_assessment_file
+from utils.filters import CompanyFilters, build_company_filter_conditions
+from log_config import get_logger
+from utils.database_manager import DatabaseManagerFactory
 
-# ------------------------------------------------------------------------------
-# Constants and Data Loading
-# ------------------------------------------------------------------------------
-BASE_DIR = FilePath(__file__).resolve().parent.parent
-BASE_DATA_DIR = BASE_DIR / "data"
-DATA_DIR = get_latest_data_dir(BASE_DATA_DIR)
+logger = get_logger(__name__)
 
-STAR_MAPPING = {
-    "0STAR": 0.0,
-    "1STAR": 1.0,
-    "2STAR": 2.0,
-    "3STAR": 3.0,
-    "4STAR": 4.0,
-    "5STAR": 5.0,
-}
-
-mq_files = sorted(DATA_DIR.glob("MQ_Assessments_Methodology_*.csv"))
-if not mq_files:
-    raise FileNotFoundError(f"No MQ datasets found in {DATA_DIR}")
-
-mq_df_list = [pd.read_csv(f) for f in mq_files]
-
-for idx, df in enumerate(mq_df_list, start=1):
-    df["methodology_cycle"] = idx
-
-mq_df = pd.concat(mq_df_list, ignore_index=True)
-mq_df.columns = mq_df.columns.str.strip().str.lower()
-
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 # Router Initialization
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 mq_router = APIRouter(tags=["MQ Endpoints"])
 
+# SQL file paths
+SQL_DIR = Path(__file__).parent.parent / "sql" / "tpi" / "queries"
+
 # ------------------------------------------------------------------------------
-# Endpoint: GET /latest - Latest MQ Assessments with Pagination
+# Endpoint: GET /latest - Latest MQ Assessments
 # ------------------------------------------------------------------------------
 @mq_router.get("/latest", response_model=PaginatedMQResponse)
 @limiter.limit("100/minute")
 async def get_latest_mq_assessments(
-    request: Request, 
+    request: Request,
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Number of results per page (max 100)"
-    ),
-    company_filter: CompanyFilters = Depends(CompanyFilters),
-    mq_filter: MQFilter = Depends(MQFilter)
-):  
-    """
-    Fetches the latest Management Quality (MQ) assessment for all companies with pagination.
-
-    This function:
-    1. Sorts the full MQ dataset by the 'assessment date'.
-    2. Groups the data by 'company name' and selects the latest record for each company.
-    3. Applies pagination based on the provided page and page_size parameters.
-    4. Maps STAR rating strings to numeric scores using a pre-defined dictionary.
-    """
-    mq_handler = MQHandler()
-
-    if mq_handler.get_df().empty:
-        raise HTTPException(status_code=503, detail="MQ dataset is not available.")
-    
-    try:
-        mq_handler.apply_company_filter(company_filter)
-        mq_handler.apply_mq_filter(mq_filter)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error filtering company data: {str(e)}"
-        )
-
-    latest_records = mq_handler.get_latest_assessments(page, page_size)
-    total_records = len(latest_records)
-
-    results = [
-        MQAssessmentDetail(
-            company_id=row["company name"],
-            name=row["company name"],
-            sector=row.get("sector", "N/A"),
-            geography=row.get("geography", "N/A"),
-            latest_assessment_year=pd.to_datetime(
-                row["assessment date"], format="%d/%m/%Y"
-            ).year,
-            management_quality_score=STAR_MAPPING.get(
-                row.get("level", "N/A"), None
-            ),
-        )
-        for _, row in latest_records.iterrows()
-    ]
-
-    return PaginatedMQResponse(
-        total_records=total_records,
-        page=page,
-        page_size=page_size,
-        results=results,
-    )
-
-
-# ------------------------------------------------------------------------------
-# Endpoint: GET /methodology/{methodology_id} - MQ Assessments by Cycle
-# ------------------------------------------------------------------------------
-@mq_router.get(
-    "/methodology/{methodology_id}", response_model=PaginatedMQResponse
-)
-@limiter.limit("100/minute")
-def get_mq_by_methodology(
-    request: Request, 
-    methodology_id: int = Path(
-        ..., ge=1, le=len(mq_files), description="Methodology cycle ID"
-    ),
-    page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Records per page (max 100)"),
-    company_filter: CompanyFilters = Depends(),
-    mq_filter: MQFilter = Depends()
+    page_size: int = Query(10, ge=1, le=100, description="Number of results per page (max 100)"),
+    filter: CompanyFilters = Depends(CompanyFilters)
 ):
-    """
-    Returns MQ assessments based on a specific research methodology cycle with pagination.
-    """
-    mq_handler = MQHandler()
-
-    if methodology_id > mq_handler.get_mq_files_length():
-        raise HTTPException(status_code=404, detail="Invalid methodology cycle.")
-
+    """Retrieve the latest MQ assessment scores for all companies with pagination."""
     try:
-        mq_handler.apply_company_filter(company_filter)
-        mq_handler.apply_mq_filter(mq_filter)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error filtering company data: {str(e)}"
+        logger.info(f"Getting latest MQ assessments - page {page}, size {page_size}")
+        db_manager = DatabaseManagerFactory.get_manager("tpi_api")
+        
+        # Build filter conditions
+        where_clause, params = build_company_filter_conditions(filter)
+        
+        # Add pagination parameters
+        params.update({
+            "limit": page_size,
+            "offset": (page - 1) * page_size
+        })
+        
+        result = db_manager.execute_sql_template(
+            SQL_DIR / "get_latest_mq_assessments.sql",
+            params=params,
+            where_clause=where_clause
         )
-    methodology_data = mq_handler.get_methodology_data(methodology_id)
-    paginated_data = mq_handler.paginate(methodology_data, page, page_size)
-    total_records = len(methodology_data)
-
-    results = []
-    for _, row in paginated_data.iterrows():
-        try:
-            year = pd.to_datetime(row["assessment date"], format="%d/%m/%Y").year
-        except Exception:
-            raise HTTPException(
-                status_code=422,
-                detail=f"Invalid date format for company: {row.get('company name')}"
+        
+        # Convert to response models
+        companies = []
+        for _, row in result.iterrows():
+            assessment = MQAssessmentDetail(
+                company_id=row["company_id"],
+                name=row["name"],
+                sector=row["sector"],
+                geography=row["geography"],
+                latest_assessment_year=row["latest_assessment_year"],
+                management_quality_score=row["management_quality_score"]
             )
+            companies.append(assessment)
+        
+        # Get total count for pagination
+        count_query = "SELECT COUNT(*) as total FROM company c JOIN mq_assessment mq ON c.company_name = mq.company_name"
+        if where_clause:
+            count_query += f" WHERE 1=1 {where_clause}"
+        else:
+            count_query += " WHERE 1=1"
+        
+        count_params = {k: v for k, v in params.items() if k not in ['limit', 'offset']}
+        count_result = db_manager.execute_query(count_query, count_params)
+        total_records = count_result.iloc[0]['total'] if not count_result.empty else 0
 
-        results.append(MQAssessmentDetail(
-            company_id=row["company name"],
-            name=row["company name"],
-            sector=row.get("sector", "N/A"),
-            geography=row.get("geography", "N/A"),
-            latest_assessment_year=year,
-            management_quality_score=STAR_MAPPING.get(row.get("level", "N/A"), None),
-        ))
-
-    return PaginatedMQResponse(
-        total_records=total_records,
-        page=page,
-        page_size=page_size,
-        results=results,
-    )
-
+        logger.info(f"Successfully retrieved {len(companies)} MQ assessments")
+        return PaginatedMQResponse(
+            total_records=total_records,
+            page=page,
+            page_size=page_size,
+            results=companies
+        )
+        
+    except Exception as e:
+        logger.exception(f"Error getting latest MQ assessments: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /trends/sector/{sector_id} - MQ Trends by Sector
+# Endpoint: GET /methodology/{methodology_id} - MQ Assessments by Methodology
 # ------------------------------------------------------------------------------
-@mq_router.get(
-    "/trends/sector/{sector_id}", response_model=PaginatedMQResponse
-)
+@mq_router.get("/methodology/{methodology_id}", response_model=PaginatedMQResponse)
+@limiter.limit("100/minute")
+async def get_mq_by_methodology(
+    request: Request,
+    methodology_id: int = PathParam(..., ge=1, description="Methodology cycle ID"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(10, ge=1, le=100, description="Records per page (max 100)"),
+    filter: CompanyFilters = Depends(CompanyFilters)
+):
+    """Returns MQ assessments based on a specific research methodology cycle with pagination."""
+    try:
+        logger.info(f"Getting MQ assessments for methodology {methodology_id} - page {page}, size {page_size}")
+        db_manager = DatabaseManagerFactory.get_manager("tpi_api")
+        
+        # Build filter conditions
+        where_clause, params = build_company_filter_conditions(filter)
+        
+        # Add methodology and pagination parameters
+        params.update({
+            "methodology_id": methodology_id,
+            "limit": page_size,
+            "offset": (page - 1) * page_size
+        })
+        
+        # Add methodology filter to WHERE clause
+        if where_clause and where_clause.strip():
+            where_clause += " AND mq.tpi_cycle = :methodology_id"
+        else:
+            where_clause = " AND mq.tpi_cycle = :methodology_id"
+        
+        result = db_manager.execute_sql_template(
+            SQL_DIR / "get_latest_mq_assessments.sql",
+            params=params,
+            where_clause=where_clause
+        )
+        
+        # Validate methodology exists
+        if result.empty:
+            # Check if methodology exists at all
+            check_result = db_manager.execute_query(
+                "SELECT DISTINCT tpi_cycle FROM mq_assessment WHERE tpi_cycle = :methodology_id",
+                params={"methodology_id": methodology_id}
+            )
+            if check_result.empty:
+                raise HTTPException(status_code=422, detail=f"Invalid methodology cycle: {methodology_id}")
+        
+        # Convert to response models
+        companies = []
+        for _, row in result.iterrows():
+            assessment = MQAssessmentDetail(
+                company_id=row["company_id"],
+                name=row["name"],
+                sector=row["sector"],
+                geography=row["geography"],
+                latest_assessment_year=row["latest_assessment_year"],
+                management_quality_score=row["management_quality_score"]
+            )
+            companies.append(assessment)
+        
+        # Get total count for pagination
+        count_query = "SELECT COUNT(*) as total FROM company c JOIN mq_assessment mq ON c.company_name = mq.company_name"
+        if where_clause:
+            count_query += f" WHERE 1=1 {where_clause}"
+        else:
+            count_query += " WHERE 1=1"
+        
+        count_params = {k: v for k, v in params.items() if k not in ['limit', 'offset']}
+        count_result = db_manager.execute_query(count_query, count_params)
+        total_records = count_result.iloc[0]['total'] if not count_result.empty else 0
+
+        logger.info(f"Successfully retrieved {len(companies)} MQ assessments for methodology {methodology_id}")
+        return PaginatedMQResponse(
+            total_records=total_records,
+            page=page,
+            page_size=page_size,
+            results=companies
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting MQ assessments for methodology {methodology_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ------------------------------------------------------------------------------
+# Endpoint: GET /trends/sector/{sector} - MQ Trends by Sector
+# ------------------------------------------------------------------------------
+@mq_router.get("/trends/sector/{sector}", response_model=PaginatedMQResponse)
 @limiter.limit("100/minute")
 async def get_mq_trends_sector(
-    request: Request, 
-    sector_id: str,
+    request: Request,
+    sector: str,
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Records per page (max 100)"
-    ),
-    company_filter: CompanyFilters = Depends(CompanyFilters),
-    mq_filter: MQFilter = Depends(MQFilter)
+    page_size: int = Query(10, ge=1, le=100, description="Records per page (max 100)")
 ):
-    """
-    Fetches MQ trends for all companies in a given sector with pagination.
-    """
-    mq_handler = MQHandler()
+    """Fetches MQ trends for all companies in a given sector with pagination."""
     try:
-        mq_handler.apply_company_filter(company_filter)
-        mq_handler.apply_mq_filter(mq_filter)
+        logger.info(f"Getting MQ trends for sector '{sector}' - page {page}, size {page_size}")
+        db_manager = DatabaseManagerFactory.get_manager("tpi_api")
+        
+        # For sector trends, we don't use additional filters since sector is specified in path
+        where_clause = " AND LOWER(c.sector_name) = :target_sector"
+        params = {
+            "target_sector": sector.lower(),
+            "limit": page_size,
+            "offset": (page - 1) * page_size
+        }
+        
+        result = db_manager.execute_sql_template(
+            SQL_DIR / "get_mq_sector_trends.sql",
+            params=params,
+            where_clause=where_clause
+        )
+        
+        # Check if sector exists
+        if result.empty:
+            raise HTTPException(status_code=404, detail=f"Sector '{sector}' not found.")
+        
+        # Convert to response models
+        companies = []
+        for _, row in result.iterrows():
+            assessment = MQAssessmentDetail(
+                company_id=row["company_id"],
+                name=row["name"],
+                sector=sector.lower(),  # Use the requested sector format
+                geography=row["geography"],
+                latest_assessment_year=row["latest_assessment_year"],
+                management_quality_score=row["management_quality_score"]
+            )
+            companies.append(assessment)
+        
+        # Get total count for pagination
+        count_query = "SELECT COUNT(*) as total FROM company c JOIN mq_assessment mq ON c.company_name = mq.company_name"
+        if where_clause:
+            count_query += f" WHERE 1=1 {where_clause}"
+        else:
+            count_query += " WHERE 1=1"
+        
+        count_params = {k: v for k, v in params.items() if k not in ['limit', 'offset']}
+        count_result = db_manager.execute_query(count_query, count_params)
+        total_records = count_result.iloc[0]['total'] if not count_result.empty else 0
+
+        logger.info(f"Successfully retrieved {len(companies)} MQ trends for sector '{sector}'")
+        return PaginatedMQResponse(
+            total_records=total_records,
+            page=page,
+            page_size=page_size,
+            results=companies
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error filtering company data: {str(e)}"
-        )
-    sector_data = mq_handler.get_sector_data(sector_id)
-    # Error handling: If no records are found for the given sector, raise an HTTP 404 error.
-    if sector_data.empty:
-        raise HTTPException(
-            status_code=404, detail=f"Sector '{sector_id}' not found."
-        )
-    paginated_data = mq_handler.paginate(sector_data, page, page_size)
-    total_records = len(sector_data)
+        logger.exception(f"Error getting MQ trends for sector '{sector}': {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    results = [
-        MQAssessmentDetail(
-            company_id=row["company name"],
-            name=row["company name"],
-            sector=sector_id,
-            geography=row.get("geography", "N/A"),
-            latest_assessment_year=pd.to_datetime(
-                row["assessment date"], format="%d/%m/%Y"
-            ).year,
-            management_quality_score=STAR_MAPPING.get(
-                row.get("level", "N/A"), None
-            ),
+# ------------------------------------------------------------------------------
+# Endpoint: GET /company/{company_id} - Company MQ History
+# ------------------------------------------------------------------------------
+@mq_router.get("/company/{company_id}", response_model=List[MQDetail])
+@limiter.limit("100/minute")
+async def get_company_mq_history(request: Request, company_id: str):
+    """Retrieve all MQ assessments for a specific company across different assessment cycles."""
+    try:
+        logger.info(f"Getting MQ history for company {company_id}")
+        db_manager = DatabaseManagerFactory.get_manager("tpi_api")
+        
+        result = db_manager.execute_sql_template(
+            SQL_DIR / "get_mq_company_history.sql",
+            params={"company_id": company_id}
         )
-        for _, row in paginated_data.iterrows()
-    ]
+        
+        if result.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Company '{company_id}' not found."
+            )
+        
+        # Convert to response models
+        history = []
+        for _, row in result.iterrows():
+            assessment = MQDetail(
+                company_id=row["company_id"],
+                name=row["name"],
+                sector=row["sector"],
+                geography=row["geography"],
+                latest_assessment_year=row["latest_assessment_year"],
+                management_quality_score=row["management_quality_score"],
+                methodology_cycle=row["methodology_cycle"]
+            )
+            history.append(assessment)
+        
+        logger.info(f"Successfully retrieved MQ history for company {company_id}")
+        return history
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting MQ history for company {company_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    return PaginatedMQResponse(
-        total_records=total_records,
-        page=page,
-        page_size=page_size,
-        results=results,
-    )
+# ------------------------------------------------------------------------------
+# Endpoint: GET /company/{company_id}/indicators/{assessment_year} - MQ Indicators
+# ------------------------------------------------------------------------------
+@mq_router.get("/company/{company_id}/indicators/{assessment_year}", response_model=MQIndicatorsResponse)
+@limiter.limit("100/minute")
+async def get_company_mq_indicators(
+    request: Request, 
+    company_id: str, 
+    assessment_year: int
+) -> MQIndicatorsResponse:
+    """Get detailed MQ indicator scores for a specific company and assessment year."""
+    try:
+        logger.info(f"Getting MQ indicators for company {company_id}, year {assessment_year}")
+        db_manager = DatabaseManagerFactory.get_manager("tpi_api")
+        
+        result = db_manager.execute_sql_template(
+            SQL_DIR / "get_mq_indicators.sql",
+            params={
+                "company_id": company_id,
+                "assessment_year": assessment_year
+            }
+        )
+        
+        if result.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No MQ data found for company '{company_id}' in year {assessment_year}"
+            )
+        
+        # Convert to response model
+        data = result.iloc[0]
+        indicators = {}
+        
+        # Extract indicator scores (assuming columns like indicator_1_score, etc.)
+        for col in result.columns:
+            if col.startswith('indicator_') and col.endswith('_score'):
+                indicator_name = col.replace('_score', '').replace('_', ' ').title()
+                indicators[indicator_name] = data[col]
+        
+        response = MQIndicatorsResponse(
+            company_id=company_id,
+            assessment_year=assessment_year,
+            methodology_cycle=data["methodology_cycle"],
+            indicators=indicators
+        )
+        
+        logger.info(f"Successfully retrieved MQ indicators for company {company_id}")
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting MQ indicators for company {company_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

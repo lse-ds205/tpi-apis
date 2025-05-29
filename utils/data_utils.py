@@ -1,13 +1,13 @@
 import pandas as pd
 from pathlib import Path as FilePath
-from utils import (
+from utils.utils import (
     get_latest_data_dir,
     get_latest_assessment_file,
     get_latest_cp_file,
     normalize_company_id,
 )
 from datetime import datetime
-from filters import CompanyFilters, MQFilter
+from utils.filters import CompanyFilters, MQFilter
 
 class BaseDataHandler:
     """Base class for handling data operations with common functionality.
@@ -347,10 +347,10 @@ class CPHandler(BaseDataHandler):
             df["assessment_cycle"] = idx
 
         cp_df = pd.concat(cp_df_list, ignore_index=True)
-        cp_df.columns = cp_df.columns.str.strip().str.lower()
+        cp_df.columns = cp_df.columns.str.strip()
 
         # Validate required columns
-        required_columns = ["company name", "assessment date", "sector", "geography"]
+        required_columns = ["Company Name", "Assessment Date", "Sector", "Geography"]
         missing_columns = [col for col in required_columns if col not in cp_df.columns]
         if missing_columns:
             raise ValueError(f"Required columns missing in CP dataset: {', '.join(missing_columns)}")
@@ -372,7 +372,7 @@ class CPHandler(BaseDataHandler):
         company_data = self.get_company_history(company_id)
         if company_data.empty:
             raise ValueError(f"Company '{company_id}' not found")
-        latest_record = company_data.sort_values("assessment date").iloc[-1]
+        latest_record = company_data.sort_values("Assessment Date").iloc[-1]
         return latest_record
     
     def compare_company_cp(self, company_id: str):
@@ -390,12 +390,12 @@ class CPHandler(BaseDataHandler):
         if len(company_data) < 2:
             available_years = [
                 pd.to_datetime(date, errors="coerce").year
-                for date in company_data["assessment date"]
+                for date in company_data["Assessment Date"]
             ]
             available_years = [year for year in available_years if year is not None]
             return None, available_years
 
-        sorted_data = company_data.sort_values("assessment date", ascending=False)
+        sorted_data = company_data.sort_values("Assessment Date", ascending=False)
         return sorted_data.iloc[0], sorted_data.iloc[1]
 
 class CompanyDataHandler(BaseDataHandler):
