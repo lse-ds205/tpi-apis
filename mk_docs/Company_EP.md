@@ -15,7 +15,7 @@ All responses are validated against [Pydantic](https://docs.pydantic.dev/latest/
 
 **HTTP Method:** GET  
 
-**Path:** `/v1/companies`  
+**Path:** `/v1/company/companies`  
 
 **Purpose:** Return a paginated list of companies including their unique ID, name, sector, geography, and latest assessment year.
 
@@ -68,7 +68,7 @@ All responses are validated against [Pydantic](https://docs.pydantic.dev/latest/
 * **503 Service Unavailable**  
 
     ```json
-    { "detail": "Company dataset is not loaded. Please ensure the data file exists." }
+    { "detail": "Company dataset is not loaded. Please ensure the data file exists in the /data folder." }
     ```  
 
 * **500 Internal Server Error**  
@@ -187,7 +187,7 @@ All responses are validated against [Pydantic](https://docs.pydantic.dev/latest/
 - **503 Service Unavailable**  
 
     ```json
-    { "detail": "Column 'MQ Assessment Date' not found in dataset. Check CSV structure." }
+    { "detail": "Column 'MQ Assessment Date' not found in dataset. Check CSV structure."}
     ```  
 
 - **500 Internal Server Error**  

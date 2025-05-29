@@ -119,7 +119,7 @@ You may also apply the same Company filters as in the “List” endpoint to fur
 * **404 Not Found**: no data for given country/year.
 
     ```json
-    { "detail": "No data found for country=Belgium in year=2024" }
+    { "detail": "Company 'unknown_id' not found." }
     ```
 
 * **500 Internal Server Error**: unexpected processing error.
@@ -162,7 +162,7 @@ You may also apply the same Company filters as in the “List” endpoint to fur
 * **404 Not Found**: no data for given country/year.
 
     ```json
-    { "detail": "No data found for country=Belgium in year=2024" }
+    { "detail": "Company 'unknown_id' not found." }
     ```
 
 * **500 Internal Server Error**: unexpected processing error.
@@ -215,12 +215,6 @@ You may also apply the same Company filters as in the “List” endpoint to fur
     ```
 
 **Error Responses:**
-
-* **404 Not Found**: company not found.
-
-    ```json
-    { "detail": "Company 'unknown_id' not found." }
-    ```
 
 * **500 Internal Server Error**: unexpected processing error.
 

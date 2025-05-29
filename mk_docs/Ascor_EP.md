@@ -149,7 +149,7 @@ HTTP/1.1 200 OK
 * Country names are matched case-insensitively and trimmed of whitespace.
 * Assessment year must match the year of the `Assessment date` column after parsing.
 * The endpoint always returns all three pillars in a single structured payload.
-* Rate-limited to 100 requests/minute per IP to ensure fairness.
+* The `/v1/country-data/{country}/{assessment_year}` route is decorated with `@limiter.limit("100/minute")` to ensure fairness.
 
 --- 
 

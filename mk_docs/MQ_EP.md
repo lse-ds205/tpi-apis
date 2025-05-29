@@ -73,11 +73,6 @@ A `PaginatedMQResponse` object with:
     { "detail": "MQ dataset is not available." }
     ```
 
-* **422 Unprocessable Entity**
-    ```json
-    { "detail": "MQ Levels are not valid: [6]" }
-    ```
-
 * **500 Internal Server Error**
 
     ```json
@@ -125,23 +120,23 @@ A `PaginatedMQResponse` object with:
 ```
 **Error Responses:**
 
-* **503 Service Unavailable**: MQ dataset is not available.
+* **404 Not Found**
 
     ```json
-    { "detail": "MQ dataset is not available." }
+    { "detail": "Invalid methodology cycle." }
     ```
 
-* **422 Unprocessable Entity**: MQ Levels are not valid: [6]
+* **422 Unprocessable Entity**
 
     ```json
-    { "detail": "MQ Levels are not valid: [6]" }
+    { "detail": "Invalid date format for company: <company_name>" }
     ```
 
-* **500 Internal Server Error**: unexpected processing error.
+* **500 Internal Server Error**
 
     ```json
     { "detail": "<error message>" }
-    ```  
+    ```
 
 ---
 
@@ -185,17 +180,17 @@ A `PaginatedMQResponse` object with:
 ```
 **Error Responses:**
 
-- **404 Not Found**  
+* **404 Not Found**
 
     ```json
-    { "detail": "Company 'unknown_id' not found." }
-    ```  
+    { "detail": "Sector '<sector_id>' not found." }
+    ```
 
 * **500 Internal Server Error**
 
     ```json
     { "detail": "<error message>" }
-    ```  
+    ```
 ---
 
 ### Design Notes
