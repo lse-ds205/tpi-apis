@@ -48,4 +48,4 @@ You can use the API to:
 
 ---
 
-See [Tutorial](Tutorial.md) to understand how to use the api
+See [Getting Started](Getting_Started.md) to understand set up!
