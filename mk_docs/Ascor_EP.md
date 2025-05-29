@@ -155,11 +155,9 @@ HTTP/1.1 200 OK
 
 ## Try it out!
 <swagger-ui
-  src="http://127.0.0.1:8000/openapi.json"
-  tags="ASCOR Endpoints"
+  src="http://127.0.0.1:8000/ascor/openapi.json"
   tryItOutEnabled="true"
   docExpansion="none"
 />
-
 
 [^1]: Pydantic is a Python library for data validation and settings management using Python type annotations. It ensures that all input and output data conform to the defined schema, reducing runtime errors and improving code clarity.

@@ -240,7 +240,7 @@ You may also apply the same Company filters as in the “List” endpoint to fur
 
 ## Try it out!
 <swagger-ui
-  src="http://127.0.0.1:8000/openapi.json"
+  src="http://127.0.0.1:8000/cp/openapi.json"
   tags="CP Endpoints"
   tryItOutEnabled="true"
   docExpansion="none"

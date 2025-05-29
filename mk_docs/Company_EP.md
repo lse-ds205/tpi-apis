@@ -263,7 +263,7 @@ or
 
 ## Try it out!
 <swagger-ui
-  src="http://127.0.0.1:8000/openapi.json"
+  src="http://127.0.0.1:8000/company/openapi.json"
   tags="Company Endpoints"
   tryItOutEnabled="true"
   docExpansion="none"

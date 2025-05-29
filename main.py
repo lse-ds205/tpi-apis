@@ -31,6 +31,10 @@ from authentication.post_router import router as post_router
 from log_config import get_logger
 from services import fetch_company_data, CompanyNotFoundError, CompanyDataError
 from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
+from ascor_app import ascor_app
+from company_app import company_app
+from cp_app import cp_app
+from mq_app import mq_app
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -46,6 +50,12 @@ app = FastAPI(
     version="1.0",
     description="Provides company, MQ, and CP assessments via REST endpoints.",
 )
+
+# Mount each sub-app at a path prefix
+app.mount("/ascor",  ascor_app)
+app.mount("/company", company_app)
+app.mount("/cp",      cp_app)
+app.mount("/mq",      mq_app)
 
 @app.middleware("http")
 async def allow_iframe(request: Request, call_next):
@@ -100,13 +110,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(LoggingMiddleware)
-
-
-# --- Root Registration ---
-app.include_router(ascor_router, prefix="/v1")
-app.include_router(company_router, prefix="/v1/company")
-app.include_router(cp_router, prefix="/v1/cp")
-app.include_router(mq_router, prefix="/v1/mq")
 
 # Add company routes for testing the fetch_company_data function
 sample_company_router = APIRouter(prefix="/companies", tags=["Sample Company Endpoints"])
