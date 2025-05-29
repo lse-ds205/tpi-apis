@@ -5,6 +5,9 @@ site_dir: site
 markdown_extensions:
   - footnotes
 
+extra_css:
+  - assets/stylesheets/extra.css
+
 theme:
   name: material
   features:

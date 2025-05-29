@@ -151,5 +151,14 @@ HTTP/1.1 200 OK
 * The endpoint always returns all three pillars in a single structured payload.
 * Rate-limited to 100 requests/minute per IP to ensure fairness.
 
+--- 
+
+<swagger-ui
+  src="http://127.0.0.1:8000/openapi.json"
+  tags="ASCOR Endpoints"
+  tryItOutEnabled="true"
+  docExpansion="none"
+/>
+
 
 [^1]: Pydantic is a Python library for data validation and settings management using Python type annotations. It ensures that all input and output data conform to the defined schema, reducing runtime errors and improving code clarity.

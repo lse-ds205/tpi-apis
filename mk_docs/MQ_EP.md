@@ -205,4 +205,13 @@ A `PaginatedMQResponse` object with:
 * Underlying handler logic reuses pagination, filtering, and sanitization from `BaseDataHandler`.
 * All MQ endpoints are rate-limited to 100 requests/minute per IP.
 
+---
+
+<swagger-ui
+  src="http://127.0.0.1:8000/openapi.json"
+  tags="MQ Endpoints"
+  tryItOutEnabled="true"
+  docExpansion="none"
+/>
+
 [^1]: Pydantic is a Python library for data validation and settings management using Python type annotations. It ensures that all input and output data conform to the defined schema, reducing runtime errors and improving code clarity.

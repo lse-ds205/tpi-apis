@@ -236,4 +236,13 @@ You may also apply the same Company filters as in the “List” endpoint to fur
 * Paths use normalized company IDs (lowercase, underscores) to ensure URL safety.
 * Responses rely on the `CPHandler` logic to combine multiple CSV cycles and always validate against Pydantic schemas.
 
+---
+
+<swagger-ui
+  src="http://127.0.0.1:8000/openapi.json"
+  tags="CP Endpoints"
+  tryItOutEnabled="true"
+  docExpansion="none"
+/>
+
 [^1]: Pydantic is a Python library for data validation and settings management using Python type annotations. It ensures that all input and output data conform to the defined schema, reducing runtime errors and improving code clarity.

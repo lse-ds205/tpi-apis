@@ -259,4 +259,13 @@ or
 - Filtering on list routes uses the same Pydantic-based `CompanyFilters` model as other endpoints.  
 - Rate-limited to 100 requests per minute per IP by default.
 
+---
+
+<swagger-ui
+  src="http://127.0.0.1:8000/openapi.json"
+  tags="Company Endpoints"
+  tryItOutEnabled="true"
+  docExpansion="none"
+/>
+
 [^1]: Pydantic is a Python library for data validation and settings management using Python type annotations. It ensures that all input and output data conform to the defined schema, reducing runtime errors and improving code clarity.
