@@ -43,20 +43,21 @@ class TPIPipeline(BasePipeline):
         if not assessment_files:
             raise FileNotFoundError("No Company Latest Assessments files found")
         
-        # Categorize by version
-        categories = {
-            '5.0': ['5.0', '_5'],
-            '4.0': ['4.0', 'Company_Latest_Assessments.csv']
-        }
-        
-        files = categorize_files(assessment_files, categories, self.logger)
-        
-        # Handle the case where the base file is version 4.0
-        if '4.0' not in files:
-            for file in assessment_files:
-                if file.name == 'Company_Latest_Assessments.csv':
-                    files['4.0'] = file
-                    break
+        # Dynamically categorize files by version
+        files = {}
+        for file in assessment_files:
+            # Handle the base file case (version 4.0)
+            if file.name == 'Company_Latest_Assessments.csv':
+                files['4.0'] = file
+                continue
+                
+            # Extract version from filename
+            # Expected format: Company_Latest_Assessments_X.Y.csv
+            version_match = re.search(r'_(\d+\.\d+)\.csv$', file.name)
+            if version_match:
+                version = version_match.group(1)
+                files[version] = file
+                self.logger.info(f"Categorized {file.name} as {version}")
         
         if not files:
             raise FileNotFoundError("No Company Latest Assessments files found")
@@ -375,25 +376,25 @@ class TPIPipeline(BasePipeline):
         # Company and Company Answer data
         company_files = self._find_company_assessment_files()
         for version, file in company_files.items():
-            source_files['company'] = str(file)
-            source_files['company_answer'] = str(file)
+            source_files['company'] = str(file.relative_to(self.data_dir))
+            source_files['company_answer'] = str(file.relative_to(self.data_dir))
         
         # MQ Assessment data
         mq_files = self._find_mq_assessment_files()
         for file in mq_files:
-            source_files['mq_assessment'] = str(file)
+            source_files['mq_assessment'] = str(file.relative_to(self.data_dir))
         
         # CP Assessment data
         cp_files = self._find_cp_assessment_files()
         for file_type, file in cp_files.items():
-            source_files['cp_assessment'] = str(file)
-            source_files['cp_alignment'] = str(file)
-            source_files['cp_projection'] = str(file)
+            source_files['cp_assessment'] = str(file.relative_to(self.data_dir))
+            source_files['cp_alignment'] = str(file.relative_to(self.data_dir))
+            source_files['cp_projection'] = str(file.relative_to(self.data_dir))
         
         # Sector Benchmark data
         benchmark_file = self._find_sector_benchmark_file()
-        source_files['sector_benchmark'] = str(benchmark_file)
-        source_files['benchmark_projection'] = str(benchmark_file)
+        source_files['sector_benchmark'] = str(benchmark_file.relative_to(self.data_dir))
+        source_files['benchmark_projection'] = str(benchmark_file.relative_to(self.data_dir))
         
         return source_files
 
