@@ -3,18 +3,51 @@ import logging
 from typing import Dict, List, Tuple
 from datetime import datetime
 import re
+from utils.database_manager import DatabaseManagerFactory
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class DataValidator:
-    def __init__(self):
+    def __init__(self, db_name: str):
         self.validation_results = {
             'errors': [],
             'warnings': [],
             'stats': {}
         }
+        self.db_manager = DatabaseManagerFactory.get_manager(db_name)
+        self.current_pipeline_run_id = None
+
+    def set_pipeline_run_id(self, execution_id: int):
+        """Set the current pipeline run ID for validation logging."""
+        self.current_pipeline_run_id = execution_id
+
+    def _log_validation_issue(self, table_name: str, message: str, severity: str, 
+                            affected_rows: int = None, validation_rule: str = None):
+        """Log a validation issue to the audit_log table."""
+        if not self.current_pipeline_run_id:
+            logger.warning("No pipeline run ID set, skipping validation log")
+            return
+
+        try:
+            # Format the validation message
+            process = f"Validation - {table_name}"
+            status = 'VALIDATION_ERROR' if severity in ['critical', 'error'] else 'VALIDATION_WARNING'
+            notes = f"Rule: {validation_rule}\nMessage: {message}"
+            if affected_rows is not None:
+                notes += f"\nAffected Rows: {affected_rows}"
+
+            # Log to audit_log
+            self.db_manager.log_execution(
+                process=process,
+                status=status,
+                notes=notes,
+                table_name=table_name,
+                rows_inserted=affected_rows
+            )
+        except Exception as e:
+            logger.error(f"Failed to log validation issue: {str(e)}")
 
     def validate_tpi_data(self, data_dict: Dict[str, pd.DataFrame]) -> Dict:
         """Validate TPI data across all tables."""
@@ -75,36 +108,46 @@ class DataValidator:
     def _validate_company_data(self, df: pd.DataFrame) -> None:
         """Validate company data."""
         if df.empty:
-            self.validation_results['errors'].append("Company data is empty")
+            error_msg = "Company data is empty"
+            self.validation_results['errors'].append(error_msg)
+            self._log_validation_issue('company', error_msg, 'critical')
             return
 
         # Check required columns
         required_cols = ['company_name', 'version', 'geography', 'sector_name']
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
-            self.validation_results['errors'].append(f"Missing required columns in company data: {missing_cols}")
+            error_msg = f"Missing required columns in company data: {missing_cols}"
+            self.validation_results['errors'].append(error_msg)
+            self._log_validation_issue('company', error_msg, 'error', validation_rule='required_columns')
 
         # Check for duplicate company-version combinations
         duplicates = df.duplicated(subset=['company_name', 'version'], keep=False)
         if duplicates.any():
-            self.validation_results['errors'].append(
-                f"Found {duplicates.sum()} duplicate company-version combinations"
-            )
+            error_msg = f"Found {duplicates.sum()} duplicate company-version combinations"
+            self.validation_results['errors'].append(error_msg)
+            self._log_validation_issue('company', error_msg, 'error', 
+                                     affected_rows=duplicates.sum(),
+                                     validation_rule='unique_constraint')
 
         # Check for missing values in required fields
         for col in required_cols:
             null_count = df[col].isnull().sum()
             if null_count > 0:
-                self.validation_results['warnings'].append(
-                    f"Found {null_count} null values in {col}"
-                )
+                warning_msg = f"Found {null_count} null values in {col}"
+                self.validation_results['warnings'].append(warning_msg)
+                self._log_validation_issue('company', warning_msg, 'warning',
+                                         affected_rows=null_count,
+                                         validation_rule='null_check')
 
         # Validate version format
         invalid_versions = df[~df['version'].str.match(r'^\d+\.\d+$')]
         if not invalid_versions.empty:
-            self.validation_results['errors'].append(
-                f"Found {len(invalid_versions)} invalid version formats"
-            )
+            error_msg = f"Found {len(invalid_versions)} invalid version formats"
+            self.validation_results['errors'].append(error_msg)
+            self._log_validation_issue('company', error_msg, 'error',
+                                     affected_rows=len(invalid_versions),
+                                     validation_rule='version_format')
 
     def _validate_company_answers(self, df: pd.DataFrame) -> None:
         """Validate company answers data."""

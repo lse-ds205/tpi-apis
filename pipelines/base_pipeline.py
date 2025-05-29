@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from utils.database_creation_utils import get_engine
+from utils.database_manager import DatabaseManagerFactory
 import logging
 import pandas as pd
 import os
@@ -21,35 +21,47 @@ class BasePipeline(ABC):
         """
         self.db_name = db_name
         self.data_dir = data_dir
-        self.engine = get_engine(db_name)
-        self.validator = DataValidator()
+        self.db_manager = DatabaseManagerFactory.get_manager(db_name)
+        self.validator = DataValidator(db_name)
         self.data = {}
         self.logger = logger
 
-    def drop_tables(self):
-        """Drop all tables in the database."""
+    def log_pipeline_execution(self, process: str = None, status: str = 'COMPLETED', notes: str = None,
+                             table_name: str = None, source_file: str = None, rows_inserted: int = None):
+        """Log pipeline execution to the database.
+        
+        Args:
+            process (str, optional): Name of the process being executed. If None, uses default pipeline name.
+            status (str): Execution status (default: 'COMPLETED')
+            notes (str, optional): Optional notes about the execution
+            table_name (str, optional): Name of the table being modified
+            source_file (str, optional): Path to the source file
+            rows_inserted (int, optional): Number of rows inserted
+        """
         try:
-            self.logger.info(f"Dropping {self.db_name} database tables...")
+            # Use provided process name or create a default one
+            if process is None:
+                process = f"TPI Pipeline - {self.db_name}"
             
-            # Check if tables exist before dropping
-            with self.engine.connect() as conn:
-                tables = conn.execute(text("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'public'
-                """)).fetchall()
-                
-                if not tables:
-                    self.logger.info(f"No {self.db_name} tables found to drop.")
-                    return
-                
-                # Drop tables using CASCADE to handle dependencies
-                for table in tables:
-                    conn.execute(text(f'DROP TABLE IF EXISTS "{table[0]}" CASCADE'))
-                conn.commit()
-                
-                self.logger.info(f"Successfully dropped {len(tables)} {self.db_name} tables.")
-                
+            self.logger.info(f"Attempting to log pipeline execution with status: {status}")
+            execution_id = self.db_manager.log_execution(
+                process=process,
+                status=status,
+                notes=notes,
+                table_name=table_name,
+                source_file=source_file,
+                rows_inserted=rows_inserted
+            )
+            self.logger.info(f"Successfully logged pipeline execution with ID: {execution_id}")
+        except Exception as e:
+            self.logger.error(f"Failed to log pipeline execution: {str(e)}")
+            raise
+
+    def drop_tables(self):
+        """Drop all tables in the database except audit_log."""
+        try:
+            self.logger.info(f"Dropping {self.db_name} database tables (excluding audit_log)...")
+            self.db_manager.drop_all_tables(exclude_tables=['audit_log'])
         except Exception as e:
             self.logger.error(f"Failed to drop {self.db_name} tables: {str(e)}")
             # Add some context to the error
@@ -62,31 +74,13 @@ class BasePipeline(ABC):
     def create_tables(self):
         """Create all tables in the database."""
         try:
-            # Ensure public schema exists and is set as search path
-            with self.engine.connect() as conn:
-                # Create schema if it doesn't exist
-                conn.execute(text("CREATE SCHEMA IF NOT EXISTS public;"))
-                
-                # Set search path
-                conn.execute(text("SET search_path TO public;"))
-                conn.commit()
-            self.logger.info(f"{self.db_name}: public schema ensured and search path set.")
-
-            # Get table creation SQL
-            tables = self._get_table_creation_sql()
-
-            # Create tables one by one for better error handling
-            with self.engine.connect() as conn:
-                for i, table_sql in enumerate(tables, 1):
-                    try:
-                        conn.execute(text(table_sql))
-                        self.logger.debug(f"Created {self.db_name} table {i}/{len(tables)}")
-                    except Exception as e:
-                        self.logger.error(f"Failed to create {self.db_name} table {i}: {str(e)}")
-                        raise
-                conn.commit()
-            self.logger.info(f"{self.db_name} tables created successfully.")
-
+            self.logger.info(f"Creating {self.db_name} tables...")
+            self.db_manager.create_all_tables()
+            # Log pipeline start after tables are created
+            self.log_pipeline_execution(
+                process=f"PIPELINE_START - {self.db_name}",
+                status='STARTED'
+            )
         except Exception as e:
             self.logger.error(f"Failed to create {self.db_name} tables: {str(e)}")
             # Add some context to the error
@@ -103,36 +97,74 @@ class BasePipeline(ABC):
             
             # Process and validate data
             self._process_data()
+            
+            # Log validation start
+            execution_id = self.log_pipeline_execution(
+                process=f"VALIDATION_START - {self.db_name}",
+                status='STARTED',
+                notes="Starting data validation process"
+            )
+            
+            # Set pipeline run ID for validation logging
+            self.validator.set_pipeline_run_id(execution_id)
+            
+            # Run validation
+            self.logger.info("Running data validation...")
             validation_results = self._validate_data()
             
             if validation_results['errors']:
                 self.logger.error("Data validation failed with the following errors:")
                 for error in validation_results['errors']:
                     self.logger.error(f"- {error}")
+                self.log_pipeline_execution(
+                    process=f"VALIDATION_FINISH - {self.db_name}",
+                    status='VALIDATION_FAILED',
+                    notes=f"Validation errors: {', '.join(validation_results['errors'])}"
+                )
                 raise ValueError("Data validation failed. Please check the errors above.")
             
             if validation_results['warnings']:
                 self.logger.warning("Data validation completed with warnings:")
                 for warning in validation_results['warnings']:
                     self.logger.warning(f"- {warning}")
+                self.log_pipeline_execution(
+                    process=f"VALIDATION_FINISH - {self.db_name}",
+                    status='VALIDATION_WARNINGS',
+                    notes=f"Validation warnings: {', '.join(validation_results['warnings'])}"
+                )
+            else:
+                self.log_pipeline_execution(
+                    process=f"VALIDATION_FINISH - {self.db_name}",
+                    status='VALIDATION_PASSED',
+                    notes="All validation checks passed successfully"
+                )
             
-            # Insert data into tables
-            self._insert_data()
+            # Get source files from the pipeline
+            source_files = self._get_source_files()
+            
+            # Insert data into tables using database manager
+            for table_name, df in self.data.items():
+                source_file = source_files.get(table_name) if source_files else None
+                self.db_manager.insert_dataframe(df, table_name, source_file=source_file)
+            
+            # Log pipeline finish after successful data insertion
+            self.log_pipeline_execution(
+                process=f"PIPELINE_FINISH - {self.db_name}",
+                status='COMPLETED_WITH_WARNINGS' if validation_results['warnings'] else 'COMPLETED',
+                notes=f"Validation warnings: {', '.join(validation_results['warnings'])}" if validation_results['warnings'] else None
+            )
             
             self.logger.info(f'{self.db_name} database population completed successfully.')
-
+            
         except Exception as e:
-            self.logger.error(f"Failed to populate {self.db_name} database: {str(e)}")
+            self.logger.error(f"Failed to populate {self.db_name} tables: {str(e)}")
+            # Log pipeline failure
+            self.log_pipeline_execution(
+                process=f"PIPELINE_FINISH - {self.db_name}",
+                status='FAILED',
+                notes=str(e)
+            )
             raise
-
-    @abstractmethod
-    def _get_table_creation_sql(self) -> list:
-        """Get SQL statements for creating tables.
-        
-        Returns:
-            list: List of SQL statements for creating tables
-        """
-        pass
 
     @abstractmethod
     def _process_data(self):
@@ -148,24 +180,5 @@ class BasePipeline(ABC):
         """
         pass
 
-    def _insert_data(self):
-        """Insert processed data into tables."""
-        try:
-            # Insert data into tables
-            for table_name, df in self.data.items():
-                if table_name not in self._get_primary_tables():  # Skip primary tables as they're already inserted
-                    df.to_sql(table_name, self.engine, if_exists='append', index=False)
-                    self.logger.info(f'{self.db_name}: {table_name} table populated.')
-        except Exception as e:
-            self.logger.error(f"Failed to insert data into {self.db_name} tables: {str(e)}")
-            raise
 
-    @abstractmethod
-    def _get_primary_tables(self) -> list:
-        """Get list of primary tables that should be inserted first.
-        
-        Returns:
-            list: List of primary table names
-        """
-        pass
     

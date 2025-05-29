@@ -1,8 +1,10 @@
 from .base_pipeline import BasePipeline
 import pandas as pd
-import os
 from datetime import datetime
 import logging
+from pathlib import Path
+from utils.file_discovery import find_latest_directory, find_files_by_pattern
+from typing import Dict
 
 class ASCORPipeline(BasePipeline):
     """Pipeline for ASCOR database operations."""
@@ -15,115 +17,40 @@ class ASCORPipeline(BasePipeline):
             logger (logging.Logger): Logger instance to use
         """
         super().__init__('ascor_api', data_dir, logger)
-        self.ascor_data_dir = os.path.join(data_dir, 'TPI_ASCOR_data_13012025')
+        self.ascor_data_dir = self._find_latest_ascor_data_dir()
 
-    def _get_table_creation_sql(self) -> list:
-        """Get SQL statements for creating ASCOR tables."""
-        return [
-            # Country table
-            """
-            CREATE TABLE IF NOT EXISTS country (
-                country_name VARCHAR NOT NULL,
-                iso VARCHAR,
-                region VARCHAR,
-                bank_lending_group VARCHAR,
-                imf_category VARCHAR,
-                un_party_type VARCHAR,
-                PRIMARY KEY (country_name)
-            );
-            """,
-            # Assessment elements table
-            """
-            CREATE TABLE IF NOT EXISTS assessment_elements (
-                code VARCHAR NOT NULL,
-                text VARCHAR NOT NULL,
-                response_type VARCHAR NOT NULL,
-                type VARCHAR NOT NULL,
-                PRIMARY KEY (code)
-            );
-            """,
-            # Assessment results table
-            """
-            CREATE TABLE IF NOT EXISTS assessment_results (
-                assessment_id INTEGER NOT NULL,
-                code VARCHAR NOT NULL,
-                response VARCHAR,
-                assessment_date DATE NOT NULL,
-                publication_date DATE,
-                source VARCHAR,
-                year INTEGER,
-                country_name VARCHAR NOT NULL,
-                PRIMARY KEY (assessment_id, code),
-                FOREIGN KEY (code) REFERENCES assessment_elements(code),
-                FOREIGN KEY (country_name) REFERENCES country(country_name)
-            );
-            """,
-            # Assessment trends table
-            """
-            CREATE TABLE IF NOT EXISTS assessment_trends (
-                trend_id INTEGER NOT NULL,
-                country_name VARCHAR NOT NULL,
-                emissions_metric VARCHAR,
-                emissions_boundary VARCHAR,
-                units VARCHAR,
-                assessment_date DATE,
-                publication_date DATE,
-                last_historical_year INTEGER,
-                PRIMARY KEY (trend_id, country_name),
-                FOREIGN KEY (country_name) REFERENCES country(country_name)
-            );
-            """,
-            # Trend values table
-            """
-            CREATE TABLE IF NOT EXISTS trend_values (
-                trend_id INTEGER NOT NULL,
-                country_name VARCHAR NOT NULL,
-                year INTEGER NOT NULL,
-                value FLOAT NOT NULL,
-                PRIMARY KEY (trend_id, country_name, year),
-                FOREIGN KEY (trend_id, country_name) REFERENCES assessment_trends(trend_id, country_name)
-            );
-            """,
-            # Value per year table
-            """
-            CREATE TABLE IF NOT EXISTS value_per_year (
-                year INTEGER NOT NULL,
-                value FLOAT NOT NULL,
-                trend_id INTEGER NOT NULL,
-                country_name VARCHAR NOT NULL,
-                FOREIGN KEY (trend_id, country_name) REFERENCES assessment_trends(trend_id, country_name)
-            );
-            """,
-            # Benchmarks table
-            """
-            CREATE TABLE IF NOT EXISTS benchmarks (
-                benchmark_id INTEGER NOT NULL,
-                publication_date DATE,
-                emissions_metric VARCHAR,
-                emissions_boundary VARCHAR,
-                units VARCHAR,
-                benchmark_type VARCHAR,
-                country_name VARCHAR,
-                PRIMARY KEY (benchmark_id),
-                FOREIGN KEY (country_name) REFERENCES country(country_name)
-            );
-            """,
-            # Benchmark values table
-            """
-            CREATE TABLE IF NOT EXISTS benchmark_values (
-                year INTEGER NOT NULL,
-                benchmark_id INTEGER NOT NULL,
-                value FLOAT NOT NULL,
-                PRIMARY KEY (year, benchmark_id),
-                FOREIGN KEY (benchmark_id) REFERENCES benchmarks(benchmark_id)
-            );
-            """
-        ]
+    def _find_latest_ascor_data_dir(self) -> str:
+        """Find the latest ASCOR data directory based on date patterns."""
+        data_path = Path(self.data_dir)
+        selected_dir = find_latest_directory(data_path, 'ascor', self.logger)
+        return str(selected_dir)
+
+    def _find_ascor_files(self) -> dict:
+        """Find ASCOR files dynamically."""
+        data_path = Path(self.ascor_data_dir)
+        
+        # Define file patterns to look for
+        file_patterns = {
+            'countries': 'ASCOR_countries.*',
+            'benchmarks': 'ASCOR_benchmarks.*',
+            'indicators': 'ASCOR_indicators.*',
+            'assessment_results': 'ASCOR_assessments_results.*',
+            'assessment_trends': 'ASCOR_assessments_results_trends_pathways.*'
+        }
+        
+        # Filter out the assessment_trends pattern from assessment_results
+        # We need to be more specific to avoid conflicts
+        file_patterns['assessment_results'] = 'ASCOR_assessments_results.xlsx'
+        
+        return find_files_by_pattern(data_path, file_patterns, self.logger)
 
     def _process_data(self):
         """Process ASCOR data from files into dataframes."""
+        # Get all files dynamically
+        files = self._find_ascor_files()
+        
         # Country
-        df_country = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_countries.xlsx'))
+        df_country = pd.read_excel(files['countries'])
         df_country.columns = df_country.columns.str.strip()
         country_df = df_country[[
             'Name',
@@ -139,15 +66,13 @@ class ASCORPipeline(BasePipeline):
         ]
         self.data['country'] = country_df
 
-        # Insert country data first since it's referenced by other tables
-        country_df.to_sql('country', self.engine, if_exists='append', index=False)
-        self.logger.info('ASCOR: country table populated.')
+        # Store country data - it will be inserted via bulk_insert in populate_tables
 
         # Get list of valid country names for foreign key validation
         valid_countries = set(country_df['country_name'].str.strip())
 
         # Benchmarks
-        df_bench = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_benchmarks.xlsx'))
+        df_bench = pd.read_excel(files['benchmarks'])
         df_bench.columns = df_bench.columns.str.strip().str.lower().str.replace(' ', '_')
         benchmarks_df = df_bench[[
             'id', 'publication_date', 'emissions_metric', 'emissions_boundary',
@@ -180,7 +105,7 @@ class ASCORPipeline(BasePipeline):
         self.data['benchmark_values'] = benchmark_values_df
 
         # Assessment Elements
-        df_elements = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_indicators.xlsx'))
+        df_elements = pd.read_excel(files['indicators'])
         df_elements.columns = df_elements.columns.str.strip().str.lower().str.replace(' ', '_')
         assessment_elements_df = df_elements[[
             'code', 'text', 'units_or_response_type', 'type'
@@ -190,7 +115,7 @@ class ASCORPipeline(BasePipeline):
         self.data['assessment_elements'] = assessment_elements_df
 
         # Assessment Results
-        df_results = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_assessments_results.xlsx'))
+        df_results = pd.read_excel(files['assessment_results'])
         df_results.columns = df_results.columns.str.strip()
         
         # Columns that represent coded responses (non-pillar only)
@@ -243,7 +168,7 @@ class ASCORPipeline(BasePipeline):
         self.data['assessment_results'] = assessment_results_df
 
         # Assessment Trends
-        df_trends = pd.read_excel(os.path.join(self.ascor_data_dir, 'ASCOR_assessments_results_trends_pathways.xlsx'))
+        df_trends = pd.read_excel(files['assessment_trends'])
         df_trends.columns = df_trends.columns.str.strip().str.lower().str.replace(' ', '_')
         
         # Select and rename relevant columns
@@ -322,6 +247,24 @@ class ASCORPipeline(BasePipeline):
         """Validate ASCOR data."""
         return self.validator.validate_ascor_data(self.data)
 
-    def _get_primary_tables(self) -> list:
-        """Get list of primary tables that should be inserted first."""
-        return ['country'] 
+    def _get_source_files(self) -> Dict[str, str]:
+        """Get a mapping of table names to their source files.
+        
+        Returns:
+            Dict[str, str]: Dictionary mapping table names to source file paths
+        """
+        source_files = {}
+        files = self._find_ascor_files()
+        
+        # Map files to their corresponding tables
+        source_files['country'] = str(files['countries'])
+        source_files['benchmarks'] = str(files['benchmarks'])
+        source_files['benchmark_values'] = str(files['benchmarks'])
+        source_files['assessment_elements'] = str(files['indicators'])
+        source_files['assessment_results'] = str(files['assessment_results'])
+        source_files['assessment_trends'] = str(files['assessment_trends'])
+        source_files['value_per_year'] = str(files['assessment_trends'])
+        
+        return source_files
+
+ 
