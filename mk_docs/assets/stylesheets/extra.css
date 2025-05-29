@@ -5,4 +5,33 @@
     padding: 1rem;
     min-width: 400px;
   }
-  
+
+/* Target the logo img inside the logo button */
+.md-header-nav__button--logo .md-header-nav__button-icon img {
+  max-height: 12rem !important;   /* make it much taller */
+  width: auto !important;        /* preserve aspect ratio */
+}
+
+/* Also make sure the button itself is tall enough */
+.md-header-nav__button--logo {
+  height: 8rem !important;
+  align-items: center;           /* vertically center its contents */
+}
+
+/* force-override any logo size setting */
+.md-header-nav__logo,
+.md-header-nav__button-icon img,
+.md-logo__image,
+.md-header-nav__button--logo img {
+  max-height: 8rem !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* ensure its container doesn’t shrink it */
+.md-header-nav__button--logo,
+.md-header-nav__logo-container {
+  height: 8rem !important;
+  padding: 0 !important;
+  align-items: center !important;
+}
