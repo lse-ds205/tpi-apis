@@ -33,7 +33,6 @@ class DateRangeFilter(BaseModel):
             if values['start_date'] > values['end_date']:
                 raise ValueError("start_date must be before or equal to end_date")
         return v
-    )
 
 # CompanyFilters to work with FastAPI dependency injection
 class CompanyFilters:
