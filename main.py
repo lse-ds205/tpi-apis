@@ -130,7 +130,15 @@ sector_router = APIRouter(prefix="/sectors", tags=["Sector Endpoints"])
 @sector_router.get("/company-assessments")
 async def get_sector_company_assessments():
     try:
-        sector_file = "/Users/rishisiddharth/Desktop/LSE_2024_2045/classes/DS205W/Summative1_logging/tpi_apis/data/TPI_sector_data_All_sectors_08032025/Company_Latest_Assessments.csv"
+        # Use a relative path instead of an absolute path
+        import os
+        import numpy as np
+        sector_file = os.path.join(
+            os.path.dirname(__file__),
+            "data",
+            "TPI_sector_data_All_sectors_08032025",
+            "Company_Latest_Assessments.csv"
+        )
         logger.info(f"Loading sector company assessments from {sector_file}")
         
         # Use pandas to read the CSV file
@@ -139,6 +147,16 @@ async def get_sector_company_assessments():
         
         # Get the first 5 records for a sample
         sample_data = df.head(5).to_dict(orient="records")
+        # Convert NaN/None to a JSON-compliant value (e.g., None or 'NaN')
+        def clean_nans(obj):
+            if isinstance(obj, float) and np.isnan(obj):
+                return None
+            if isinstance(obj, dict):
+                return {k: clean_nans(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [clean_nans(x) for x in obj]
+            return obj
+        sample_data = clean_nans(sample_data)
         logger.info(f"Successfully loaded {len(df)} company assessments, returning sample of 5")
         
         return {
