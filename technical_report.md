@@ -8,7 +8,7 @@ Our team’s specific objective is to collaborate with clients from the Luxembou
 --- 
 
 ## 2. Design decisions (and rationale, including rejected ideas)
-
+### Endpoint Design
 ---
 ## 3. Methodology
 

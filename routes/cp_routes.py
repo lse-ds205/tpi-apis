@@ -113,10 +113,10 @@ async def get_latest_cp_assessments(
             sector=row.get("sector", "N/A"),
             geography=row.get("geography", "N/A"),
             latest_assessment_year=pd.to_datetime(row["assessment date"]).year,
-            carbon_performance_2025=row.get("carbon performance 2025", "N/A"),
-            carbon_performance_2027=row.get("carbon performance 2027", "N/A"),
-            carbon_performance_2035=row.get("carbon performance 2035", "N/A"),
-            carbon_performance_2050=row.get("carbon performance 2050", "N/A"),
+            carbon_performance_2025=row.get("carbon performance alignment 2025", "N/A") if pd.notna(row.get("carbon performance alignment 2025")) else "N/A",
+            carbon_performance_2027=row.get("carbon performance alignment 2027", "N/A") if pd.notna(row.get("carbon performance alignment 2027")) else "N/A",
+            carbon_performance_2035=row.get("carbon performance alignment 2035", "N/A") if pd.notna(row.get("carbon performance alignment 2035")) else "N/A",
+            carbon_performance_2050=row.get("carbon performance alignment 2050", "N/A") if pd.notna(row.get("carbon performance alignment 2050")) else "N/A",
         )
         for _, row in latest_records.iterrows()
     ]
@@ -171,28 +171,25 @@ async def get_company_cp_history(
             sector=row.get("sector", "N/A"),
             geography=row.get("geography", "N/A"),
             latest_assessment_year=pd.to_datetime(row["assessment date"],dayfirst=True).year,
-            carbon_performance_2025=row.get("carbon performance 2025", "N/A"),
-            carbon_performance_2027=row.get("carbon performance 2027", "N/A"),
-            carbon_performance_2035=row.get("carbon performance 2035", "N/A"),
-            carbon_performance_2050=row.get("carbon performance 2050", "N/A"),
+            carbon_performance_2025=row.get("carbon performance alignment 2025", "N/A") if pd.notna(row.get("carbon performance alignment 2025")) else "N/A",
+            carbon_performance_2027=row.get("carbon performance alignment 2027", "N/A") if pd.notna(row.get("carbon performance alignment 2027")) else "N/A",
+            carbon_performance_2035=row.get("carbon performance alignment 2035", "N/A") if pd.notna(row.get("carbon performance alignment 2035")) else "N/A",
+            carbon_performance_2050=row.get("carbon performance alignment 2050", "N/A") if pd.notna(row.get("carbon performance alignment 2050")) else "N/A",
         )
         for _, row in company_history.iterrows()
     ]
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/alignment - Alignment Status
+# Endpoint: GET /company/{company_id}/alignment - Alignment Status
 # ------------------------------------------------------------------------------
-@cp_router.get("/company/{company_identifier}/alignment", response_model=Dict[str, str])
+@cp_router.get(
+    "/company/{company_id}/alignment", response_model=Dict[str, str]
+)
 @limiter.limit("100/minute")
-async def get_company_cp_alignment(
-    request: Request,
-    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
-    filter: CompanyFilters = Depends(CompanyFilters)
-):
+async def get_company_cp_alignment(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
-    Retrieve the latest CP alignment status for a company.
-    The company_identifier can be a company name/id or an ISIN (case-insensitive).
+    Retrieves a company's carbon performance alignment status across target years
     """
     cp_handler = CPHandler(prefix=CP_DATA_DIR)
     try:
@@ -202,43 +199,35 @@ async def get_company_cp_alignment(
             status_code=500,
             detail=f"Error filtering company data: {str(e)}"
         )
+    try:
+        company_data_latest = cp_handler.get_company_alignment(company_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404, detail=f"Company '{company_id}' not found."
+        )
     
-    # Try ISIN matching first
-    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
-    company_data = cp_df[mask]
-    
-    if company_data.empty:
-        # Fallback to company name/id
-        normalized_input = company_identifier.strip().lower()
-        company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
-    
-    if company_data.empty:
-        raise HTTPException(404, f"Company '{company_identifier}' not found.")
-    
-    # Get the latest record
-    latest_record = company_data.sort_values("assessment date").iloc[-1]
-    
-    alignment_data = {}
-    for col in latest_record.index:
-        if "carbon performance" in col and col not in ["carbon performance 2025", "carbon performance 2027", "carbon performance 2035", "carbon performance 2050"]:
-            alignment_data[col] = str(latest_record[col])
-    
-    return alignment_data
+    return {
+        "2025": str(company_data_latest.get("carbon performance alignment 2025", "N/A")) if pd.notna(company_data_latest.get("carbon performance alignment 2025")) else "N/A",
+        "2027": str(company_data_latest.get("carbon performance alignment 2027", "N/A")) if pd.notna(company_data_latest.get("carbon performance alignment 2027")) else "N/A",
+        "2028": str(company_data_latest.get("carbon performance alignment 2028", "N/A")) if pd.notna(company_data_latest.get("carbon performance alignment 2028")) else "N/A",
+        "2035": str(company_data_latest.get("carbon performance alignment 2035", "N/A")) if pd.notna(company_data_latest.get("carbon performance alignment 2035")) else "N/A",
+        "2050": str(company_data_latest.get("carbon performance alignment 2050", "N/A")) if pd.notna(company_data_latest.get("carbon performance alignment 2050")) else "N/A",
+    }
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/comparison - Compare CP Performance
+# Endpoint: GET /company/{company_id}/comparison - Compare CP Performance
 # ------------------------------------------------------------------------------
-@cp_router.get("/company/{company_identifier}/comparison", response_model=Union[CPComparisonResponse, PerformanceComparisonInsufficientDataResponse])
+@cp_router.get(
+    "/company/{company_id}/comparison",
+    response_model=Union[
+        CPComparisonResponse, PerformanceComparisonInsufficientDataResponse
+    ],
+)
 @limiter.limit("100/minute")
-async def compare_company_cp_performance(
-    request: Request,
-    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
-    filter: CompanyFilters = Depends(CompanyFilters)
-):
+async def compare_company_cp(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
     """
-    Compare a company's latest CP performance against the previous assessment.
-    The company_identifier can be a company name/id or an ISIN (case-insensitive).
+    Compare the most recent CP assessment to the previous one for a company.
     """
     cp_handler = CPHandler(prefix=CP_DATA_DIR)
     try:
@@ -248,58 +237,26 @@ async def compare_company_cp_performance(
             status_code=500,
             detail=f"Error filtering company data: {str(e)}"
         )
-    
-    # Try ISIN matching first
-    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
-    company_history = cp_df[mask]
-    
-    if company_history.empty:
-        # Fallback to company name/id
-        normalized_input = company_identifier.strip().lower()
-        company_history = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
-    
-    if company_history.empty:
-        raise HTTPException(404, f"Company '{company_identifier}' not found.")
-    
-    # Sort by assessment date
-    company_history = company_history.sort_values("assessment date")
-    
-    if len(company_history) < 2:
+    company_data = cp_handler.compare_company_cp(company_id)
+
+    if company_data[0] is None:
         return PerformanceComparisonInsufficientDataResponse(
-            company_id=company_identifier,
-            message="Insufficient data for CP performance comparison. At least 2 assessment records are required.",
-        )
-    
-    # Get latest and previous records
-    latest = company_history.iloc[-1]
-    previous = company_history.iloc[-2]
-    
-    return CPComparisonResponse(
-        company_id=company_identifier,
-        latest_assessment=CPAssessmentDetail(
-            company_id=latest["company name"],
-            name=latest["company name"],
-            sector=latest.get("sector", "N/A"),
-            geography=latest.get("geography", "N/A"),
-            latest_assessment_year=pd.to_datetime(latest["assessment date"],dayfirst=True).year,
-            carbon_performance_2025=latest.get("carbon performance 2025", "N/A"),
-            carbon_performance_2027=latest.get("carbon performance 2027", "N/A"),
-            carbon_performance_2035=latest.get("carbon performance 2035", "N/A"),
-            carbon_performance_2050=latest.get("carbon performance 2050", "N/A"),
-        ),
-        previous_assessment=CPAssessmentDetail(
-            company_id=previous["company name"],
-            name=previous["company name"],
-            sector=previous.get("sector", "N/A"),
-            geography=previous.get("geography", "N/A"),
-            latest_assessment_year=pd.to_datetime(previous["assessment date"],dayfirst=True).year,
-            carbon_performance_2025=previous.get("carbon performance 2025", "N/A"),
-            carbon_performance_2027=previous.get("carbon performance 2027", "N/A"),
-            carbon_performance_2035=previous.get("carbon performance 2035", "N/A"),
-            carbon_performance_2050=previous.get("carbon performance 2050", "N/A"),
-        ),
-    )
+            company_id=company_id,
+            message="Insufficient data for comparison",
+            available_assessment_years=company_data[1]
+        )       
 
+    else:
+        latest, previous = company_data
+        return CPComparisonResponse(
+            company_id=company_id,
+            current_year=pd.to_datetime(latest["assessment date"], dayfirst=True).year,
+            previous_year=pd.to_datetime(previous["assessment date"], dayfirst=True).year,
+            latest_cp_2025=latest.get("carbon performance alignment 2025", "N/A") if pd.notna(latest.get("carbon performance alignment 2025")) else "N/A",
+            previous_cp_2025=previous.get("carbon performance alignment 2025", "N/A") if pd.notna(previous.get("carbon performance alignment 2025")) else "N/A",
+            latest_cp_2035=latest.get("carbon performance alignment 2035", "N/A") if pd.notna(latest.get("carbon performance alignment 2035")) else "N/A",
+            previous_cp_2035=previous.get("carbon performance alignment 2035", "N/A") if pd.notna(previous.get("carbon performance alignment 2035")) else "N/A",
+        )
 
 # ------------------------------------------------------------------------------
 # Endpoint: GET /company/{company_identifier}/carbon-intensity - Carbon Intensity Data

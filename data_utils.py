@@ -133,8 +133,13 @@ class BaseDataHandler:
     
     def get_latest_assessments(self, page: int, page_size: int):
         """Get latest assessments with pagination."""
+        # Extract year from assessment date for proper sorting
+        df_with_year = self._df.copy()
+        df_with_year['assessment_year'] = pd.to_datetime(df_with_year['assessment date'], dayfirst=True, errors='coerce').dt.year
+        
+        # Get the latest record for each company based on assessment year
         latest_records = (
-            self._df.sort_values("assessment date")
+            df_with_year.sort_values('assessment_year')
             .groupby("company name")
             .tail(1)
         )
@@ -417,7 +422,13 @@ class CPHandler(BaseDataHandler):
         company_data = self.get_company_history(company_id)
         if company_data.empty:
             raise ValueError(f"Company '{company_id}' not found")
-        latest_record = company_data.sort_values("assessment date").iloc[-1]
+        
+        # Extract year from assessment date and sort by year to get truly latest
+        company_data = company_data.copy()
+        company_data['assessment_year'] = pd.to_datetime(company_data['assessment date'], dayfirst=True, errors='coerce').dt.year
+        
+        # Sort by assessment year and get the latest (highest year)
+        latest_record = company_data.sort_values('assessment_year', ascending=True).iloc[-1]
         return latest_record
     
     def compare_company_cp(self, company_id: str):
@@ -433,14 +444,16 @@ class CPHandler(BaseDataHandler):
         company_data = self.get_company_history(company_id)
 
         if len(company_data) < 2:
-            available_years = [
-                pd.to_datetime(date, errors="coerce").year
-                for date in company_data["assessment date"]
-            ]
-            available_years = [year for year in available_years if year is not None]
+            # Extract years for available_years list
+            company_data_with_year = company_data.copy()
+            company_data_with_year['assessment_year'] = pd.to_datetime(company_data_with_year['assessment date'], dayfirst=True, errors='coerce').dt.year
+            available_years = company_data_with_year['assessment_year'].dropna().astype(int).tolist()
             return None, available_years
 
-        sorted_data = company_data.sort_values("assessment date", ascending=False)
+        # Extract year from assessment date and sort by year
+        company_data = company_data.copy()
+        company_data['assessment_year'] = pd.to_datetime(company_data['assessment date'], dayfirst=True, errors='coerce').dt.year
+        sorted_data = company_data.sort_values('assessment_year', ascending=False)
         return sorted_data.iloc[0], sorted_data.iloc[1]
 
 class CompanyDataHandler(BaseDataHandler):
