@@ -52,20 +52,67 @@ We aim to develop a system that can efficiently process and serve assessments of
 The project follows a structured directory layout to ensure modularity, maintainability, and ease of expansion. The separation of concerns allows for clear organisation of API routes, data management, and application logic.
 
 ```bash
-tpi_api/
-tpi_api/
-├── venv/                 # Virtual environment
-├── data/                 # CSV datasets used for assessments
-├── routes/               # FastAPI route handlers
-│   ├── __init__.py       # Makes 'routes' a Python package for imports
-│   ├── company_routes.py # Company assessments endpoints
-│   ├── mq_routes.py      # Management Quality endpoints
-│   └── cp_routes.py      # Carbon Performance endpoints
-├── tests/*               # Unit tests for route handlers and utilities
-├── schemas.py            # Pydantic models for data validation
-├── main.py               # Application entry point
-├── requirements.txt      # Project dependencies
-└── README.md             # Documentation
+tpi-apis/
+├── venv/                         # Virtual environment
+├── data/                         # CSV datasets used for assessments
+│   ├── TPI_ASCOR_data_13012025/  # ASCOR assessment data
+│   └── TPI_sector_data_All_sectors_08032025/ # Sector-specific TPI data
+├── routes/                       # FastAPI route handlers
+│   ├── __init__.py               # Makes 'routes' a Python package for imports
+│   ├── company_routes.py         # Company assessments endpoints
+│   ├── mq_routes.py              # Management Quality endpoints
+│   ├── cp_routes.py              # Carbon Performance endpoints
+│   └── ascor_routes.py           # ASCOR assessment endpoints
+├── models/                       # Data models and database schemas
+│   ├── models.py                 # Pydantic models
+│   └── sqlalchemymodels.py       # SQLAlchemy database models
+├── utils/                        # Utility functions and data processing
+│   ├── __init__.py               # Package initialization
+│   ├── data_utils.py             # Data processing utilities
+│   ├── data_validation.py        # Data validation functions
+│   ├── database_manager.py       # Database management utilities
+│   ├── database_creation_utils.py # Database creation helpers
+│   ├── file_discovery.py         # File discovery and loading utilities
+│   ├── filters.py                # Data filtering utilities
+│   └── utils.py                  # General utility functions
+├── pipelines/                    # Data processing pipelines
+│   ├── __init__.py               # Package initialization
+│   ├── base_pipeline.py          # Base pipeline class
+│   ├── tpi_pipeline.py           # TPI data processing pipeline
+│   └── ascor_pipeline.py         # ASCOR data processing pipeline
+├── authentication/               # Authentication and authorization
+│   ├── auth_router.py            # Authentication routes
+│   ├── database.py               # Authentication database setup
+│   ├── dependency.py             # Authentication dependencies
+│   ├── post_router.py            # POST endpoint authentication
+│   └── AUTHENTICATION.md         # Authentication documentation
+├── middleware/                   # Custom middleware
+│   ├── __init__.py               # Package initialization
+│   └── rate_limiter.py           # Rate limiting middleware
+├── sql/                          # SQL queries and database scripts
+│   ├── tpi/                      # TPI-specific SQL queries
+│   └── ascor/                    # ASCOR-specific SQL queries
+├── tests/                        # Unit tests and test utilities
+│   ├── __init__.py               # Package initialization
+│   ├── conftest.py               # Test configuration and fixtures
+│   ├── test_*.py                 # Individual test files
+│   └── snapshots/                # Test snapshots
+├── notebooks/                    # Jupyter notebooks for analysis
+├── docs/                         # Documentation files
+├── images/                       # Image assets
+├── icons/                        # Icon assets
+├── schemas.py                    # Pydantic models for data validation
+├── services.py                   # Business logic and services
+├── main.py                       # Application entry point
+├── run_pipeline.py               # Pipeline execution script
+├── log_config.py                 # Logging configuration
+├── requirements.txt              # Project dependencies
+├── .env                          # Environment variables (not tracked)
+├── .gitignore                    # Git ignore patterns
+├── LICENSE                       # Project license
+├── CONTRIBUTING.md               # Contribution guidelines
+├── REPORT.md                     # Project report
+└── README.md                     # Documentation
 ```
 
 ## Prerequisites and Installation
