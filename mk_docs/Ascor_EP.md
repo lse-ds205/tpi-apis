@@ -155,7 +155,8 @@ HTTP/1.1 200 OK
 
 ## Try it out!
 <swagger-ui
-  src="http://127.0.0.1:8000/ascor/openapi.json"
+  src="http://127.0.0.1:8000/openapi.json"
+  tags="Ascor Endpoints"
   tryItOutEnabled="true"
   docExpansion="none"
 />

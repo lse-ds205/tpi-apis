@@ -1,6 +1,6 @@
 # Getting Started with TPI Assessment API
 
-This guide will walk you through everything you need to know to get the TPI Assessment API up and running on your local machine.
+This guide will walk you through everything you need to know to get the TPI Assessment API and its documentation up and running on your local machine.
 
 ## What You'll Need
 
@@ -45,7 +45,7 @@ With your virtual environment activated, install all required packages:
 pip install -r requirements.txt
 ```
 
-This command reads the `requirements.txt` file and installs FastAPI, pandas, and all other necessary libraries.
+This command reads the `requirements.txt` file and installs FastAPI, MkDocs, pandas, and all other necessary libraries.
 
 ### Step 3: Configure Environment Variables
 
@@ -62,7 +62,11 @@ Replace `your_secret_key_here` with any random string. This is used for the expe
 SECRET_KEY=somerandomstringherefornow
 ```
 
-### Step 4: Start the API Server
+### Step 4: Start the Servers
+
+> 📝 **Note**: You'll need to run both the FastAPI server and the MkDocs documentation server on different ports. We recommend opening two terminal windows or tabs for this.
+
+#### Terminal 1: Start the FastAPI Server
 
 Navigate to your project's root directory and run:
 
@@ -70,7 +74,7 @@ Navigate to your project's root directory and run:
 uvicorn main:app --reload
 ```
 
-You should see output similar to:
+This will start the API server on port 8000. You should see output similar to:
 ```
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process
@@ -79,15 +83,34 @@ INFO:     Started server process
 
 The `--reload` flag automatically restarts the server when you make code changes during development.
 
+#### Terminal 2: Start the MkDocs Documentation Server
+
+Open a new terminal window/tab, activate your virtual environment again, navigate to your project directory, and run:
+
+```bash
+mkdocs serve -a 127.0.0.1:8001
+```
+
+This will start the documentation server on port 8001. You should see output similar to:
+```
+INFO     -  Building documentation...
+INFO     -  Cleaning site directory
+INFO     -  Documentation built in X.XX seconds
+INFO     -  [HH:MM:SS] Serving on http://127.0.0.1:8001/
+```
+
 ### Step 5: Verify Everything Works
 
-Open your web browser and visit these URLs to confirm the API is running:
+With both servers running, open your web browser and visit these URLs:
 
-**Base API URL:**
-- http://127.0.0.1:8000/
-
-**Interactive Documentation:**
+**FastAPI Server (Port 8000):**
+- http://127.0.0.1:8000/ - Base API URL
 - http://127.0.0.1:8000/docs - Swagger UI interface where you can test all API endpoints
+
+**MkDocs Documentation Server (Port 8001):**
+- http://127.0.0.1:8001/ - Full project documentation
+
+> 💡 **Tip**: Keep both servers running while you work. The FastAPI server handles your API requests, while the MkDocs server provides comprehensive documentation.
 
 ## Understanding the API
 
@@ -102,7 +125,7 @@ The TPI Assessment API provides access to three main types of data:
 
 ### Testing Your First API Call
 
-Once your server is running, try making your first API call:
+Once your FastAPI server is running, try making your first API call:
 
 1. Go to http://127.0.0.1:8000/docs
 2. Look for available endpoints in the interactive documentation
@@ -111,22 +134,20 @@ Once your server is running, try making your first API call:
 5. Fill in any required parameters
 6. Click "Execute" to see the response
 
-### Stopping the Server
+### Stopping the Servers
 
-When you're done working with the API, stop the server by pressing:
+When you're done working:
 
-```
-CTRL + C
-```
-
-in your terminal.
+1. **Stop the FastAPI server**: Press `CTRL + C` in the first terminal
+2. **Stop the MkDocs server**: Press `CTRL + C` in the second terminal
 
 ### Next Steps
 
-Now that your API is running:
+Now that both servers are running:
 
-1. **[Read the API Documentation](Overview_Documentation.md)** - Learn about request/response formats and parameters
-2. **Test Different Endpoints** - Visit http://127.0.0.1:8000/docs to see all available endpoints
+1. **Browse the MkDocs Documentation** - Visit http://127.0.0.1:8001/ for comprehensive guides
+2. **Test API Endpoints** - Visit http://127.0.0.1:8000/docs to interact with the API
+3. **[Read the API Documentation](Overview_Documentation.md)** - Learn about request/response formats and parameters
 
 ## Troubleshooting
 
@@ -145,10 +166,24 @@ Now that your API is running:
   ```
 
 **Port already in use:**
-- If port 8000 is busy, start the server on a different port:
+- If port 8000 is busy (FastAPI), start the server on a different port:
   
   ```
-  uvicorn main:app --reload --port 8001
+  uvicorn main:app --reload --port 8002
+  ```
+
+- If port 8001 is busy (MkDocs), start the documentation on a different port:
+  
+  ```
+  mkdocs serve -a 127.0.0.1:8002
+  ```
+
+**MkDocs not found:**
+- Make sure MkDocs is included in your `requirements.txt`
+- Install it manually if needed:
+  
+  ```
+  pip install mkdocs
   ```
 
 **Environment variables not loading:**
@@ -157,4 +192,4 @@ Now that your API is running:
 
 ---
 
-**Ready to start using the API?** Head over to the [Documentation Overview](Overview_Documentation.md) to learn about all available endpoints and how to use them effectively.
+**Ready to start using the API?** Make sure both servers are running, then explore the MkDocs documentation at http://127.0.0.1:8001/ and test the API endpoints at http://127.0.0.1:8000/docs.

@@ -8,6 +8,7 @@ It integrates endpoints for:
 
 It also defines a basic root endpoint for a welcome message.
 """
+
 import os
 import time
 from pathlib import Path
@@ -31,10 +32,7 @@ from authentication.post_router import router as post_router
 from log_config import get_logger
 from services import fetch_company_data, CompanyNotFoundError, CompanyDataError
 from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
-from ascor_app import ascor_app
-from company_app import company_app
-from cp_app import cp_app
-from mq_app import mq_app
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -49,13 +47,11 @@ app = FastAPI(
     title="Transition Pathway Initiative API",
     version="1.0",
     description="Provides company, MQ, and CP assessments via REST endpoints.",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
-# Mount each sub-app at a path prefix
-app.mount("/ascor",  ascor_app)
-app.mount("/company", company_app)
-app.mount("/cp",      cp_app)
-app.mount("/mq",      mq_app)
 
 @app.middleware("http")
 async def allow_iframe(request: Request, call_next):
@@ -63,7 +59,6 @@ async def allow_iframe(request: Request, call_next):
     if "x-frame-options" in response.headers:
         del response.headers["x-frame-options"]
     return response
-
 
 raw = os.getenv("CORS_ORIGINS", "")
 origins = [o for o in raw.split(",") if o] or ["*"]
@@ -110,6 +105,13 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(LoggingMiddleware)
+
+
+# --- Root Registration ---
+app.include_router(ascor_router, prefix="/v1")
+app.include_router(company_router, prefix="/v1/company")
+app.include_router(cp_router, prefix="/v1/cp")
+app.include_router(mq_router, prefix="/v1/mq")
 
 # Add company routes for testing the fetch_company_data function
 sample_company_router = APIRouter(prefix="/companies", tags=["Sample Company Endpoints"])

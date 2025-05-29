@@ -56,7 +56,7 @@ Use this guide as your roadmap: first skim the high-level group summaries below,
 
 ---
 
-### Endpoints
+## Endpoints
 
 1. [**ASCOR Endpoints**](Ascor_EP.md)
 

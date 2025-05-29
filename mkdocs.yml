@@ -40,7 +40,7 @@ theme:
 
 nav:
     - Home:
-        - Overview: Overview_Home.md
+        - Overview: index.md
         - Getting Started: Getting_Started.md
     - API Documentation: 
         - Documentation: Overview_Documentation.md
@@ -48,12 +48,9 @@ nav:
         - Company Endpoints: Company_EP.md
         - CP Endpoints: CP_EP.md
         - MQ Endpoints: MQ_EP.md
-        - Playground: api-playground.md
 
 plugins:
   - search
   - swagger-ui-tag:
-      # (optional) control whether “Try it out” is editable immediately
       tryItOutEnabled: true
-      # (optional) collapse all operations initially
       docExpansion: none
