@@ -133,8 +133,13 @@ class BaseDataHandler:
     
     def get_latest_assessments(self, page: int, page_size: int):
         """Get latest assessments with pagination."""
+        # Extract year from assessment date for proper sorting
+        df_with_year = self._df.copy()
+        df_with_year['assessment_year'] = pd.to_datetime(df_with_year['assessment date'], dayfirst=True, errors='coerce').dt.year
+        
+        # Get the latest record for each company based on assessment year
         latest_records = (
-            self._df.sort_values("assessment date")
+            df_with_year.sort_values('assessment_year')
             .groupby("company name")
             .tail(1)
         )
@@ -153,17 +158,17 @@ class BaseDataHandler:
 
         filtered_df = self._df.copy()
         
-        # Apply geography filter
+        # Apply geography filter (case-insensitive)
         if filters.geography:
-            filtered_df = filtered_df[filtered_df["geography"] == filters.geography]
+            filtered_df = filtered_df[filtered_df["geography"].str.strip().str.lower() == filters.geography.strip().lower()]
             
-        # Apply geography code filter
+        # Apply geography code filter (case-insensitive)
         if filters.geography_code:
-            filtered_df = filtered_df[filtered_df["geography code"] == filters.geography_code]
+            filtered_df = filtered_df[filtered_df["geography code"].str.strip().str.lower() == filters.geography_code.strip().lower()]
             
-        # Apply sector filter
+        # Apply sector filter (case-insensitive)
         if filters.sector:
-            filtered_df = filtered_df[filtered_df["sector"] == filters.sector]
+            filtered_df = filtered_df[filtered_df["sector"].str.strip().str.lower() == filters.sector.strip().lower()]
             
         # Apply CA100 filter
         if filters.ca100_focus_company is not None:
@@ -175,24 +180,24 @@ class BaseDataHandler:
             else:
                 filtered_df = filtered_df[filtered_df[ca100_col] != "Yes"]
                 
-        # Apply company size filter
+        # Apply company size filter (case-insensitive)
         if filters.large_medium_classification:
-            filtered_df = filtered_df[filtered_df["large/medium classification"] == filters.large_medium_classification]
+            filtered_df = filtered_df[filtered_df["large/medium classification"].str.strip().str.lower() == filters.large_medium_classification.strip().lower()]
             
-        # Apply ISIN filter
+        # Apply ISIN filter (case-insensitive)
         if filters.isins:
             if isinstance(filters.isins, str):
-                filtered_df = filtered_df[filtered_df["isins"].str.contains(filters.isins, na=False)]
+                filtered_df = filtered_df[filtered_df["isins"].str.contains(filters.isins, case=False, na=False)]
             else:
-                mask = filtered_df["isins"].apply(lambda x: any(isin in str(x) for isin in filters.isins))
+                mask = filtered_df["isins"].apply(lambda x: any(isin.lower() in str(x).lower() for isin in filters.isins))
                 filtered_df = filtered_df[mask]
                 
-        # Apply SEDOL filter
+        # Apply SEDOL filter (case-insensitive)
         if filters.sedol:
             if isinstance(filters.sedol, str):
-                filtered_df = filtered_df[filtered_df["sedol"].str.contains(filters.sedol, na=False)]
+                filtered_df = filtered_df[filtered_df["sedol"].str.contains(filters.sedol, case=False, na=False)]
             else:
-                mask = filtered_df["sedol"].apply(lambda x: any(sedol in str(x) for sedol in filters.sedol))
+                mask = filtered_df["sedol"].apply(lambda x: any(sedol.lower() in str(x).lower() for sedol in filters.sedol))
                 filtered_df = filtered_df[mask]
             
         self._df = filtered_df
@@ -252,24 +257,28 @@ class MQHandler(BaseDataHandler):
         filtered_df = self._df.copy()
         
         if filters.assessment_year:
-            filtered_df = filtered_df[filtered_df['Assessment Date'].str.contains(str(filters.assessment_year))]
-        if filtered_df.empty:
-            raise ValueError(f"Assessment Year is not valid: {filters.assessment_year}")
+            filtered_df = filtered_df[filtered_df['assessment date'].str.contains(str(filters.assessment_year))]
+            if filtered_df.empty:
+                raise ValueError(f"Assessment Year is not valid: {filters.assessment_year}")
         
         # both of these can be simplified by using a service layer and simplying into check if valid in column name
         if filters.mq_levels:
-            valid_mq_levels = filtered_df['MQ Level'].unique()
-            invalid_levels = [level for level in filters.mq_levels if level not in valid_mq_levels]
-            if invalid_levels:
-                raise ValueError(f"MQ Levels are not valid: {invalid_levels}")
-            filtered_df = filtered_df[filtered_df['MQ Level'].isin(filters.mq_levels)]
+            # Check if the column exists
+            if 'level' in filtered_df.columns:
+                valid_mq_levels = filtered_df['level'].unique()
+                invalid_levels = [level for level in filters.mq_levels if level not in valid_mq_levels]
+                if invalid_levels:
+                    raise ValueError(f"MQ Levels are not valid: {invalid_levels}")
+                filtered_df = filtered_df[filtered_df['level'].isin(filters.mq_levels)]
 
         if filters.level:
-            valid_levels = filtered_df['Overall Management Level'].unique()
-            invalid_levels = [level for level in filters.level if level not in valid_levels]
-            if invalid_levels:
-                raise ValueError(f"Overall Management Level is not valid: {invalid_levels}")
-            filtered_df = filtered_df[filtered_df['Overall Management Level'].isin(filters.level)]
+            # Check if the column exists
+            if 'level' in filtered_df.columns:
+                valid_levels = filtered_df['level'].unique()
+                invalid_levels = [level for level in filters.level if level not in valid_levels]
+                if invalid_levels:
+                    raise ValueError(f"Overall Management Level is not valid: {invalid_levels}")
+                filtered_df = filtered_df[filtered_df['level'].isin(filters.level)]
 
         self._df = filtered_df
 
@@ -304,6 +313,47 @@ class MQHandler(BaseDataHandler):
             self._df["sector"].str.strip().str.lower() == sector_id.strip().lower()
         ]
         return sector_data.sort_values("assessment date", ascending=False)
+
+    def get_sector_trends(self):
+        """Analyze MQ trends by sector across different methodology cycles.
+        
+        Returns:
+            list: List of dictionaries containing sector trend data
+        """
+        trends_data = []
+        
+        # Define STAR mapping
+        star_mapping = {
+            '0STAR': 0, '1STAR': 1, '2STAR': 2, 
+            '3STAR': 3, '4STAR': 4, '5STAR': 5
+        }
+        
+        # Group by sector and methodology cycle
+        try:
+            sector_groups = self._df.groupby(['sector', 'methodology_cycle'])
+            
+            for (sector, cycle), group in sector_groups:
+                # Calculate average scores for this sector and cycle
+                scores = []
+                for level in group['level']:
+                    if pd.notna(level) and str(level) in star_mapping:
+                        scores.append(star_mapping[str(level)])
+                
+                avg_score = sum(scores) / len(scores) if scores else 0
+                
+                trends_data.append({
+                    'sector': str(sector),
+                    'methodology_cycle': int(cycle),
+                    'average_score': round(avg_score, 2),
+                    'company_count': len(group),
+                    'assessment_dates': [str(date) for date in group['assessment date'].unique() if pd.notna(date)]
+                })
+        except Exception as e:
+            # Return empty list if there's an error
+            print(f"Error in get_sector_trends: {e}")
+            return []
+        
+        return trends_data
 
 class CPHandler(BaseDataHandler):
     """Handler for Carbon Performance (CP) assessment data.
@@ -372,7 +422,13 @@ class CPHandler(BaseDataHandler):
         company_data = self.get_company_history(company_id)
         if company_data.empty:
             raise ValueError(f"Company '{company_id}' not found")
-        latest_record = company_data.sort_values("assessment date").iloc[-1]
+        
+        # Extract year from assessment date and sort by year to get truly latest
+        company_data = company_data.copy()
+        company_data['assessment_year'] = pd.to_datetime(company_data['assessment date'], dayfirst=True, errors='coerce').dt.year
+        
+        # Sort by assessment year and get the latest (highest year)
+        latest_record = company_data.sort_values('assessment_year', ascending=True).iloc[-1]
         return latest_record
     
     def compare_company_cp(self, company_id: str):
@@ -388,14 +444,16 @@ class CPHandler(BaseDataHandler):
         company_data = self.get_company_history(company_id)
 
         if len(company_data) < 2:
-            available_years = [
-                pd.to_datetime(date, errors="coerce").year
-                for date in company_data["assessment date"]
-            ]
-            available_years = [year for year in available_years if year is not None]
+            # Extract years for available_years list
+            company_data_with_year = company_data.copy()
+            company_data_with_year['assessment_year'] = pd.to_datetime(company_data_with_year['assessment date'], dayfirst=True, errors='coerce').dt.year
+            available_years = company_data_with_year['assessment_year'].dropna().astype(int).tolist()
             return None, available_years
 
-        sorted_data = company_data.sort_values("assessment date", ascending=False)
+        # Extract year from assessment date and sort by year
+        company_data = company_data.copy()
+        company_data['assessment_year'] = pd.to_datetime(company_data['assessment date'], dayfirst=True, errors='coerce').dt.year
+        sorted_data = company_data.sort_values('assessment_year', ascending=False)
         return sorted_data.iloc[0], sorted_data.iloc[1]
 
 class CompanyDataHandler(BaseDataHandler):

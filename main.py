@@ -20,7 +20,7 @@ from routes.ascor_routes import router as ascor_router
 from routes.company_routes import router as company_router
 from routes.cp_routes import cp_router
 from routes.mq_routes import mq_router
-from routes.cp_routes import cp_router
+from routes.bank_routes import router as bank_router
 from authentication.auth_router import router as auth_router
 from authentication.post_router import router as post_router
 from log_config import get_logger
@@ -39,12 +39,6 @@ app = FastAPI(
     version="1.0",
     description="Provides company, MQ, and CP assessments via REST endpoints.",
 )
-
-# Add limiter to app state
-app.state.limiter = limiter
-
-# Add rate limit exceeded handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Add limiter to app state
 app.state.limiter = limiter
@@ -87,6 +81,9 @@ app.include_router(ascor_router, prefix="/v1")
 app.include_router(company_router, prefix="/v1/company")
 app.include_router(cp_router, prefix="/v1/cp")
 app.include_router(mq_router, prefix="/v1/mq")
+app.include_router(bank_router, prefix="/v1")
+app.include_router(auth_router, prefix="/v1")
+app.include_router(post_router, prefix="/v1")
 
 # Add company routes for testing the fetch_company_data function
 sample_company_router = APIRouter(prefix="/companies", tags=["Sample Company Endpoints"])
@@ -127,15 +124,21 @@ async def get_company(company_id: int):
         logger.exception(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
-app.include_router(company_router, prefix="/v1")
-
 # Add sector data routes for demonstrating logging with real data files
 sector_router = APIRouter(prefix="/sectors", tags=["Sector Endpoints"])
 
 @sector_router.get("/company-assessments")
 async def get_sector_company_assessments():
     try:
-        sector_file = "/Users/rishisiddharth/Desktop/LSE_2024_2045/classes/DS205W/Summative1_logging/tpi_apis/data/TPI_sector_data_All_sectors_08032025/Company_Latest_Assessments.csv"
+        # Use a relative path instead of an absolute path
+        import os
+        import numpy as np
+        sector_file = os.path.join(
+            os.path.dirname(__file__),
+            "data",
+            "TPI_sector_data_All_sectors_08032025",
+            "Company_Latest_Assessments.csv"
+        )
         logger.info(f"Loading sector company assessments from {sector_file}")
         
         # Use pandas to read the CSV file
@@ -144,6 +147,16 @@ async def get_sector_company_assessments():
         
         # Get the first 5 records for a sample
         sample_data = df.head(5).to_dict(orient="records")
+        # Convert NaN/None to a JSON-compliant value (e.g., None or 'NaN')
+        def clean_nans(obj):
+            if isinstance(obj, float) and np.isnan(obj):
+                return None
+            if isinstance(obj, dict):
+                return {k: clean_nans(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [clean_nans(x) for x in obj]
+            return obj
+        sample_data = clean_nans(sample_data)
         logger.info(f"Successfully loaded {len(df)} company assessments, returning sample of 5")
         
         return {
@@ -155,10 +168,6 @@ async def get_sector_company_assessments():
         raise HTTPException(status_code=500, detail=f"Error loading sector data: {str(e)}")
 
 app.include_router(sector_router, prefix="/v1")
-app.include_router(auth_router, prefix="/v1")
-app.include_router(post_router, prefix="/v1")
-
-# ... other routers go here
 
 # --- Root Endpoint ---
 @app.get("/")
