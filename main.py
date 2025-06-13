@@ -8,14 +8,20 @@ It integrates endpoints for:
 
 It also defines a basic root endpoint for a welcome message.
 """
+
+import os
 import time
+from pathlib import Path
 from fastapi import FastAPI, APIRouter, Request, HTTPException, Response
 from slowapi.errors import RateLimitExceeded
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 from middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response 
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import HTTPException
+from fastapi.exceptions import HTTPException, RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from routes.ascor_routes import router as ascor_router
 from routes.company_routes import router as company_router
 from routes.cp_routes import cp_router
@@ -27,6 +33,7 @@ from log_config import get_logger
 from services import fetch_company_data, CompanyNotFoundError, CompanyDataError
 from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
 
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -34,17 +41,35 @@ logger = get_logger(__name__) # Get logger for main module
 
 # -------------------------------------------------------------------------
 # App Initialization
+
+# Using default docs_url and redoc_url (Swagger UI at /docs, ReDoc at /redoc)
 app = FastAPI(
     title="Transition Pathway Initiative API",
     version="1.0",
     description="Provides company, MQ, and CP assessments via REST endpoints.",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
-# Add limiter to app state
-app.state.limiter = limiter
 
-# Add rate limit exceeded handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+@app.middleware("http")
+async def allow_iframe(request: Request, call_next):
+    response = await call_next(request)
+    if "x-frame-options" in response.headers:
+        del response.headers["x-frame-options"]
+    return response
+
+raw = os.getenv("CORS_ORIGINS", "")
+origins = [o for o in raw.split(",") if o] or ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,    # now ["*"] if CORS_ORIGINS is empty
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 # Add limiter to app state
 app.state.limiter = limiter
@@ -169,11 +194,15 @@ async def home(request: Request):
     """
     return {"message": "Welcome to the TPI API!"}
 
-# Global exception handler for more structured error logging
+# Global exception handler for any *unexpected* errors in your business logic
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
-    # Log the exception details here before returning the response
-    logger.error(f"Unhandled Exception for {request.method} {request.url.path}: {exc}", exc_info=True) # exc_info=True adds traceback
+    # Let FastAPI/Starlette handle its own HTTPExceptions & validation errors
+    if isinstance(exc, (StarletteHTTPException, RequestValidationError)):
+        raise exc
+
+    # Otherwise log and return a 500
+    logger.error(f"Unhandled Exception for {request.method} {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"message": "An internal server error occurred."},
