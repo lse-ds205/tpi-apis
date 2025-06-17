@@ -69,6 +69,7 @@ async def get_latest_mq_assessments(
     page_size: int = Query(
         10, ge=1, le=100, description="Number of results per page (max 100)"
     ),
+    isin: str = Query(None, description="ISIN identifier"),
     company_filter: CompanyFilters = Depends(CompanyFilters),
     mq_filter: MQFilter = Depends(MQFilter)
 ):  
@@ -95,8 +96,14 @@ async def get_latest_mq_assessments(
             detail=f"Error filtering company data: {str(e)}"
         )
 
-    latest_records = mq_handler.get_latest_assessments(page, page_size)
-    total_records = len(latest_records)
+    # Handle ISIN filtering if provided
+    if isin:
+        mask = mq_df["isins"].str.lower().str.split(";").apply(lambda x: isin.lower() in [i.strip().lower() for i in x if i])
+        latest_records = mq_df[mask]
+        total_records = len(latest_records)
+    else:
+        latest_records = mq_handler.get_latest_assessments(page, page_size)
+        total_records = len(latest_records)
 
     results = [
         MQAssessmentDetail(
@@ -106,6 +113,9 @@ async def get_latest_mq_assessments(
             geography=row.get("geography", "N/A"),
             latest_assessment_year=pd.to_datetime(
                 row["assessment date"], format="%d/%m/%Y"
+            ).year,
+            latest_publication_year=pd.to_datetime(
+                row["publication date"], format="%d/%m/%Y"
             ).year,
             management_quality_score=STAR_MAPPING.get(
                 row.get("level", "N/A"), None
@@ -129,7 +139,7 @@ async def get_latest_mq_assessments(
     "/methodology/{methodology_id}", response_model=PaginatedMQResponse
 )
 @limiter.limit("100/minute")
-def get_mq_by_methodology(
+async def get_mq_by_methodology(
     request: Request, 
     methodology_id: int = Path(
         ..., ge=1, le=len(mq_files), description="Methodology cycle ID"
@@ -163,7 +173,8 @@ def get_mq_by_methodology(
     results = []
     for _, row in paginated_data.iterrows():
         try:
-            year = pd.to_datetime(row["assessment date"], format="%d/%m/%Y").year
+            assessment_year = pd.to_datetime(row["assessment date"], format="%d/%m/%Y").year
+            publication_year = pd.to_datetime(row["publication date"], format="%d/%m/%Y").year
         except Exception:
             raise HTTPException(
                 status_code=422,
@@ -175,8 +186,11 @@ def get_mq_by_methodology(
             name=row["company name"],
             sector=row.get("sector", "N/A"),
             geography=row.get("geography", "N/A"),
-            latest_assessment_year=year,
-            management_quality_score=STAR_MAPPING.get(row.get("level", "N/A"), None),
+            latest_assessment_year=assessment_year,
+            latest_publication_year=publication_year,
+            management_quality_score=STAR_MAPPING.get(
+                row.get("level", "N/A"), None
+            ),
         ))
 
     return PaginatedMQResponse(
@@ -248,3 +262,71 @@ async def get_mq_trends_sector(
         page_size=page_size,
         results=results,
     )
+
+# ------------------------------------------------------------------------------
+# Endpoint: GET /company/{company_identifier}/indicators - Company MQ Indicators
+# ------------------------------------------------------------------------------
+@mq_router.get("/company/{company_identifier}/indicators", response_model=MQIndicatorsResponse)
+@limiter.limit("100/minute")
+async def get_company_mq_indicators(
+    request: Request,
+    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
+    company_filter: CompanyFilters = Depends(CompanyFilters),
+    mq_filter: MQFilter = Depends(MQFilter)
+):
+    """
+    Retrieve detailed MQ indicators for a specific company.
+    The company_identifier can be a company name/id or an ISIN (case-insensitive).
+    """
+    mq_handler = MQHandler()
+    try:
+        mq_handler.apply_company_filter(company_filter)
+        mq_handler.apply_mq_filter(mq_filter)
+    except Exception as e:
+        raise HTTPException(500, f"Error filtering company data: {e}")
+
+    # Grab the handler's filtered DataFrame
+    df = mq_handler.get_df()
+
+    if "isins" in df.columns:
+        isin_col = "isins"
+    elif "isin" in df.columns:
+        isin_col = "isin"
+    else:
+        raise HTTPException(500, "No ISIN(s) column found in MQ data.")
+
+    # Try ISIN lookup
+    mask = (
+        df[isin_col]
+          .str.lower()
+          .str.split(";")
+          .apply(lambda isins: company_identifier.lower() in [i.strip() for i in isins])
+    )
+    company_data = df[mask]
+
+    # Fallback to company name
+    if company_data.empty:
+        normalized = company_identifier.strip().lower()
+        company_data = df[df["company name"].str.strip().str.lower() == normalized]
+
+    if company_data.empty:
+        raise HTTPException(404, f"Company '{company_identifier}' not found.")
+
+    # Pick the latest record
+    latest = company_data.sort_values("assessment date").iloc[-1]
+
+    # Pull out anything that looks like an indicator/question
+    indicators = {
+        col: latest[col]
+        for col in latest.index
+        if "indicator" in col.lower() or "question" in col.lower()
+    }
+
+    assessment_dt = pd.to_datetime(latest["assessment date"], format="%d/%m/%Y")
+    return MQIndicatorsResponse(
+        company_id=company_identifier,
+         company_name=latest["company name"],
+         assessment_date=latest["assessment date"],        
+         assessment_year=assessment_dt.year,                 
+         methodology_cycle=latest["methodology_cycle"],   
+           indicators=indicators)
