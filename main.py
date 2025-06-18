@@ -26,7 +26,7 @@ from routes.ascor_routes import router as ascor_router
 from routes.company_routes import router as company_router
 from routes.cp_routes import cp_router
 from routes.mq_routes import mq_router
-from routes.cp_routes import cp_router
+from routes.bank_routes import router as bank_router
 from authentication.auth_router import router as auth_router
 from authentication.post_router import router as post_router
 from log_config import get_logger
@@ -71,12 +71,6 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-# Add limiter to app state
-app.state.limiter = limiter
-
-# Add rate limit exceeded handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
-
 # --- Logging Middleware ---
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -112,6 +106,9 @@ app.include_router(ascor_router, prefix="/v1")
 app.include_router(company_router, prefix="/v1/company")
 app.include_router(cp_router, prefix="/v1/cp")
 app.include_router(mq_router, prefix="/v1/mq")
+app.include_router(bank_router, prefix="/v1")
+app.include_router(auth_router, prefix="/v1")
+app.include_router(post_router, prefix="/v1")
 
 # Add company routes for testing the fetch_company_data function
 sample_company_router = APIRouter(prefix="/companies", tags=["Sample Company Endpoints"])
@@ -152,8 +149,6 @@ async def get_company(company_id: int):
         logger.exception(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
-app.include_router(company_router, prefix="/v1")
-
 # Add sector data routes for demonstrating logging with real data files
 sector_router = APIRouter(prefix="/sectors", tags=["Sector Endpoints"])
 
@@ -180,10 +175,6 @@ async def get_sector_company_assessments():
         raise HTTPException(status_code=500, detail=f"Error loading sector data: {str(e)}")
 
 app.include_router(sector_router, prefix="/v1")
-app.include_router(auth_router, prefix="/v1")
-app.include_router(post_router, prefix="/v1")
-
-# ... other routers go here
 
 # --- Root Endpoint ---
 @app.get("/")

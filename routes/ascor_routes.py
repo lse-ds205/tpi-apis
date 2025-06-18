@@ -1,12 +1,11 @@
 import os
 import pandas as pd
 
-from fastapi import APIRouter, HTTPException, FastAPI, Request, Depends 
+from fastapi import APIRouter, HTTPException, FastAPI, Request, Depends, Path
 from schemas import CountryDataResponse
 from services import CountryDataProcessor
 from middleware.rate_limiter import limiter
 from log_config import get_logger
-
 
 logger = get_logger(__name__)
 
@@ -57,13 +56,19 @@ except FileNotFoundError as e:
     
     logger.info("Created mock data with sample values for all three pillars (EP, CP, CF)")
 
+# Load CP assessment file for ISIN-country mapping
+CP_ISIN_FILE = "data/TPI_sector_data_All_sectors_08032025/CP_Assessments_08032025.csv"
+cp_df = pd.read_csv(CP_ISIN_FILE)
+cp_df.columns = cp_df.columns.str.strip().str.lower()
+
 # -------------------------------------------------------------------------
 # Router Initialization
 # -------------------------------------------------------------------------
 router = APIRouter(tags=["ASCOR Endpoints"])
 
 @router.get("/countries")
-async def get_countries():
+@limiter.limit("100/minute")
+async def get_countries(request: Request):
     """Get a list of all available countries in the dataset."""
     try:
         logger.info("Getting list of all countries")
@@ -74,26 +79,41 @@ async def get_countries():
         logger.exception(f"Error getting countries list: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/country-data/{country}/{assessment_year}", response_model=CountryDataResponse)
+@router.get("/country-data/{country_identifier}/{assessment_year}", response_model=CountryDataResponse)
 @limiter.limit("100/minute")
-async def get_country_data(request: Request, country: str, assessment_year: int) -> CountryDataResponse:
-    country = country.strip().lower()
+async def get_country_data(
+    request: Request,
+    country_identifier: str = Path(..., description="Country identifier (3-letter ISO code, name, or ID; case-insensitive)"),
+    assessment_year: int = Path(..., description="Assessment year (e.g., 2023)")
+) -> CountryDataResponse:
+    """
+    Retrieve ASCOR data for a given country and assessment year.
+    The country_identifier can be a 3-letter ISO code (e.g., 'AUS'), a country name (e.g., 'Australia'), or a country ID (e.g., '8').
+    If an ISO code is provided, it will be mapped to the country using the CP assessment file, then used to fetch ASCOR data.
+    Matching is case-insensitive and will try ISO code, then ID, then name.
+    """
+    # Try ISO code mapping first (using Geography Code in CP file)
+    iso_lower = country_identifier.strip().lower()
+    match = cp_df[cp_df['geography code'].astype(str).str.strip().str.lower() == iso_lower]
+    if not match.empty:
+        mapped_country = match.iloc[0]['geography']
+        country_identifier = mapped_country
     
-    print(f"[ROUTE DEBUG] Received request: {country=}, {assessment_year=}")
+    print(f"[ROUTE DEBUG] Received request: {country_identifier=}, {assessment_year=}")
 
     try:
-        logger.info(f"Processing request for country: {country}, year: {assessment_year}")
-        processor = CountryDataProcessor(df_assessments.copy(), country, assessment_year)
+        logger.info(f"Processing request for country: {country_identifier}, year: {assessment_year}")
+        processor = CountryDataProcessor(df_assessments.copy(), country_identifier, assessment_year)
         result = processor.process_country_data()
-        logger.info(f"Successfully processed data for {country}, {assessment_year}")
+        logger.info(f"Successfully processed data for {country_identifier}, {assessment_year}")
         # Use when debugging
         # logger.debug(f"[ROUTE DEBUG] Result to return: {result.model_dump()}")
         return result
     except ValueError as e:
-        logger.error(f"Value error for {country}, {assessment_year}: {e}")
+        logger.error(f"Value error for {country_identifier}, {assessment_year}: {e}")
         print(f"[ROUTE DEBUG] ValueError: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.exception(f"Unexpected error processing data for {country}, {assessment_year}: {e}")
+        logger.exception(f"Unexpected error processing data for {country_identifier}, {assessment_year}: {e}")
         print(f"[ROUTE DEBUG] Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="Unexpected server error.")
