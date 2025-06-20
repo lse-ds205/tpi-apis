@@ -167,7 +167,7 @@ The **ascor_api** database is used to store the files from the *data/TPI_ASCOR_d
 
 ### 4A: ERD Diagram
 
-![AScor Logo](icons/ascor_ERD.png)
+![AScor Logo](../images/ascor_ERD.png)
 
 #### 4B: Relationships Constraints
 
@@ -189,7 +189,7 @@ Here in the modelling stage, I chose to use optional relationships in cases wher
 
 ### 4C: Relational Schema 
 
-![AScor Logo](icons/ascor_RS.png)
+![AScor Logo](../images/ascor_RS.png)
 
 ### Overview of Structure and Design Choices
 
@@ -435,7 +435,7 @@ country_name Australia
 
 ### 5A: ERD Diagram
 
-![tpi erd](icons/tpi_ERD.png)
+![tpi erd](../images/tpi_ERD.png)
 
 
 #### 5B: Relationships Constraints
@@ -455,7 +455,7 @@ country_name Australia
 
 ### 5C: Relational Schema 
 
-![tpi RS](icons/tpi_RS.png)
+![tpi RS](../images/tpi_RS.png)
 
 ### 5D: Overview of TPI Structure and Design Choices
 
