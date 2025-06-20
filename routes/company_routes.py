@@ -106,9 +106,9 @@ async def get_all_companies(
     )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier} - Retrieve Company Details
+# Endpoint: GET /{company_id} - Retrieve Company Details
 # ------------------------------------------------------------------------------
-@router.get("/company/{company_id}", response_model=CompanyDetail)
+@router.get("/{company_id}", response_model=CompanyDetail)
 @limiter.limit("100/minute")
 async def get_company_details(
     request: Request, 
@@ -159,9 +159,9 @@ async def get_company_details(
         )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/history - Retrieve Company History
+# Endpoint: GET /{company_id}/history - Retrieve Company History
 # ------------------------------------------------------------------------------
-@router.get("/company/{company_id}/history", response_model=CompanyHistoryResponse)
+@router.get("/{company_id}/history", response_model=CompanyHistoryResponse)
 @limiter.limit("100/minute")
 async def get_company_history(
     request: Request, 
@@ -217,10 +217,10 @@ async def get_company_history(
         )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/performance-comparison - Compare Performance
+# Endpoint: GET /{company_id}/performance-comparison - Compare Performance
 # ------------------------------------------------------------------------------
 @router.get(
-    "/company/{company_identifier}/performance-comparison",
+    "/{company_id}/performance-comparison",
     response_model=Union[
         PerformanceComparisonResponse,
         PerformanceComparisonInsufficientDataResponse,

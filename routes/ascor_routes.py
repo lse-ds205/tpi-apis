@@ -36,7 +36,7 @@ async def get_countries(request: Request):
         logger.exception(f"Error getting countries list: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/country-data/{country_identifier}/{assessment_year}", response_model=CountryDataResponse)
+@router.get("/country-data/{country_id}/{assessment_year}", response_model=CountryDataResponse)
 @limiter.limit("100/minute")
 async def get_country_data(request: Request, country: str, assessment_year: int) -> CountryDataResponse:
     """Get assessment data for a specific country and year from the database."""
