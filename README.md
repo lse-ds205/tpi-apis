@@ -1,6 +1,6 @@
 ## TPI Assessment API 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-12-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
@@ -172,6 +172,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/BilalNHashim"><img src="https://avatars.githubusercontent.com/u/153951896?v=4?s=100" width="100px;" alt="BilalNHashim"/><br /><sub><b>BilalNHashim</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=BilalNHashim" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jessie-Fung"><img src="https://avatars.githubusercontent.com/u/147734161?v=4?s=100" width="100px;" alt="Jessie Fung"/><br /><sub><b>Jessie Fung</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=Jessie-Fung" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/datascraper758"><img src="https://avatars.githubusercontent.com/u/183512656?v=4?s=100" width="100px;" alt="datascraper758"/><br /><sub><b>datascraper758</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=datascraper758" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Nayrbnat"><img src="https://avatars.githubusercontent.com/u/97864681?v=4?s=100" width="100px;" alt="Nayrbnat"/><br /><sub><b>Nayrbnat</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=Nayrbnat" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
