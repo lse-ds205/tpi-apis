@@ -14,7 +14,7 @@ bank_df.columns = bank_df.columns.str.strip().str.lower()
 bank_cp_df = pd.read_excel(BANK_CP_FILE)
 bank_cp_df.columns = bank_cp_df.columns.str.strip().str.lower()
 
-router = APIRouter(prefix="/bank", tags=["Bank Endpoints"])
+router = APIRouter(tags=["Bank Endpoints"])
 
 @router.get("/pilot-indicator/{indicator_number}")
 def get_pilot_indicator(indicator_number: str = Path(..., description="Pilot indicator number (e.g., '1.1', '1.1.a')")) -> Dict[str, Any]:
