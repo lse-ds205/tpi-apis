@@ -1,7 +1,7 @@
 -- Carbon Performance Projection table for TPI database
 CREATE TABLE cp_projection (
     cp_projection_year INTEGER NOT NULL,
-    cp_projection_value INTEGER,
+    cp_projection_value FLOAT,
     assessment_date DATE NOT NULL,
     company_name VARCHAR NOT NULL,
     version VARCHAR NOT NULL,
