@@ -1,6 +1,6 @@
 ## TPI Assessment API 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
@@ -169,6 +169,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/alexgabriellafaith"><img src="https://avatars.githubusercontent.com/u/146425549?v=4?s=100" width="100px;" alt="alexgabriellafaith"/><br /><sub><b>alexgabriellafaith</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=alexgabriellafaith" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/MaddoxLeigh"><img src="https://avatars.githubusercontent.com/u/147736410?v=4?s=100" width="100px;" alt="MaddoxLeigh"/><br /><sub><b>MaddoxLeigh</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=MaddoxLeigh" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/BilalNHashim"><img src="https://avatars.githubusercontent.com/u/153951896?v=4?s=100" width="100px;" alt="BilalNHashim"/><br /><sub><b>BilalNHashim</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=BilalNHashim" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
