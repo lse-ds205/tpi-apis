@@ -290,9 +290,9 @@ class CarbonPerformanceVisualizer:
             colors = {
                 "1.5 Degrees":           "rgba(153,194,255,0.35)",    # light blue (bottom)
                 "Below 2 Degrees":       "rgba(100,144,233,0.25)",    # more blue (middle) - more transparent
-                "International Pledges": "rgba(100,149,237,0.35)"     # darker blue (top)
+                "Paris Pledges": "rgba(100,149,237,0.35)"     # darker blue (top)
             }
-            scenarios = ["1.5 Degrees", "Below 2 Degrees", "International Pledges"]
+            scenarios = ["1.5 Degrees", "Below 2 Degrees", "Paris Pledges"]
             for i, scenario in enumerate(scenarios):
                 band = data["benchmarks"].get(scenario)
                 if not band:

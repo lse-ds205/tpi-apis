@@ -7,6 +7,7 @@ It uses the database manager and SQL templates for efficient data retrieval.
 # Imports
 # -------------------------------------------------------------------------
 import re 
+import asyncio
 import pandas as pd
 from pathlib import Path
 from fastapi.responses import JSONResponse
@@ -262,7 +263,6 @@ async def get_company_carbon_intensity_data(
 ):
     """
     Retrieve carbon intensity data for a company including historical values, sector means, and benchmarks.
-    The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
     try:
         carbon_intensity_data = {}
@@ -295,8 +295,8 @@ async def get_company_carbon_intensity_data(
         sector_results = result[result["sector_name"] == sector].loc[:, ["cp_projection_year", "cp_projection_value"]]
         sector_results = sector_results.groupby("cp_projection_year").mean().reset_index()
         output_sector = {
-            "secotr_mean_years": sector_results["cp_projection_year"].astype(int).tolist(),
-            "secotr_mean_values": sector_results["cp_projection_value"].tolist()
+            "sector_mean_years": sector_results["cp_projection_year"].astype(int).tolist(),
+            "sector_mean_values": sector_results["cp_projection_value"].tolist()
         }
         carbon_intensity_data.update({f"sector_average": output_sector})
 
@@ -305,6 +305,7 @@ async def get_company_carbon_intensity_data(
             SQL_DIR / "get_sector_benchmarks.sql",
             params={"sector": sector}
         )
+        logger.info(sector_benchmark_results["scenario_name"].unique())
 
         output_benchmarks = {}
         unit = sector_benchmark_results.iloc[0].get("unit", "Carbon Intensity")
@@ -312,7 +313,6 @@ async def get_company_carbon_intensity_data(
             scenario_results = sector_benchmark_results[sector_benchmark_results["scenario_name"] == scenario]
             if scenario_results.empty:
                 continue
-            logger.info(scenario_results)
             output_benchmarks[scenario] = {
                 "years": scenario_results["benchmark_projection_year"].astype(int).tolist(),
                 "values": scenario_results["benchmark_projection_attribute"].tolist()
@@ -334,8 +334,8 @@ async def get_company_carbon_intensity_data(
     responses={200: {"content": {"image/png": {}}, "description": "PNG graph"}}
 )
 def get_company_carbon_performance_graph(
+    request: Request,
     company_id: str,
-    include_sector_benchmarks: bool = Query(True, description="Include benchmarks"),
     as_image: bool = Query(True, description="Return PNG if true"),
     image_format: str = Query("png", description="png|jpeg"),
     width: int = Query(1000, ge=400, le=2000),
@@ -345,32 +345,9 @@ def get_company_carbon_performance_graph(
     """
     Generate a carbon performance graph for a company.
     """
-    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_id.lower() in [i.strip().lower() for i in x if i])
-    sub = cp_df[mask]
-    if sub.empty:
-        normalized_input = company_id.strip().lower()
-        sub = cp_df[cp_df["company name"].str.lower() == normalized_input]
-        if sub.empty:
-            raise HTTPException(404, f"Company '{company_id}' not found")
-        company_id_for_graph = company_id
-    else:
-        company_id_for_graph = sub.iloc[-1]["company name"]
-    data = get_company_carbon_intensity(company_id_for_graph, include_sector_benchmarks, cp_df, sector_bench_df)
-    row = sub.sort_values("assessment_cycle").iloc[-1]
-    target_years, target_values = [], []
-    for col in row.index:
-        m = re.search(r"carbon performance.*?(\d{4})$", col)
-        if m:
-            yr = int(m.group(1))
-            val = pd.to_numeric(row[col], errors="coerce")
-            if pd.notnull(val):
-                target_years.append(yr)
-                target_values.append(float(val))
-    if target_years:
-        yrs, vals = zip(*sorted(zip(target_years, target_values)))
-        data["target_years"] = list(yrs)
-        data["target_values"] = list(vals)
-    chart_title = title or f"Carbon Performance for {company_id_for_graph}"
+    data = asyncio.run(get_company_carbon_intensity_data(request, company_id))
+    logger.info(data)
+    chart_title = title or f"Carbon Performance for {company_id}"
     fig_or_resp = CarbonPerformanceVisualizer.generate_carbon_intensity_graph(
         data, chart_title, width, height, as_image, image_format
     )
