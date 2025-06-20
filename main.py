@@ -110,7 +110,9 @@ sector_router = APIRouter(prefix="/sectors", tags=["Sector Endpoints"])
 
 @sector_router.get("/company-assessments")
 @limiter.limit("100/minute")
-async def get_sector_company_assessments():
+async def get_sector_company_assessments(
+    request: Request
+):
     try:
         sector_file = "data/TPI_sector_data_All_sectors_08032025/Company_Latest_Assessments.csv"
         logger.info(f"Loading sector company assessments from {sector_file}")
