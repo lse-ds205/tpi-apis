@@ -101,7 +101,7 @@ app.include_router(ascor_router, prefix="/v1/ascor")
 app.include_router(company_router, prefix="/v1/company")
 app.include_router(cp_router, prefix="/v1/cp")
 app.include_router(mq_router, prefix="/v1/mq")
-app.include_router(bank_router, prefix="/v1")
+app.include_router(bank_router, prefix="/v1/bank")
 app.include_router(auth_router, prefix="/v1")
 app.include_router(post_router, prefix="/v1")
 
