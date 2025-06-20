@@ -248,7 +248,7 @@ class CPProjection(TpiBase):
     __tablename__ = 'cp_projection'
     
     cp_projection_year = Column(Integer, primary_key=True)
-    cp_projection_value = Column(Integer, nullable=True)
+    cp_projection_value = Column(Float, nullable=True)
     assessment_date = Column(Date, primary_key=True)
     company_name = Column(String, primary_key=True)
     version = Column(String, primary_key=True)
