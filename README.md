@@ -1,6 +1,6 @@
 ## TPI Assessment API 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-6-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
@@ -164,6 +164,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/billyblue1"><img src="https://avatars.githubusercontent.com/u/114443347?v=4?s=100" width="100px;" alt="billyblue1"/><br /><sub><b>billyblue1</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=billyblue1" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/krishyb123"><img src="https://avatars.githubusercontent.com/u/123502998?v=4?s=100" width="100px;" alt="Krish Bhatia"/><br /><sub><b>Krish Bhatia</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=krishyb123" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Yiwen-x"><img src="https://avatars.githubusercontent.com/u/147771778?v=4?s=100" width="100px;" alt="Yiwen-x"/><br /><sub><b>Yiwen-x</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=Yiwen-x" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/DylanButcher"><img src="https://avatars.githubusercontent.com/u/43067126?v=4?s=100" width="100px;" alt="DylanButcher"/><br /><sub><b>DylanButcher</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=DylanButcher" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
