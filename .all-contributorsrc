@@ -1,0 +1,160 @@
+{
+  "projectName": "tpi-apis",
+  "projectOwner": "ds205",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "gitmoji",
+  "contributors": [
+    {
+      "login": "ColemanCochran",
+      "name": "Coleman Cochran",
+      "avatar_url": "https://avatars.githubusercontent.com/u/123137609?v=4",
+      "profile": "https://github.com/ColemanCochran",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "GAURVI27",
+      "name": "Urvi Gaur",
+      "avatar_url": "https://avatars.githubusercontent.com/u/147526356?v=4",
+      "profile": "https://github.com/GAURVI27",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "deyavuz",
+      "name": "Defne",
+      "avatar_url": "https://avatars.githubusercontent.com/u/185213861?v=4",
+      "profile": "https://github.com/deyavuz",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "billyblue1",
+      "name": "billyblue1",
+      "avatar_url": "https://avatars.githubusercontent.com/u/114443347?v=4",
+      "profile": "https://github.com/billyblue1",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "krishyb123",
+      "name": "Krish Bhatia",
+      "avatar_url": "https://avatars.githubusercontent.com/u/123502998?v=4",
+      "profile": "https://github.com/krishyb123",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Yiwen-x",
+      "name": "Yiwen-x",
+      "avatar_url": "https://avatars.githubusercontent.com/u/147771778?v=4",
+      "profile": "https://github.com/Yiwen-x",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "DylanButcher",
+      "name": "DylanButcher",
+      "avatar_url": "https://avatars.githubusercontent.com/u/43067126?v=4",
+      "profile": "https://github.com/DylanButcher",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "alexgabriellafaith",
+      "name": "alexgabriellafaith",
+      "avatar_url": "https://avatars.githubusercontent.com/u/146425549?v=4",
+      "profile": "https://github.com/alexgabriellafaith",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "MaddoxLeigh",
+      "name": "MaddoxLeigh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/147736410?v=4",
+      "profile": "https://github.com/MaddoxLeigh",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "BilalNHashim",
+      "name": "BilalNHashim",
+      "avatar_url": "https://avatars.githubusercontent.com/u/153951896?v=4",
+      "profile": "https://github.com/BilalNHashim",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Jessie-Fung",
+      "name": "Jessie Fung",
+      "avatar_url": "https://avatars.githubusercontent.com/u/147734161?v=4",
+      "profile": "https://github.com/Jessie-Fung",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "datascraper758",
+      "name": "datascraper758",
+      "avatar_url": "https://avatars.githubusercontent.com/u/183512656?v=4",
+      "profile": "https://github.com/datascraper758",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Nayrbnat",
+      "name": "Nayrbnat",
+      "avatar_url": "https://avatars.githubusercontent.com/u/97864681?v=4",
+      "profile": "https://github.com/Nayrbnat",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "felix-brown",
+      "name": "Felix Brown",
+      "avatar_url": "https://avatars.githubusercontent.com/u/107852540?v=4",
+      "profile": "https://github.com/felix-brown",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "tz1211",
+      "name": "Terry Zhou",
+      "avatar_url": "https://avatars.githubusercontent.com/u/114442618?v=4",
+      "profile": "https://github.com/tz1211",
+      "contributions": [
+        "review"
+      ]
+    },
+    {
+      "login": "jonjoncardoso",
+      "name": "Jon Cardoso-Silva",
+      "avatar_url": "https://avatars.githubusercontent.com/u/896254?v=4",
+      "profile": "https://github.com/jonjoncardoso",
+      "contributions": [
+        "projectManagement"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": false
+}

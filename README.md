@@ -1,5 +1,7 @@
 ## TPI Assessment API 
-
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -146,3 +148,44 @@ You can stop the Uvicorn server at anytime by pressing `CTRL + C` in the termina
 ## 📟 Contact Us
 
 If you have any questions about a particular functionality or need assistance with the codebase, post a message to the [Discussions](https://github.com/lse-ds205/tpi-apis/discussions) section of this repository.
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ColemanCochran"><img src="https://avatars.githubusercontent.com/u/123137609?v=4?s=100" width="100px;" alt="Coleman Cochran"/><br /><sub><b>Coleman Cochran</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=ColemanCochran" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/GAURVI27"><img src="https://avatars.githubusercontent.com/u/147526356?v=4?s=100" width="100px;" alt="Urvi Gaur"/><br /><sub><b>Urvi Gaur</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=GAURVI27" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/deyavuz"><img src="https://avatars.githubusercontent.com/u/185213861?v=4?s=100" width="100px;" alt="Defne"/><br /><sub><b>Defne</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=deyavuz" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/billyblue1"><img src="https://avatars.githubusercontent.com/u/114443347?v=4?s=100" width="100px;" alt="billyblue1"/><br /><sub><b>billyblue1</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=billyblue1" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/krishyb123"><img src="https://avatars.githubusercontent.com/u/123502998?v=4?s=100" width="100px;" alt="Krish Bhatia"/><br /><sub><b>Krish Bhatia</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=krishyb123" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Yiwen-x"><img src="https://avatars.githubusercontent.com/u/147771778?v=4?s=100" width="100px;" alt="Yiwen-x"/><br /><sub><b>Yiwen-x</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=Yiwen-x" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/DylanButcher"><img src="https://avatars.githubusercontent.com/u/43067126?v=4?s=100" width="100px;" alt="DylanButcher"/><br /><sub><b>DylanButcher</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=DylanButcher" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/alexgabriellafaith"><img src="https://avatars.githubusercontent.com/u/146425549?v=4?s=100" width="100px;" alt="alexgabriellafaith"/><br /><sub><b>alexgabriellafaith</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=alexgabriellafaith" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/MaddoxLeigh"><img src="https://avatars.githubusercontent.com/u/147736410?v=4?s=100" width="100px;" alt="MaddoxLeigh"/><br /><sub><b>MaddoxLeigh</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=MaddoxLeigh" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/BilalNHashim"><img src="https://avatars.githubusercontent.com/u/153951896?v=4?s=100" width="100px;" alt="BilalNHashim"/><br /><sub><b>BilalNHashim</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=BilalNHashim" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Jessie-Fung"><img src="https://avatars.githubusercontent.com/u/147734161?v=4?s=100" width="100px;" alt="Jessie Fung"/><br /><sub><b>Jessie Fung</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=Jessie-Fung" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/datascraper758"><img src="https://avatars.githubusercontent.com/u/183512656?v=4?s=100" width="100px;" alt="datascraper758"/><br /><sub><b>datascraper758</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=datascraper758" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Nayrbnat"><img src="https://avatars.githubusercontent.com/u/97864681?v=4?s=100" width="100px;" alt="Nayrbnat"/><br /><sub><b>Nayrbnat</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=Nayrbnat" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/felix-brown"><img src="https://avatars.githubusercontent.com/u/107852540?v=4?s=100" width="100px;" alt="Felix Brown"/><br /><sub><b>Felix Brown</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=felix-brown" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tz1211"><img src="https://avatars.githubusercontent.com/u/114442618?v=4?s=100" width="100px;" alt="Terry Zhou"/><br /><sub><b>Terry Zhou</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/pulls?q=is%3Apr+reviewed-by%3Atz1211" title="Reviewed Pull Requests">👀</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/jonjoncardoso"><img src="https://avatars.githubusercontent.com/u/896254?v=4?s=100" width="100px;" alt="Jon Cardoso-Silva"/><br /><sub><b>Jon Cardoso-Silva</b></sub></a><br /><a href="#projectManagement-jonjoncardoso" title="Project Management">📆</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

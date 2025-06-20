@@ -12,40 +12,50 @@ from fastapi import APIRouter, HTTPException
 from log_config import get_logger
 from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
 
+logger = get_logger(__name__)
+
 class CountryDataProcessor:
-    def __init__(self, df: pd.DataFrame, country: str, assessment_year: int):
+    def __init__(self, df: pd.DataFrame, country_identifier: str, assessment_year: int):
         self.df = df
-        self.country = country.strip()
+        self.country_identifier = str(country_identifier).strip().lower()
         self.assessment_year = assessment_year
-        self.filtered_df = self.filter_data()  
+        self.filtered_df = self.filter_data()
         
-    def filter_data(self) -> pd.DataFrame: 
+    def filter_data(self) -> pd.DataFrame:
         self.df['Publication date'] = pd.to_datetime(self.df['Publication date'], errors="coerce", dayfirst=True)
         self.df['Assessment date'] = pd.to_datetime(self.df['Assessment date'], errors="coerce", dayfirst=True)
-
-        self.df['Country'] = self.df['Country'].astype(str).str.strip().str.lower()
-        input_country = self.country.strip().lower()
-
-        logger.debug(f"[FILTER] Filtering for: country={self.country}, assessment_year={self.assessment_year}")
+        
+        logger.debug(f"[FILTER] Filtering for: country={self.country_identifier}, assessment_year={self.assessment_year}")
         logger.debug(f"[FILTER] Unique countries: {self.df['Country'].unique()}")
         logger.debug(f"[FILTER] Unique years: {self.df['Assessment date'].dt.year.unique()}")
-
-        mask = (
-            (self.df['Country'] == input_country) &
-            (self.df['Assessment date'].dt.year == self.assessment_year)
-        )
-
-        logger.debug(f"[FILTER] Rows matched: {mask.sum()}")
-
-        filtered_df = self.df[mask].copy()
+        
+        # Try to match by ISIN (semicolon-separated, case-insensitive)
+        if 'ISIN' in self.df.columns:
+            mask_isin = self.df['ISIN'].astype(str).str.lower().str.split(';').apply(lambda x: self.country_identifier in [i.strip().lower() for i in x if i])
+            filtered_df = self.df[mask_isin & (self.df['Assessment date'].dt.year == self.assessment_year)]
+        else:
+            filtered_df = pd.DataFrame()
         
         if filtered_df.empty:
-            logger.error(f"[FILTER] No match found for: {self.country=} {self.assessment_year=}")
+            # Try to match by Country Id (as string)
+            mask_id = self.df['Country Id'].astype(str).str.strip().str.lower() == self.country_identifier
+            filtered_df = self.df[mask_id & (self.df['Assessment date'].dt.year == self.assessment_year)]
+        
+        if filtered_df.empty:
+            # Fallback to Country name
+            self.df['Country'] = self.df['Country'].astype(str).str.strip().str.lower()
+            mask_name = self.df['Country'] == self.country_identifier
+            filtered_df = self.df[mask_name & (self.df['Assessment date'].dt.year == self.assessment_year)]
+        
+        logger.debug(f"[FILTER] Rows matched: {len(filtered_df)}")
+        
+        if filtered_df.empty:
+            logger.error(f"[FILTER] No match found for: {self.country_identifier=} {self.assessment_year=}")
             logger.error(f"[FILTER] Available country/year pairs:\n{self.df[['Country', 'Assessment date']].dropna().head(10)}")
-            raise ValueError(f"No data found for country={self.country} in year={self.assessment_year}")
-
+            raise ValueError(f"No data found for country={self.country_identifier} in year={self.assessment_year}")
+        
         filtered_df = filtered_df.fillna('')
-        return filtered_df.iloc[0]  
+        return filtered_df.iloc[0]
     
     def create_pillar(self, pillar: str) -> Pillar:
         areas = []
@@ -105,14 +115,12 @@ class CountryDataProcessor:
     def process_country_data(self) -> CountryDataResponse:
         pillars = [self.create_pillar(pillar) for pillar in ['EP', 'CP', 'CF']]
         output_dict = CountryDataResponse(
-            country=self.country, 
+            country=self.country_identifier, 
             assessment_year=self.assessment_year, 
             pillars=pillars
         )
         return output_dict
 
-
-logger = get_logger(__name__)
 
 # --- Define Custom Exceptions (Optional but recommended) ---
 class CompanyNotFoundError(Exception):
