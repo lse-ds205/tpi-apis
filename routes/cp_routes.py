@@ -94,7 +94,7 @@ async def get_latest_cp_assessments(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier} - Company CP History
+# Endpoint: GET /company/{company_id} - Company CP History
 # ------------------------------------------------------------------------------
 @cp_router.get("/company/{company_id}", response_model=List[CPAssessmentDetail])
 @limiter.limit("100/minute")
@@ -252,9 +252,9 @@ async def compare_company_cp(
         logger.exception(f"Error comparing CP for company {company_id}: {e}")
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/carbon-intensity - Carbon Intensity Data
+# Endpoint: GET /company/{company_id}/carbon-intensity - Carbon Intensity Data
 # ------------------------------------------------------------------------------
-@cp_router.get("/company/{company_identifier}/carbon-intensity")
+@cp_router.get("/company/{company_id}/carbon-intensity")
 @limiter.limit("100/minute")
 async def get_company_carbon_intensity_data(
     request: Request,
@@ -296,10 +296,10 @@ async def get_company_carbon_intensity_data(
 
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_identifier}/carbon-performance-graph" - Graph endpoint
+# Endpoint: GET /company/{company_id}/carbon-performance-graph" - Graph endpoint
 # ------------------------------------------------------------------------------
 @cp_router.get(
-    "/company/{company_identifier}/carbon-performance-graph",
+    "/company/{company_id}/carbon-performance-graph",
     responses={200: {"content": {"image/png": {}}, "description": "PNG graph"}}
 )
 def get_company_carbon_performance_graph(
