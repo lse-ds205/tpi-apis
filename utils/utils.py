@@ -292,7 +292,7 @@ class CarbonPerformanceVisualizer:
                 "Below 2 Degrees":       "rgba(100,144,233,0.25)",    # more blue (middle) - more transparent
                 "Paris Pledges": "rgba(100,149,237,0.35)"     # darker blue (top)
             }
-            scenarios = ["1.5 Degrees", "Below 2 Degrees", "Paris Pledges"]
+            scenarios = ["1.5 Degrees", "Below 2 Degrees" , "Paris Pledges"]
             for i, scenario in enumerate(scenarios):
                 band = data["benchmarks"].get(scenario)
                 if not band:
@@ -308,6 +308,7 @@ class CarbonPerformanceVisualizer:
                 ))
         # sector mean
         if data.get("sector_mean_years"):
+            print("entered")
             # Filter years up to 2022
             years = data["sector_mean_years"]
             values = data["sector_mean_values"]

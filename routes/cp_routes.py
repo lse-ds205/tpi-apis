@@ -288,7 +288,7 @@ async def get_company_carbon_intensity_data(
             "years": company_results["cp_projection_year"].astype(int).tolist(),
             "values": company_results["cp_projection_value"].tolist()
         }
-        carbon_intensity_data.update({f"company": output_company})
+        carbon_intensity_data.update(output_company)
 
         # Get sector-wide average carbon intensity 
         sector = company_results.iloc[0].get("sector_name", "")
@@ -298,14 +298,13 @@ async def get_company_carbon_intensity_data(
             "sector_mean_years": sector_results["cp_projection_year"].astype(int).tolist(),
             "sector_mean_values": sector_results["cp_projection_value"].tolist()
         }
-        carbon_intensity_data.update({f"sector_average": output_sector})
+        carbon_intensity_data.update(output_sector)
 
         # Get sector benchmarks
         sector_benchmark_results = db_manager.execute_sql_template(
             SQL_DIR / "get_sector_benchmarks.sql",
             params={"sector": sector}
         )
-        logger.info(sector_benchmark_results["scenario_name"].unique())
 
         output_benchmarks = {}
         unit = sector_benchmark_results.iloc[0].get("unit", "Carbon Intensity")
