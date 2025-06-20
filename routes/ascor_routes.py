@@ -1,5 +1,7 @@
+import os
+import pandas as pd
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Request 
+from fastapi import APIRouter, HTTPException, FastAPI, Request, Depends
 from schemas import CountryDataResponse
 from middleware.rate_limiter import limiter
 from log_config import get_logger
@@ -16,7 +18,8 @@ router = APIRouter(tags=["ASCOR Endpoints"])
 SQL_DIR = Path(__file__).parent.parent / "sql" / "ascor" / "queries"
 
 @router.get("/countries")
-async def get_countries():
+@limiter.limit("100/minute")
+async def get_countries(request: Request):
     """Get a list of all available countries in the dataset."""
     try:
         logger.info("Getting list of all countries from database")
@@ -33,7 +36,7 @@ async def get_countries():
         logger.exception(f"Error getting countries list: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/country-data/{country}/{assessment_year}", response_model=CountryDataResponse)
+@router.get("/country-data/{country_identifier}/{assessment_year}", response_model=CountryDataResponse)
 @limiter.limit("100/minute")
 async def get_country_data(request: Request, country: str, assessment_year: int) -> CountryDataResponse:
     """Get assessment data for a specific country and year from the database."""

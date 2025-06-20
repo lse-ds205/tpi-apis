@@ -8,24 +8,31 @@ It integrates endpoints for:
 
 It also defines a basic root endpoint for a welcome message.
 """
+
+import os
 import time
+from pathlib import Path
 from fastapi import FastAPI, APIRouter, Request, HTTPException, Response
 from slowapi.errors import RateLimitExceeded
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 from middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response 
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import HTTPException
+from fastapi.exceptions import HTTPException, RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from routes.ascor_routes import router as ascor_router
 from routes.company_routes import router as company_router
 from routes.cp_routes import cp_router
 from routes.mq_routes import mq_router
-from routes.cp_routes import cp_router
+from routes.bank_routes import router as bank_router
 from authentication.auth_router import router as auth_router
 from authentication.post_router import router as post_router
 from log_config import get_logger
 from services import fetch_company_data, CompanyNotFoundError, CompanyDataError
 from schemas import Metric, MetricSource, Indicator, IndicatorSource, Area, Pillar, CountryDataResponse
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -34,23 +41,35 @@ logger = get_logger(__name__) # Get logger for main module
 
 # -------------------------------------------------------------------------
 # App Initialization
+
+# Using default docs_url and redoc_url (Swagger UI at /docs, ReDoc at /redoc)
 app = FastAPI(
     title="Transition Pathway Initiative API",
     version="1.0",
     description="Provides company, MQ, and CP assessments via REST endpoints.",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
-# Add limiter to app state
-app.state.limiter = limiter
 
-# Add rate limit exceeded handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+@app.middleware("http")
+async def allow_iframe(request: Request, call_next):
+    response = await call_next(request)
+    if "x-frame-options" in response.headers:
+        del response.headers["x-frame-options"]
+    return response
 
-# Add limiter to app state
-app.state.limiter = limiter
+raw = os.getenv("CORS_ORIGINS", "")
+origins = [o for o in raw.split(",") if o] or ["*"]
 
-# Add rate limit exceeded handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,    # now ["*"] if CORS_ORIGINS is empty
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 # --- Logging Middleware ---
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -87,6 +106,9 @@ app.include_router(ascor_router, prefix="/v1")
 app.include_router(company_router, prefix="/v1/company")
 app.include_router(cp_router, prefix="/v1/cp")
 app.include_router(mq_router, prefix="/v1/mq")
+app.include_router(bank_router, prefix="/v1")
+app.include_router(auth_router, prefix="/v1")
+app.include_router(post_router, prefix="/v1")
 
 # Add company routes for testing the fetch_company_data function
 sample_company_router = APIRouter(prefix="/companies", tags=["Sample Company Endpoints"])
@@ -127,8 +149,6 @@ async def get_company(company_id: int):
         logger.exception(f"Unexpected error: {e}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
-app.include_router(company_router, prefix="/v1")
-
 # Add sector data routes for demonstrating logging with real data files
 sector_router = APIRouter(prefix="/sectors", tags=["Sector Endpoints"])
 
@@ -155,10 +175,6 @@ async def get_sector_company_assessments():
         raise HTTPException(status_code=500, detail=f"Error loading sector data: {str(e)}")
 
 app.include_router(sector_router, prefix="/v1")
-app.include_router(auth_router, prefix="/v1")
-app.include_router(post_router, prefix="/v1")
-
-# ... other routers go here
 
 # --- Root Endpoint ---
 @app.get("/")
@@ -169,11 +185,15 @@ async def home(request: Request):
     """
     return {"message": "Welcome to the TPI API!"}
 
-# Global exception handler for more structured error logging
+# Global exception handler for any *unexpected* errors in your business logic
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
-    # Log the exception details here before returning the response
-    logger.error(f"Unhandled Exception for {request.method} {request.url.path}: {exc}", exc_info=True) # exc_info=True adds traceback
+    # Let FastAPI/Starlette handle its own HTTPExceptions & validation errors
+    if isinstance(exc, (StarletteHTTPException, RequestValidationError)):
+        raise exc
+
+    # Otherwise log and return a 500
+    logger.error(f"Unhandled Exception for {request.method} {request.url.path}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"message": "An internal server error occurred."},

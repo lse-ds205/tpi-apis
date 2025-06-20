@@ -8,6 +8,7 @@ and comparing performance between assessment cycles.
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
+import re
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
 import pandas as pd
 from datetime import datetime
@@ -105,12 +106,14 @@ async def get_all_companies(
     )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id} - Retrieve Company Details
+# Endpoint: GET /company/{company_identifier} - Retrieve Company Details
 # ------------------------------------------------------------------------------
 @router.get("/company/{company_id}", response_model=CompanyDetail)
 @limiter.limit("100/minute")
-async def get_company_details(request: Request, company_id: str,
-                        filter: CompanyFilters = Depends(CompanyFilters)):
+async def get_company_details(
+    request: Request, 
+    company_id: str,
+    filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve the latest MQ & CP scores for a specific company.
     """
@@ -156,11 +159,14 @@ async def get_company_details(request: Request, company_id: str,
         )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/history - Retrieve Company History
+# Endpoint: GET /company/{company_identifier}/history - Retrieve Company History
 # ------------------------------------------------------------------------------
 @router.get("/company/{company_id}/history", response_model=CompanyHistoryResponse)
 @limiter.limit("100/minute")
-async def get_company_history(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+async def get_company_history(
+    request: Request, 
+    company_id: str, 
+    filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Retrieve a company's historical MQ & CP scores.
     """
@@ -211,17 +217,20 @@ async def get_company_history(request: Request, company_id: str, filter: Company
         )
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/performance-comparison - Compare Performance
+# Endpoint: GET /company/{company_identifier}/performance-comparison - Compare Performance
 # ------------------------------------------------------------------------------
 @router.get(
-    "/company/{company_id}/performance-comparison",
+    "/company/{company_identifier}/performance-comparison",
     response_model=Union[
         PerformanceComparisonResponse,
         PerformanceComparisonInsufficientDataResponse,
     ],
 )
 @limiter.limit("100/minute")
-async def compare_company_performance(request: Request, company_id: str, filter: CompanyFilters = Depends(CompanyFilters)):
+async def compare_company_performance(
+    request: Request, 
+    company_id: str, 
+    filter: CompanyFilters = Depends(CompanyFilters)):
     """
     Compare a company's latest performance against the previous year.
     """

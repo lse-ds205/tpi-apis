@@ -6,10 +6,12 @@ It uses the database manager and SQL templates for efficient data retrieval.
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
+import re 
+import pandas as pd
 from pathlib import Path
-from datetime import datetime
+from fastapi.responses import JSONResponse
+from typing import Any, Dict, List, Optional, Union
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
-from typing import List, Optional, Dict, Union
 from middleware.rate_limiter import limiter
 from schemas import (
     CPAssessmentDetail,
@@ -19,6 +21,13 @@ from schemas import (
 from utils.filters import CompanyFilters, build_company_filter_conditions
 from log_config import get_logger
 from utils.database_manager import DatabaseManagerFactory
+from utils.utils import (
+    get_latest_data_dir,
+    get_latest_assessment_file,
+    get_latest_cp_file,
+    get_company_carbon_intensity,
+    CarbonPerformanceVisualizer
+)
 
 logger = get_logger(__name__)
 
@@ -85,11 +94,13 @@ async def get_latest_cp_assessments(
         raise HTTPException(status_code=500, detail=str(e))
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id} - Company CP History
+# Endpoint: GET /company/{company_identifier} - Company CP History
 # ------------------------------------------------------------------------------
 @cp_router.get("/company/{company_id}", response_model=List[CPAssessmentDetail])
 @limiter.limit("100/minute")
-async def get_company_cp_history(request: Request, company_id: str):
+async def get_company_cp_history(
+    request: Request, 
+    company_id: str):
     """Retrieve all CP assessments for a specific company across different assessment cycles."""
     try:
         logger.info(f"Getting CP history for company {company_id}")
@@ -139,7 +150,9 @@ async def get_company_cp_history(request: Request, company_id: str):
 # ------------------------------------------------------------------------------
 @cp_router.get("/company/{company_id}/alignment", response_model=Dict[str, str])
 @limiter.limit("100/minute")
-async def get_company_cp_alignment(request: Request, company_id: str):
+async def get_company_cp_alignment(
+    request: Request, 
+    company_id: str):
     """Get the latest Carbon Performance alignment for a specific company."""
     try:
         logger.info(f"Getting CP alignment for company {company_id}")
@@ -177,7 +190,7 @@ async def get_company_cp_alignment(request: Request, company_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 # ------------------------------------------------------------------------------
-# Endpoint: GET /company/{company_id}/comparison - Compare CP over Time
+# Endpoint: GET /company/{company_id}/comparison - Compare CP Performance
 # ------------------------------------------------------------------------------
 @cp_router.get(
     "/company/{company_id}/comparison",
@@ -232,4 +245,101 @@ async def compare_company_cp(request: Request, company_id: str):
         raise
     except Exception as e:
         logger.exception(f"Error comparing CP for company {company_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
+# ------------------------------------------------------------------------------
+# Endpoint: GET /company/{company_identifier}/carbon-intensity - Carbon Intensity Data
+# ------------------------------------------------------------------------------
+@cp_router.get("/company/{company_identifier}/carbon-intensity")
+@limiter.limit("100/minute")
+async def get_company_carbon_intensity_data(
+    request: Request,
+    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
+    filter: CompanyFilters = Depends(CompanyFilters)
+):
+    """
+    Retrieve carbon intensity data for a company including historical values, sector means, and benchmarks.
+    The company_identifier can be a company name/id or an ISIN (case-insensitive).
+    """
+    try:
+        # Try ISIN matching first
+        mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+        company_data = cp_df[mask]
+        
+        if company_data.empty:
+            # Fallback to company name/id
+            normalized_input = company_identifier.strip().lower()
+            company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
+        
+        if company_data.empty:
+            raise HTTPException(404, f"Company '{company_identifier}' not found.")
+        
+        # Get the latest record for sector information
+        latest_record = company_data.sort_values("assessment date").iloc[-1]
+        sector = latest_record.get("sector", "")
+        
+        # Get carbon intensity data using the utility function
+        carbon_intensity_data = get_company_carbon_intensity(
+            company_identifier, 
+            sector, 
+            cp_df, 
+            sector_bench_df
+        )
+        
+        return carbon_intensity_data
+        
+    except Exception as e:
+        raise HTTPException(500, f"Error retrieving carbon intensity data: {str(e)}")
+
+
+# ------------------------------------------------------------------------------
+# Endpoint: GET /company/{company_identifier}/carbon-performance-graph" - Graph endpoint
+# ------------------------------------------------------------------------------
+@cp_router.get(
+    "/company/{company_identifier}/carbon-performance-graph",
+    responses={200: {"content": {"image/png": {}}, "description": "PNG graph"}}
+)
+def get_company_carbon_performance_graph(
+    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
+    include_sector_benchmarks: bool = Query(True, description="Include benchmarks"),
+    as_image: bool = Query(True, description="Return PNG if true"),
+    image_format: str = Query("png", description="png|jpeg"),
+    width: int = Query(1000, ge=400, le=2000),
+    height: int = Query(600, ge=300, le=1200),
+    title: Optional[str] = Query(None, description="Custom title")
+):
+    """
+    Generate a carbon performance graph for a company.
+    The company_identifier can be a company name/id or an ISIN (case-insensitive).
+    """
+    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+    sub = cp_df[mask]
+    if sub.empty:
+        normalized_input = company_identifier.strip().lower()
+        sub = cp_df[cp_df["company name"].str.lower() == normalized_input]
+        if sub.empty:
+            raise HTTPException(404, f"Company '{company_identifier}' not found")
+        company_id_for_graph = company_identifier
+    else:
+        company_id_for_graph = sub.iloc[-1]["company name"]
+    data = get_company_carbon_intensity(company_id_for_graph, include_sector_benchmarks, cp_df, sector_bench_df)
+    row = sub.sort_values("assessment_cycle").iloc[-1]
+    target_years, target_values = [], []
+    for col in row.index:
+        m = re.search(r"carbon performance.*?(\d{4})$", col)
+        if m:
+            yr = int(m.group(1))
+            val = pd.to_numeric(row[col], errors="coerce")
+            if pd.notnull(val):
+                target_years.append(yr)
+                target_values.append(float(val))
+    if target_years:
+        yrs, vals = zip(*sorted(zip(target_years, target_values)))
+        data["target_years"] = list(yrs)
+        data["target_values"] = list(vals)
+    chart_title = title or f"Carbon Performance for {company_id_for_graph}"
+    fig_or_resp = CarbonPerformanceVisualizer.generate_carbon_intensity_graph(
+        data, chart_title, width, height, as_image, image_format
+    )
+    if as_image:
+        return fig_or_resp
+    return JSONResponse(content=fig_or_resp)

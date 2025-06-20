@@ -33,44 +33,27 @@ class DateRangeFilter(BaseModel):
             if values['start_date'] > values['end_date']:
                 raise ValueError("start_date must be before or equal to end_date")
         return v
-    
-class CompanyFilters(BaseModel):
-    geography: Optional[str] = Field(
-        None,
-        description="Filter by geography",
-        json_schema_extra={"example": "United States of America"}
-    )
-    geography_code: Optional[str] = Field(
-        None,
-        description="Filter by geography code", 
-        json_schema_extra={"example": "USA"}
-    )
-    sector: Optional[str] = Field(
-        None,
-        description="Filter by sector",
-        json_schema_extra={"example": "Cement"}
-    )
-    ca100_focus_company: Optional[bool] = Field(
-        None,
-        description="Filter for CA100 focus companies",
-        json_schema_extra={"example": True}
-    )
-    large_medium_classification: Optional[str] = Field(
-        None,
-        description="Filter by company size classification",
-        json_schema_extra={"example": "Large"}
-    )
-    isins: Optional[Union[list[str], str]] = Field(
-        default=None,
-        description="Filter by ISIN identifiers",
-        json_schema_extra={"example": ["US0378331005", "GB00B03MLX29"]}
-    )
-    sedol: Optional[Union[list[str], str]] = Field(
-        default=None,
-        description="Filter by SEDOL identifiers",
-        json_schema_extra={"example": ["2000019", "B03MLX2"]}
-    )
 
+# CompanyFilters to work with FastAPI dependency injection
+class CompanyFilters:
+    def __init__(
+        self,
+        geography: Optional[str] = Query(None, description="Filter by geography"),
+        geography_code: Optional[str] = Query(None, description="Filter by geography code"),
+        sector: Optional[str] = Query(None, description="Filter by sector"),
+        ca100_focus_company: Optional[bool] = Query(None, description="Filter for CA100 focus companies"),
+        large_medium_classification: Optional[str] = Query(None, description="Filter by company size classification"),
+        isins: Optional[str] = Query(None, description="Filter by ISIN identifiers (comma-separated)"),
+        sedol: Optional[str] = Query(None, description="Filter by SEDOL identifiers (comma-separated)")
+    ):
+        self.geography = geography
+        self.geography_code = geography_code
+        self.sector = sector
+        self.ca100_focus_company = ca100_focus_company
+        self.large_medium_classification = large_medium_classification
+        # Convert comma-separated strings to lists
+        self.isins = isins.split(',') if isins else None
+        self.sedol = sedol.split(',') if sedol else None
 
 class CPBenchmarkFilter(BaseModel):
     benchmark_id: Optional[List[str]] = Query(None, description="Filter by Benchmark_id")
