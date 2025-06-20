@@ -188,18 +188,42 @@ def get_company_carbon_intensity(
     if cp_df is None:
         raise ValueError("cp_df must be provided")
         
-    sub = cp_df[cp_df["name"].str.lower() == company_id.lower()]
+    sub = cp_df[cp_df["company name"].str.lower() == company_id.lower()]
     if sub.empty:
         raise HTTPException(404, f"Company '{company_id}' not found")
 
-    
+    year_map = {
+        int(m.group(1)): col
+        for col in sub.columns
+        for m in [re.search(r"(\d{4})$", col)]
+        if m and 1900 <= int(m.group(1)) <= 2100
+    }
+
+    # pick the row with the latest assessment date
+    sub = sub.copy()
+    sub["_ad"] = pd.to_datetime(sub["assessment date"], dayfirst=True, errors="coerce")
+    if sub["_ad"].isna().all():
+        raise HTTPException(500, "No valid assessment dates found in CP data")
+    row = sub.sort_values("_ad", ascending=True).iloc[-1]
+
+    # reported history (filter out NaNs)
+    pts = []
+    for yr, col in sorted(year_map.items()):
+        val = pd.to_numeric(row[col], errors="coerce")
+        if pd.notnull(val):
+            pts.append((yr, float(val)))
+    if pts:
+        ys, vs = zip(*pts)
+        data = {"years": list(ys), "values": list(vs)}
+    else:
+        data = {}
 
     # sector mean
     sector = row.get("sector", "").strip().lower()
     if sector:
         # Get latest assessment for each company in the sector
         sector_peers = cp_df[cp_df["sector"].str.lower() == sector]
-        latest_assessments = sector_peers.sort_values("latest_assessment_year").groupby("name").tail(1)
+        latest_assessments = sector_peers.sort_values("assessment date").groupby("company name").tail(1)
         sm = []
         for yr, col in sorted(year_map.items()):
             vals = pd.to_numeric(latest_assessments[col], errors="coerce").dropna()
@@ -211,12 +235,13 @@ def get_company_carbon_intensity(
 
     # benchmarks
     if include_sector_benchmarks and sector_bench_df is not None:
+        sb = sector_bench_df[sector_bench_df["sector name"].str.lower() == sector]
         bench = {}
-        for scenario in ["National Pledges", "Below 2 Degrees", "1.5 Degrees"]:
-            sc = sector_bench_df[sector_bench_df["scenario_name"].str.lower() == scenario.lower()]
+        for scenario in ["International Pledges", "Below 2 Degrees", "1.5 Degrees"]:
+            sc = sb[sb["scenario name"].str.lower() == scenario.lower()]
             if sc.empty:
                 continue
-            latest = sc.sort_values(["release_date"], key=lambda c: pd.to_datetime(c, dayfirst=True)).iloc[-1]
+            latest = sc.sort_values(["release date"], key=lambda c: pd.to_datetime(c, dayfirst=True)).iloc[-1]
             recs = [(yr, float(latest.get(str(yr)))) for yr in range(2013, 2051) if pd.notna(latest.get(str(yr)))]
             if recs:
                 ys, vs = zip(*recs)

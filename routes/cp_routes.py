@@ -264,45 +264,66 @@ async def get_company_carbon_intensity_data(
     Retrieve carbon intensity data for a company including historical values, sector means, and benchmarks.
     The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
-    #try:
-    logger.info(f"Getting CP history for company {company_id}")
-    db_manager = DatabaseManagerFactory.get_manager("tpi_api")
-    
-    result = db_manager.execute_sql_template(
-        SQL_DIR / "get_cp_carbon_intensity.sql",
-        params={"company_id": company_id}
-    )
-    
-    if result.empty:
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Company '{company_id}' not found."
-        )
-    
-    # Get the latest record for sector information
-    latest_record = result.sort_values("latest_assessment_year", ascending=False).iloc[0]
-    sector = latest_record.get("sector", "")
+    try:
+        carbon_intensity_data = {}
 
-    # Get sector benchmarks
-    sector_benchmark_result = db_manager.execute_sql_template(
-        SQL_DIR / "get_sector_benchmarks.sql",
-        params={"sector": sector}
-    )
-
-    logger.info(result)
-    
-    # Get carbon intensity data using the utility function
-    carbon_intensity_data = get_company_carbon_intensity(
-        company_id, 
-        sector, 
-        result, 
-        sector_benchmark_result
-    )
-    
-    return carbon_intensity_data
+        logger.info(f"Getting CP history for company {company_id}")
+        db_manager = DatabaseManagerFactory.get_manager("tpi_api")
         
-    # except Exception as e:
-    #     raise HTTPException(500, f"Error retrieving carbon intensity data: {str(e)}")
+        # Get all carbon intensity results
+        result = db_manager.execute_sql_template(
+            SQL_DIR / "get_cp_carbon_intensity.sql",
+        )
+
+        # Get company results
+        company_results = result[result["company_name"].str.lower() == company_id.lower()]
+
+        if company_results.empty:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Company '{company_id}' not found."
+            )
+        
+        output_company = {
+            "years": company_results["cp_projection_year"].astype(int).tolist(),
+            "values": company_results["cp_projection_value"].tolist()
+        }
+        carbon_intensity_data.update({f"company": output_company})
+
+        # Get sector-wide average carbon intensity 
+        sector = company_results.iloc[0].get("sector_name", "")
+        sector_results = result[result["sector_name"] == sector].loc[:, ["cp_projection_year", "cp_projection_value"]]
+        sector_results = sector_results.groupby("cp_projection_year").mean().reset_index()
+        output_sector = {
+            "secotr_mean_years": sector_results["cp_projection_year"].astype(int).tolist(),
+            "secotr_mean_values": sector_results["cp_projection_value"].tolist()
+        }
+        carbon_intensity_data.update({f"sector_average": output_sector})
+
+        # Get sector benchmarks
+        sector_benchmark_results = db_manager.execute_sql_template(
+            SQL_DIR / "get_sector_benchmarks.sql",
+            params={"sector": sector}
+        )
+
+        output_benchmarks = {}
+        unit = sector_benchmark_results.iloc[0].get("unit", "Carbon Intensity")
+        for scenario in sector_benchmark_results["scenario_name"].unique():
+            scenario_results = sector_benchmark_results[sector_benchmark_results["scenario_name"] == scenario]
+            if scenario_results.empty:
+                continue
+            logger.info(scenario_results)
+            output_benchmarks[scenario] = {
+                "years": scenario_results["benchmark_projection_year"].astype(int).tolist(),
+                "values": scenario_results["benchmark_projection_attribute"].tolist()
+            }
+        if output_benchmarks:
+            carbon_intensity_data.update({f"benchmarks": output_benchmarks, "unit": unit if unit else "Carbon Intensity"})
+        
+        return carbon_intensity_data
+        
+    except Exception as e:
+        raise HTTPException(500, f"Error retrieving carbon intensity data: {str(e)}")
 
 
 # ------------------------------------------------------------------------------
