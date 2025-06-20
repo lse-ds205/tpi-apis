@@ -109,6 +109,7 @@ app.include_router(post_router, prefix="/v1")
 sector_router = APIRouter(prefix="/sectors", tags=["Sector Endpoints"])
 
 @sector_router.get("/company-assessments")
+@limiter.limit("100/minute")
 async def get_sector_company_assessments():
     try:
         sector_file = "data/TPI_sector_data_All_sectors_08032025/Company_Latest_Assessments.csv"
