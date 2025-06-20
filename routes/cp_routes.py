@@ -264,35 +264,45 @@ async def get_company_carbon_intensity_data(
     Retrieve carbon intensity data for a company including historical values, sector means, and benchmarks.
     The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
-    try:
-        # Try ISIN matching first
-        mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_id.lower() in [i.strip().lower() for i in x if i])
-        company_data = cp_df[mask]
-        
-        if company_data.empty:
-            # Fallback to company name/id
-            normalized_input = company_id.strip().lower()
-            company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
-        
-        if company_data.empty:
-            raise HTTPException(404, f"Company '{company_id}' not found.")
-        
-        # Get the latest record for sector information
-        latest_record = company_data.sort_values("assessment date").iloc[-1]
-        sector = latest_record.get("sector", "")
-        
-        # Get carbon intensity data using the utility function
-        carbon_intensity_data = get_company_carbon_intensity(
-            company_id, 
-            sector, 
-            cp_df, 
-            sector_bench_df
+    #try:
+    logger.info(f"Getting CP history for company {company_id}")
+    db_manager = DatabaseManagerFactory.get_manager("tpi_api")
+    
+    result = db_manager.execute_sql_template(
+        SQL_DIR / "get_cp_carbon_intensity.sql",
+        params={"company_id": company_id}
+    )
+    
+    if result.empty:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Company '{company_id}' not found."
         )
+    
+    # Get the latest record for sector information
+    latest_record = result.sort_values("latest_assessment_year", ascending=False).iloc[0]
+    sector = latest_record.get("sector", "")
+
+    # Get sector benchmarks
+    sector_benchmark_result = db_manager.execute_sql_template(
+        SQL_DIR / "get_sector_benchmarks.sql",
+        params={"sector": sector}
+    )
+
+    logger.info(result)
+    
+    # Get carbon intensity data using the utility function
+    carbon_intensity_data = get_company_carbon_intensity(
+        company_id, 
+        sector, 
+        result, 
+        sector_benchmark_result
+    )
+    
+    return carbon_intensity_data
         
-        return carbon_intensity_data
-        
-    except Exception as e:
-        raise HTTPException(500, f"Error retrieving carbon intensity data: {str(e)}")
+    # except Exception as e:
+    #     raise HTTPException(500, f"Error retrieving carbon intensity data: {str(e)}")
 
 
 # ------------------------------------------------------------------------------
@@ -313,7 +323,6 @@ def get_company_carbon_performance_graph(
 ):
     """
     Generate a carbon performance graph for a company.
-    The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
     mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_id.lower() in [i.strip().lower() for i in x if i])
     sub = cp_df[mask]
