@@ -148,6 +148,7 @@ You can stop the Uvicorn server at anytime by pressing `CTRL + C` in the termina
 ## 📟 Contact Us
 
 If you have any questions about a particular functionality or need assistance with the codebase, post a message to the [Discussions](https://github.com/lse-ds205/tpi-apis/discussions) section of this repository.
+
 ## Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
