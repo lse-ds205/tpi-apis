@@ -1,6 +1,6 @@
 ## TPI Assessment API 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-14-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-15-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
@@ -174,6 +174,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/datascraper758"><img src="https://avatars.githubusercontent.com/u/183512656?v=4?s=100" width="100px;" alt="datascraper758"/><br /><sub><b>datascraper758</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=datascraper758" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Nayrbnat"><img src="https://avatars.githubusercontent.com/u/97864681?v=4?s=100" width="100px;" alt="Nayrbnat"/><br /><sub><b>Nayrbnat</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=Nayrbnat" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/felix-brown"><img src="https://avatars.githubusercontent.com/u/107852540?v=4?s=100" width="100px;" alt="Felix Brown"/><br /><sub><b>Felix Brown</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=felix-brown" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tz1211"><img src="https://avatars.githubusercontent.com/u/114442618?v=4?s=100" width="100px;" alt="Terry Zhou"/><br /><sub><b>Terry Zhou</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/pulls?q=is%3Apr+reviewed-by%3Atz1211" title="Reviewed Pull Requests">👀</a></td>
     </tr>
   </tbody>
 </table>
