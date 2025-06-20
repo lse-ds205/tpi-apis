@@ -100,7 +100,8 @@ async def get_latest_cp_assessments(
 @limiter.limit("100/minute")
 async def get_company_cp_history(
     request: Request, 
-    company_id: str):
+    company_id: str
+    ):
     """Retrieve all CP assessments for a specific company across different assessment cycles."""
     try:
         logger.info(f"Getting CP history for company {company_id}")
@@ -152,7 +153,8 @@ async def get_company_cp_history(
 @limiter.limit("100/minute")
 async def get_company_cp_alignment(
     request: Request, 
-    company_id: str):
+    company_id: str
+    ):
     """Get the latest Carbon Performance alignment for a specific company."""
     try:
         logger.info(f"Getting CP alignment for company {company_id}")
@@ -197,7 +199,10 @@ async def get_company_cp_alignment(
     response_model=Union[CPComparisonResponse, PerformanceComparisonInsufficientDataResponse],
 )
 @limiter.limit("100/minute")
-async def compare_company_cp(request: Request, company_id: str):
+async def compare_company_cp(
+    request: Request, 
+    company_id: str
+    ):
     """Compare Carbon Performance alignment between the most recent and previous assessment."""
     try:
         logger.info(f"Comparing CP for company {company_id}")
@@ -253,8 +258,7 @@ async def compare_company_cp(request: Request, company_id: str):
 @limiter.limit("100/minute")
 async def get_company_carbon_intensity_data(
     request: Request,
-    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
-    filter: CompanyFilters = Depends(CompanyFilters)
+    company_id: str 
 ):
     """
     Retrieve carbon intensity data for a company including historical values, sector means, and benchmarks.
@@ -262,16 +266,16 @@ async def get_company_carbon_intensity_data(
     """
     try:
         # Try ISIN matching first
-        mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+        mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_id.lower() in [i.strip().lower() for i in x if i])
         company_data = cp_df[mask]
         
         if company_data.empty:
             # Fallback to company name/id
-            normalized_input = company_identifier.strip().lower()
+            normalized_input = company_id.strip().lower()
             company_data = cp_df[cp_df["company name"].str.strip().str.lower() == normalized_input]
         
         if company_data.empty:
-            raise HTTPException(404, f"Company '{company_identifier}' not found.")
+            raise HTTPException(404, f"Company '{company_id}' not found.")
         
         # Get the latest record for sector information
         latest_record = company_data.sort_values("assessment date").iloc[-1]
@@ -279,7 +283,7 @@ async def get_company_carbon_intensity_data(
         
         # Get carbon intensity data using the utility function
         carbon_intensity_data = get_company_carbon_intensity(
-            company_identifier, 
+            company_id, 
             sector, 
             cp_df, 
             sector_bench_df
@@ -299,7 +303,7 @@ async def get_company_carbon_intensity_data(
     responses={200: {"content": {"image/png": {}}, "description": "PNG graph"}}
 )
 def get_company_carbon_performance_graph(
-    company_identifier: str = Path(..., description="Company identifier (name/id or ISIN, case-insensitive)"),
+    company_id: str,
     include_sector_benchmarks: bool = Query(True, description="Include benchmarks"),
     as_image: bool = Query(True, description="Return PNG if true"),
     image_format: str = Query("png", description="png|jpeg"),
@@ -311,14 +315,14 @@ def get_company_carbon_performance_graph(
     Generate a carbon performance graph for a company.
     The company_identifier can be a company name/id or an ISIN (case-insensitive).
     """
-    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_identifier.lower() in [i.strip().lower() for i in x if i])
+    mask = cp_df["isins"].str.lower().str.split(";").apply(lambda x: company_id.lower() in [i.strip().lower() for i in x if i])
     sub = cp_df[mask]
     if sub.empty:
-        normalized_input = company_identifier.strip().lower()
+        normalized_input = company_id.strip().lower()
         sub = cp_df[cp_df["company name"].str.lower() == normalized_input]
         if sub.empty:
-            raise HTTPException(404, f"Company '{company_identifier}' not found")
-        company_id_for_graph = company_identifier
+            raise HTTPException(404, f"Company '{company_id}' not found")
+        company_id_for_graph = company_id
     else:
         company_id_for_graph = sub.iloc[-1]["company name"]
     data = get_company_carbon_intensity(company_id_for_graph, include_sector_benchmarks, cp_df, sector_bench_df)
