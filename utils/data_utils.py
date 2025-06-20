@@ -1,13 +1,13 @@
 import pandas as pd
 from pathlib import Path as FilePath
-from utils import (
+from utils.utils import (
     get_latest_data_dir,
     get_latest_assessment_file,
     get_latest_cp_file,
     normalize_company_id,
 )
 from datetime import datetime
-from filters import CompanyFilters, MQFilter
+from utils.filters import CompanyFilters, MQFilter
 
 class BaseDataHandler:
     """Base class for handling data operations with common functionality.
@@ -397,10 +397,10 @@ class CPHandler(BaseDataHandler):
             df["assessment_cycle"] = idx
 
         cp_df = pd.concat(cp_df_list, ignore_index=True)
-        cp_df.columns = cp_df.columns.str.strip().str.lower()
+        cp_df.columns = cp_df.columns.str.strip()
 
         # Validate required columns
-        required_columns = ["company name", "assessment date", "sector", "geography"]
+        required_columns = ["Company Name", "Assessment Date", "Sector", "Geography"]
         missing_columns = [col for col in required_columns if col not in cp_df.columns]
         if missing_columns:
             raise ValueError(f"Required columns missing in CP dataset: {', '.join(missing_columns)}")
