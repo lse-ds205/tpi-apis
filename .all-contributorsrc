@@ -1,0 +1,25 @@
+{
+  "projectName": "tpi-apis",
+  "projectOwner": "ds205",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "gitmoji",
+  "contributors": [
+    {
+      "login": "ColemanCochran",
+      "name": "Coleman Cochran",
+      "avatar_url": "https://avatars.githubusercontent.com/u/123137609?v=4",
+      "profile": "https://github.com/ColemanCochran",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "linkToUsage": false
+}

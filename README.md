@@ -1,5 +1,7 @@
 ## TPI Assessment API 
-
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.7-green.svg)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -146,3 +148,24 @@ You can stop the Uvicorn server at anytime by pressing `CTRL + C` in the termina
 ## 📟 Contact Us
 
 If you have any questions about a particular functionality or need assistance with the codebase, post a message to the [Discussions](https://github.com/lse-ds205/tpi-apis/discussions) section of this repository.
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ColemanCochran"><img src="https://avatars.githubusercontent.com/u/123137609?v=4?s=100" width="100px;" alt="Coleman Cochran"/><br /><sub><b>Coleman Cochran</b></sub></a><br /><a href="https://github.com/ds205/tpi-apis/commits?author=ColemanCochran" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
