@@ -6,12 +6,10 @@ It uses the database manager and SQL templates for efficient data retrieval.
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
-import re 
 import asyncio
-import pandas as pd
 from pathlib import Path
 from fastapi.responses import JSONResponse
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from middleware.rate_limiter import limiter
 from schemas import (
@@ -22,13 +20,7 @@ from schemas import (
 from utils.filters import CompanyFilters, build_company_filter_conditions
 from log_config import get_logger
 from utils.database_manager import DatabaseManagerFactory
-from utils.utils import (
-    get_latest_data_dir,
-    get_latest_assessment_file,
-    get_latest_cp_file,
-    get_company_carbon_intensity,
-    CarbonPerformanceVisualizer
-)
+from utils.utils import CarbonPerformanceVisualizer
 
 logger = get_logger(__name__)
 
@@ -300,7 +292,7 @@ async def get_company_carbon_intensity_data(
         }
         carbon_intensity_data.update(output_sector)
 
-        # Get sector benchmarks
+        # Get latest sector benchmarks
         sector_benchmark_results = db_manager.execute_sql_template(
             SQL_DIR / "get_sector_benchmarks.sql",
             params={"sector": sector}
@@ -345,7 +337,6 @@ def get_company_carbon_performance_graph(
     Generate a carbon performance graph for a company.
     """
     data = asyncio.run(get_company_carbon_intensity_data(request, company_id))
-    logger.info(data)
     chart_title = title or f"Carbon Performance for {company_id}"
     fig_or_resp = CarbonPerformanceVisualizer.generate_carbon_intensity_graph(
         data, chart_title, width, height, as_image, image_format
